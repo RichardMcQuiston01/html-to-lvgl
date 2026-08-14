@@ -26,6 +26,13 @@
       255
     ],
     "borderWidth": 0,
+    "borderBottomColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderBottomWidth": 0,
     "radius": 0,
     "fontSize": 16,
     "padLeft": 0,
@@ -61,6 +68,13 @@
           255
         ],
         "borderWidth": 0,
+        "borderBottomColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderBottomWidth": 0,
         "radius": 0,
         "fontSize": 14,
         "padLeft": 12,
@@ -92,6 +106,13 @@
           255
         ],
         "borderWidth": 0,
+        "borderBottomColor": [
+          229,
+          231,
+          235,
+          255
+        ],
+        "borderBottomWidth": 1,
         "radius": 0,
         "fontSize": 16,
         "padLeft": 12,
@@ -122,6 +143,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 13,
             "padLeft": 0,
@@ -160,6 +188,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 13,
             "padLeft": 0,
@@ -193,6 +228,13 @@
           255
         ],
         "borderWidth": 0,
+        "borderBottomColor": [
+          229,
+          231,
+          235,
+          255
+        ],
+        "borderBottomWidth": 1,
         "radius": 0,
         "fontSize": 16,
         "padLeft": 12,
@@ -223,6 +265,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 13,
             "padLeft": 0,
@@ -261,6 +310,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 13,
             "padLeft": 0,
@@ -294,6 +350,13 @@
           255
         ],
         "borderWidth": 0,
+        "borderBottomColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderBottomWidth": 0,
         "radius": 0,
         "fontSize": 16,
         "padLeft": 12,
@@ -324,6 +387,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              107,
+              114,
+              128,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 12,
             "padLeft": 0,
@@ -367,6 +437,13 @@
               255
             ],
             "borderWidth": 0,
+            "borderBottomColor": [
+              157,
+              150,
+              142,
+              255
+            ],
+            "borderBottomWidth": 0,
             "radius": 0,
             "fontSize": 13,
             "padLeft": 0,
@@ -405,6 +482,13 @@
           255
         ],
         "borderWidth": 0,
+        "borderBottomColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderBottomWidth": 0,
         "radius": 6,
         "fontSize": 13,
         "padLeft": 0,

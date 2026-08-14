@@ -5,6 +5,9 @@ node_modules/
 build/
 *.o
 
+# Local LVGL checkout used by the spike render harness
+spike/render/lvgl/
+
 # Editor/OS noise
 .DS_Store
 *.swp

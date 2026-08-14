@@ -13,6 +13,7 @@
 #define LV_USE_OBJ_NAME 1
 
 /* Font sizes the HTML converter can map CSS font-size onto */
+#define LV_FONT_MONTSERRAT_10 1
 #define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_16 1

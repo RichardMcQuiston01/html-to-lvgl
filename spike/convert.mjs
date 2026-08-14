@@ -20,7 +20,7 @@ const tree = JSON.parse(readFileSync(jsonIn, 'utf8'));
 
 // Montserrat sizes enabled in the render harness's lv_conf.h and registered
 // in main.c as fonts named "montserrat_<size>".
-const FONT_SIZES = [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48];
+const FONT_SIZES = [10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48];
 
 // Montserrat runs wider than default browser sans-serif fonts, so pick the
 // largest enabled size that does NOT exceed the CSS px size — undersizing
@@ -58,6 +58,13 @@ function boxStyles(node, { transparentDefault = true, pad = 0 } = {}) {
   }
   if (s.borderWidth > 0 && s.borderColor) {
     parts.push(`style_border_width="${s.borderWidth}"`, `style_border_color="${hex(s.borderColor)}"`);
+  } else if (s.borderBottomWidth > 0 && s.borderBottomColor) {
+    // CSS side-specific border (e.g. list-row separators via border-bottom)
+    parts.push(
+      `style_border_width="${s.borderBottomWidth}"`,
+      `style_border_color="${hex(s.borderBottomColor)}"`,
+      `style_border_side="bottom"`
+    );
   } else {
     parts.push(`style_border_width="0"`);
   }
@@ -104,7 +111,11 @@ function emit(node, parent, indent) {
     const placeholder = node.attrs.placeholder ? ` placeholder_text="${esc(node.attrs.placeholder)}"` : '';
     const value = node.attrs.value ? ` text="${esc(node.attrs.value)}"` : '';
     const pw = t === 'password' ? ' password_mode="true"' : '';
-    return `${pad}<lv_textarea name="${uid('textarea')}" ${g} one_line="true"${placeholder}${value}${pw} ${boxStyles(node, { transparentDefault: false, pad: 8 })} ${textStyles(node)} />`;
+    // Vertical padding centers the single line; horizontal padding comes from
+    // the page's CSS. style_pad_hor follows style_pad_all, so it wins (the
+    // parser applies attributes in order).
+    const padHor = node.styles.padLeft || 8;
+    return `${pad}<lv_textarea name="${uid('textarea')}" ${g} one_line="true"${placeholder}${value}${pw} ${boxStyles(node, { transparentDefault: false, pad: 8 })} style_pad_hor="${padHor}" ${textStyles(node)} />`;
   }
 
   // Leaf element with text and no children

@@ -2,7 +2,7 @@
 
 This spike validates the core loop proposed in [`../RESEARCH.md`](../RESEARCH.md):
 
-```
+```text
 HTML page ──► headless Chromium ──► UI-tree JSON ──► LVGL XML ──► headless LVGL v9.4 ──► framebuffer PNG
               (extract.mjs:                (convert.mjs)          (render/main.c:
                DOM walk +                                          lv_xml runtime +

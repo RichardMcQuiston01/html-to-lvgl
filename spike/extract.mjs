@@ -77,6 +77,8 @@ const tree = await page.evaluate(() => {
         color: parseColor(cs.color),
         borderColor: parseColor(cs.borderTopColor),
         borderWidth: Math.round(parseFloat(cs.borderTopWidth) || 0),
+        borderBottomColor: parseColor(cs.borderBottomColor),
+        borderBottomWidth: Math.round(parseFloat(cs.borderBottomWidth) || 0),
         radius: Math.round(parseFloat(cs.borderTopLeftRadius) || 0),
         fontSize: Math.round(parseFloat(cs.fontSize) || 16),
         padLeft: Math.round(parseFloat(cs.paddingLeft) || 0),

@@ -1,11 +1,11 @@
 <component>
   <view width="320" height="240" style_bg_color="0xf4f5f7" style_border_width="0" style_radius="0" style_pad_all="0" style_shadow_width="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
     <lv_label name="label_1" x="104" y="18" text="Device Login" style_text_font="montserrat_18" style_text_color="0x202124" />
-    <lv_textarea name="textarea_2" x="40" y="53" width="240" height="34" one_line="true" placeholder_text="Username" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_pad_all="8" style_shadow_width="0" style_text_font="montserrat_12" style_text_color="0x202124" />
-    <lv_textarea name="textarea_3" x="40" y="97" width="240" height="34" one_line="true" placeholder_text="Password" password_mode="true" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_pad_all="8" style_shadow_width="0" style_text_font="montserrat_12" style_text_color="0x202124" />
+    <lv_textarea name="textarea_2" x="40" y="53" width="240" height="34" one_line="true" placeholder_text="Username" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_pad_all="8" style_shadow_width="0" style_pad_hor="10" style_text_font="montserrat_12" style_text_color="0x202124" />
+    <lv_textarea name="textarea_3" x="40" y="97" width="240" height="34" one_line="true" placeholder_text="Password" password_mode="true" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_pad_all="8" style_shadow_width="0" style_pad_hor="10" style_text_font="montserrat_12" style_text_color="0x202124" />
     <lv_button name="button_5" x="40" y="147" width="240" height="38" style_bg_color="0x2563eb" style_border_width="0" style_radius="6" style_pad_all="0" style_shadow_width="0">
       <lv_label name="label_4" align="center" text="Sign In" style_text_font="montserrat_14" style_text_color="0xffffff" style_text_align="center" />
     </lv_button>
-    <lv_label name="label_6" x="76" y="197" text="Forgot password? Hold SET for 5s" style_text_font="montserrat_12" style_text_color="0x7a7f88" />
+    <lv_label name="label_6" x="76" y="197" text="Forgot password? Hold SET for 5s" style_text_font="montserrat_10" style_text_color="0x7a7f88" />
   </view>
 </component>

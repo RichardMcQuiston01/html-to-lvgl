@@ -32,10 +32,12 @@ static char * read_file(const char * path)
 {
     FILE * f = fopen(path, "rb");
     if(!f) return NULL;
-    fseek(f, 0, SEEK_END);
+    if(fseek(f, 0, SEEK_END) != 0) { fclose(f); return NULL; }
     long len = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    if(len < 0) { fclose(f); return NULL; }
+    if(fseek(f, 0, SEEK_SET) != 0) { fclose(f); return NULL; }
     char * buf = malloc((size_t)len + 1);
+    if(!buf) { fclose(f); return NULL; }
     if(fread(buf, 1, (size_t)len, f) != (size_t)len) { fclose(f); free(buf); return NULL; }
     buf[len] = '\0';
     fclose(f);
@@ -61,9 +63,10 @@ static int write_bmp(const char * path)
     uint16_t planes = 1;          memcpy(header + 26, &planes, 2);
     uint16_t bpp = 24;            memcpy(header + 28, &bpp, 2);
     memcpy(header + 34, &image_size, 4);
-    fwrite(header, 1, 54, f);
+    if(fwrite(header, 1, 54, f) != 54) { fclose(f); return -1; }
 
     uint8_t * row = malloc((size_t)row_bytes);
+    if(!row) { fclose(f); return -1; }
     memset(row, 0, (size_t)row_bytes);
     for(int y = VER_RES - 1; y >= 0; y--) {   /* BMP rows are bottom-up */
         const uint8_t * src = &framebuffer[y * HOR_RES * 4];
@@ -72,11 +75,14 @@ static int write_bmp(const char * path)
             row[x * 3 + 1] = src[x * 4 + 1];  /* G */
             row[x * 3 + 2] = src[x * 4 + 2];  /* R */
         }
-        fwrite(row, 1, (size_t)row_bytes, f);
+        if(fwrite(row, 1, (size_t)row_bytes, f) != (size_t)row_bytes) {
+            free(row);
+            fclose(f);
+            return -1;
+        }
     }
     free(row);
-    fclose(f);
-    return 0;
+    return fclose(f) == 0 ? 0 : -1;
 }
 
 int main(int argc, char ** argv)
@@ -102,6 +108,7 @@ int main(int argc, char ** argv)
     lv_xml_init();
 
     /* Fonts the converter's nearest-size mapping can reference by name */
+    lv_xml_register_font(NULL, "montserrat_10", &lv_font_montserrat_10);
     lv_xml_register_font(NULL, "montserrat_12", &lv_font_montserrat_12);
     lv_xml_register_font(NULL, "montserrat_14", &lv_font_montserrat_14);
     lv_xml_register_font(NULL, "montserrat_16", &lv_font_montserrat_16);
