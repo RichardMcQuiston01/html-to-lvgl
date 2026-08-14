@@ -53,6 +53,8 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_flex_main_place(row, LV_FLEX_ALIGN_SPACE_BETWEEN, 0);
     lv_obj_set_style_flex_cross_place(row, LV_FLEX_ALIGN_CENTER, 0);
     lv_obj_set_style_flex_track_place(row, LV_FLEX_ALIGN_CENTER, 0);
+    lv_obj_set_style_pad_row(row, 0, 0);
+    lv_obj_set_style_pad_column(row, 0, 0);
     lv_obj_set_flag(row, LV_OBJ_FLAG_SCROLLABLE, false);
 
     lv_obj_t * row_label = lv_label_create(row);
@@ -84,6 +86,8 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_flex_main_place(row_2, LV_FLEX_ALIGN_SPACE_BETWEEN, 0);
     lv_obj_set_style_flex_cross_place(row_2, LV_FLEX_ALIGN_CENTER, 0);
     lv_obj_set_style_flex_track_place(row_2, LV_FLEX_ALIGN_CENTER, 0);
+    lv_obj_set_style_pad_row(row_2, 0, 0);
+    lv_obj_set_style_pad_column(row_2, 0, 0);
     lv_obj_set_flag(row_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
     lv_obj_t * row_label_2 = lv_label_create(row_2);

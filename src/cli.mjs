@@ -14,8 +14,11 @@ import { parseArgs } from 'node:util';
 import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
+import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
+import { componentize } from './componentize.mjs';
 import { emitC } from './emit-c.mjs';
+import { render } from './emit-xml.mjs';
 
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
@@ -50,7 +53,9 @@ const name = opts.name ?? basename(input).replace(/\.[a-z]+$/i, '').replace(/[^a
 
 mkdirSync(opts.output, { recursive: true });
 
-const tree = await extractPage(input, {
+const reactMode = /\.(jsx|tsx)$/i.test(input);
+const extractor = reactMode ? extractReactPage : extractPage;
+const tree = await extractor(input, {
   width,
   height,
   screenshotPath: opts.screenshot ? join(opts.output, `${name}_web.png`) : undefined,
@@ -64,8 +69,19 @@ if (opts.debug) writeFileSync(join(opts.output, `${name}.json`), JSON.stringify(
 const { xml, view, warnings, assets, collapsed } = convert(tree, { name });
 const written = [];
 if (opts.format !== 'c') {
+  let pageXml = xml;
+  if (reactMode) {
+    // Split React component boundaries into reusable LVGL XML components.
+    const { view: pageView, components } = componentize(view, { warnings });
+    pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
+    for (const [cname, cxml] of components) {
+      const cPath = join(opts.output, `${cname}.xml`);
+      writeFileSync(cPath, cxml);
+      written.push(cPath);
+    }
+  }
   const xmlPath = join(opts.output, `${name}.xml`);
-  writeFileSync(xmlPath, xml);
+  writeFileSync(xmlPath, pageXml);
   written.push(xmlPath);
 }
 if (opts.format !== 'xml') {

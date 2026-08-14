@@ -18,6 +18,10 @@ node src/cli.mjs examples/dashboard.html --size 320x240 -o out/
 # no lv_xml runtime needed
 node src/cli.mjs examples/monitor.html -o out/ --format both
 
+# Convert a React app: each function component becomes a reusable,
+# parameterized LVGL XML component
+node src/cli.mjs examples/react/panel.jsx -o out/
+
 # Also save the Chromium reference screenshot and the extracted UI tree
 node src/cli.mjs examples/dashboard.html -o out/ --screenshot --debug
 ```
@@ -56,6 +60,28 @@ lv_xml_create(lv_screen_active(), "dashboard", NULL);
 | Colors, borders (incl. side-specific), radius, padding, opacity, text styles | LVGL style properties |
 
 An optimizer pass collapses visually inert single-child wrapper divs (framework "wrapper soup") so they never become on-device widgets.
+
+### React input (Phase 3)
+
+Point the CLI at a `.jsx`/`.tsx` file whose default export is a component; it is bundled with esbuild, mounted in headless Chromium, and each function component's DOM subtree is identified by walking the React fiber tree. The componentizer then turns repeated components into **reusable LVGL XML components with props**:
+
+```xml
+<!-- stat_card.xml — generated from function StatCard({label, value, unit}) -->
+<component>
+  <api>
+    <prop type="string" name="label" default="311"/>
+    ...
+  </api>
+  <view style_bg_color="0x1c2430" ...>
+    <lv_label text="$label" .../>
+  </view>
+</component>
+
+<!-- panel.xml references it -->
+<stat_card flex_grow="1" width="92" height="78" label="311" label_2="CORE K"/>
+```
+
+Differing label texts become string props, differing colors become color props, and placement stays on the instances. Structurally inconsistent instances fall back to inline output with a warning. Plain HTML can opt into the same mechanism with `data-lv-component="Name"` attributes. C output (`--format c/both`) stays flattened and works for React input too.
 
 ### Output formats
 

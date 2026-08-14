@@ -11,7 +11,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convert } from '../src/convert.mjs';
+import { componentize } from '../src/componentize.mjs';
 import { emitC } from '../src/emit-c.mjs';
+import { render } from '../src/emit-xml.mjs';
 import { optimize } from '../src/optimize.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -20,13 +22,31 @@ const fixtures = readdirSync(join(here, 'fixtures')).filter((f) => f.endsWith('.
 assert.ok(fixtures.length >= 4, 'expected at least 4 fixtures');
 
 for (const file of fixtures) {
-  const name = file.replace(/\.json$/, '');
-  test(`golden xml: ${name}`, () => {
-    const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
-    const { xml } = convert(tree, { name });
-    const golden = readFileSync(join(here, 'golden', `${name}.xml`), 'utf8');
-    assert.equal(xml, golden);
-  });
+  const react = file.endsWith('.react.json');
+  const name = file.replace(/(\.react)?\.json$/, '');
+
+  if (react) {
+    test(`golden react: ${name}`, () => {
+      const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+      const { view } = convert(tree, { name });
+      const { view: pageView, components } = componentize(view);
+      const dir = join(here, 'golden-react', name);
+      const pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
+      assert.equal(pageXml, readFileSync(join(dir, `${name}.xml`), 'utf8'));
+      const goldenFiles = readdirSync(dir).filter((f) => f !== `${name}.xml`);
+      assert.deepEqual([...components.keys()].sort(), goldenFiles.map((f) => f.replace('.xml', '')).sort());
+      for (const [cname, cxml] of components) {
+        assert.equal(cxml, readFileSync(join(dir, `${cname}.xml`), 'utf8'));
+      }
+    });
+  } else {
+    test(`golden xml: ${name}`, () => {
+      const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+      const { xml } = convert(tree, { name });
+      const golden = readFileSync(join(here, 'golden', `${name}.xml`), 'utf8');
+      assert.equal(xml, golden);
+    });
+  }
 
   test(`golden c: ${name}`, () => {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
@@ -36,6 +56,34 @@ for (const file of fixtures) {
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
   });
 }
+
+test('componentizer parameterizes text and color, keeps structure', () => {
+  const label = (name, text) => ({ tag: 'lv_label', attrs: { name, text, style_text_color: '0xffffff' }, children: [] });
+  const card = (n, text, bg) => ({
+    tag: 'lv_obj',
+    attrs: { name: `card_${n}`, x: n * 100, y: 0, width: 90, height: 40, style_bg_color: bg },
+    children: [label(`t_${n}`, text)],
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1, 'A', '0x111111'), card(2, 'B', '0x222222')] };
+  const { view: page, components, warnings } = componentize(view);
+  assert.equal(warnings.length, 0);
+  assert.ok(components.has('stat_card'));
+  const xml = components.get('stat_card');
+  assert.match(xml, /<prop type="color" name="[^"]+" default="0x111111"\/>/);
+  assert.match(xml, /<prop type="string" name="[^"]+" default="A"\/>/);
+  assert.equal(page.children[0].tag, 'stat_card');
+  assert.equal(page.children[1].attrs.x, 200); // placement stays on the instance
+});
+
+test('componentizer bails on structural differences', () => {
+  const a = { tag: 'lv_obj', attrs: { name: 'a' }, children: [{ tag: 'lv_label', attrs: { name: 'l', text: 'x' }, children: [] }], meta: { component: 'Card' } };
+  const b = { tag: 'lv_obj', attrs: { name: 'b' }, children: [], meta: { component: 'Card' } };
+  const view = { tag: 'view', attrs: {}, children: [a, b] };
+  const { components, warnings } = componentize(view);
+  assert.equal(components.size, 0);
+  assert.ok(warnings.some((w) => w.includes('structurally')));
+});
 
 test('warnings surface unsupported tags', () => {
   const tree = {

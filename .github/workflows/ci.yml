@@ -50,6 +50,15 @@ jobs:
             ./build/render "$xml" /tmp/out.bmp
           done
 
+      - name: Render componentized React goldens (multi-file registration)
+        run: |
+          for dir in tests/golden-react/*/; do
+            name=$(basename "$dir")
+            components=$(ls "$dir"*.xml | grep -v "/$name\.xml$")
+            echo "validating $dir ($name + components)"
+            ./build/render "$dir$name.xml" /tmp/out.bmp $components
+          done
+
       - name: Compile and render every golden C file against plain LVGL
         run: |
           for c in tests/golden-c/*.c; do
