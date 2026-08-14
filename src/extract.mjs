@@ -23,7 +23,7 @@ export async function extractPage(htmlPath, { width = 320, height = 240, screens
   }
 }
 
-async function launch() {
+export async function launch() {
   try {
     return await chromium.launch();
   } catch {
@@ -33,7 +33,7 @@ async function launch() {
 }
 
 /** Runs inside the page. Must be self-contained (no imports). */
-function buildTree() {
+export function buildTree() {
   const SKIP = new Set(['SCRIPT', 'STYLE', 'HEAD', 'META', 'LINK', 'TITLE', 'NOSCRIPT']);
 
   function parseColor(str) {
@@ -121,6 +121,9 @@ function buildTree() {
       tag: el.tagName.toLowerCase(),
       id: el.id || null,
       className: (typeof el.className === 'string' && el.className.split(/\s+/)[0]) || null,
+      // Component boundary: stamped by the React fiber walk, or set manually
+      // in plain HTML via data-lv-component="Name"
+      component: el.getAttribute('data-lv-component') || null,
       x: Math.round(r.x),
       y: Math.round(r.y),
       w: Math.round(r.width),

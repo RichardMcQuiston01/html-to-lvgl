@@ -32,6 +32,8 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_flex_main_place(header, LV_FLEX_ALIGN_SPACE_BETWEEN, 0);
     lv_obj_set_style_flex_cross_place(header, LV_FLEX_ALIGN_CENTER, 0);
     lv_obj_set_style_flex_track_place(header, LV_FLEX_ALIGN_CENTER, 0);
+    lv_obj_set_style_pad_row(header, 0, 0);
+    lv_obj_set_style_pad_column(header, 0, 0);
     lv_obj_set_flag(header, LV_OBJ_FLAG_SCROLLABLE, false);
 
     lv_obj_t * title = lv_label_create(header);

@@ -85,10 +85,20 @@ static int write_bmp(const char * path)
     return fclose(f) == 0 ? 0 : -1;
 }
 
+/** "path/to/stat_card.xml" -> "stat_card" (caller-owned buffer) */
+static void component_name_from_path(const char * path, char * out, size_t out_size)
+{
+    const char * base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    size_t i;
+    for(i = 0; i + 1 < out_size && base[i] != '\0' && base[i] != '.'; i++) out[i] = base[i];
+    out[i] = '\0';
+}
+
 int main(int argc, char ** argv)
 {
     if(argc < 3) {
-        fprintf(stderr, "usage: %s <page.xml> <out.bmp>\n", argv[0]);
+        fprintf(stderr, "usage: %s <page.xml> <out.bmp> [component.xml ...]\n", argv[0]);
         return 1;
     }
 
@@ -121,6 +131,22 @@ int main(int argc, char ** argv)
     lv_xml_register_font(NULL, "montserrat_36", &lv_font_montserrat_36);
     lv_xml_register_font(NULL, "montserrat_40", &lv_font_montserrat_40);
     lv_xml_register_font(NULL, "montserrat_48", &lv_font_montserrat_48);
+
+    /* Register dependency components first (e.g. the componentizer's output) */
+    for(int i = 3; i < argc; i++) {
+        char * comp_xml = read_file(argv[i]);
+        if(!comp_xml) {
+            fprintf(stderr, "cannot read %s\n", argv[i]);
+            return 1;
+        }
+        char comp_name[128];
+        component_name_from_path(argv[i], comp_name, sizeof(comp_name));
+        if(lv_xml_register_component_from_data(comp_name, comp_xml) != LV_RESULT_OK) {
+            fprintf(stderr, "failed to register XML component %s from %s\n", comp_name, argv[i]);
+            return 1;
+        }
+        free(comp_xml);
+    }
 
     if(lv_xml_register_component_from_data("page", xml) != LV_RESULT_OK) {
         fprintf(stderr, "failed to register XML component from %s\n", argv[1]);

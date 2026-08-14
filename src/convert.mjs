@@ -188,14 +188,15 @@ function containerLayout(node) {
     const l = node.layout;
     // Computed grid templates are resolved px tracks at the target
     // resolution; emitting them verbatim reproduces the browser's geometry.
-    const attrs = {
+    // Gaps are always explicit — LVGL themes default pad_row/pad_column to
+    // a nonzero value, which would add phantom spacing for CSS gap: 0.
+    return {
       style_layout: 'grid',
       style_grid_column_dsc_array: l.gridColumns.join(' '),
       style_grid_row_dsc_array: l.gridRows.join(' '),
+      style_pad_row: l.rowGap,
+      style_pad_column: l.columnGap,
     };
-    if (l.rowGap > 0) attrs.style_pad_row = l.rowGap;
-    if (l.columnGap > 0) attrs.style_pad_column = l.columnGap;
-    return attrs;
   }
   if (!isFlex(node)) return {};
   const l = node.layout;
@@ -212,8 +213,10 @@ function containerLayout(node) {
     attrs.style_flex_cross_place = cross;
     attrs.style_flex_track_place = cross;
   }
-  if (l.rowGap > 0) attrs.style_pad_row = l.rowGap;
-  if (l.columnGap > 0) attrs.style_pad_column = l.columnGap;
+  // Always explicit: LVGL themes default pad_row/pad_column to a nonzero
+  // value, which would add phantom spacing for CSS gap: 0.
+  attrs.style_pad_row = l.rowGap;
+  attrs.style_pad_column = l.columnGap;
   return attrs;
 }
 
@@ -264,6 +267,14 @@ function emit(node, parent, ctx, index = 0) {
     return null;
   }
 
+  const out = emitByTag(node, parent, ctx, index);
+  // Carry component boundaries (React fiber walk or data-lv-component)
+  // through to the element tree for the componentizer.
+  if (out && node.component) out.meta = { component: node.component };
+  return out;
+}
+
+function emitByTag(node, parent, ctx, index) {
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
