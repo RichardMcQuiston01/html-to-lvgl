@@ -1,0 +1,10 @@
+# Node
+node_modules/
+
+# Build artifacts
+build/
+*.o
+
+# Editor/OS noise
+.DS_Store
+*.swp

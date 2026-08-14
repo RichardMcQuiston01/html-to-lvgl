@@ -1,0 +1,417 @@
+{
+  "tag": "body",
+  "x": 0,
+  "y": 0,
+  "w": 320,
+  "h": 240,
+  "text": null,
+  "attrs": {},
+  "styles": {
+    "bgColor": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "color": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderWidth": 0,
+    "radius": 0,
+    "fontSize": 16,
+    "padLeft": 0,
+    "textAlign": "start",
+    "opacity": 1
+  },
+  "children": [
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 0,
+      "w": 320,
+      "h": 34,
+      "text": "Settings",
+      "attrs": {},
+      "styles": {
+        "bgColor": [
+          15,
+          118,
+          110,
+          255
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 14,
+        "padLeft": 12,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": []
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 34,
+      "w": 320,
+      "h": 40,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 12,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "span",
+          "x": 12,
+          "y": 46,
+          "w": 30,
+          "h": 15,
+          "text": "Wi-Fi",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderColor": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "input",
+          "x": 268,
+          "y": 43,
+          "w": 40,
+          "h": 22,
+          "text": null,
+          "attrs": {
+            "type": "checkbox",
+            "value": "on",
+            "placeholder": null,
+            "checked": true,
+            "min": null,
+            "max": null
+          },
+          "styles": {
+            "bgColor": null,
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 74,
+      "w": 320,
+      "h": 40,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 12,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "span",
+          "x": 12,
+          "y": 86,
+          "w": 55,
+          "h": 15,
+          "text": "Bluetooth",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderColor": [
+              31,
+              41,
+              55,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "input",
+          "x": 268,
+          "y": 83,
+          "w": 40,
+          "h": 22,
+          "text": null,
+          "attrs": {
+            "type": "checkbox",
+            "value": "on",
+            "placeholder": null,
+            "checked": false,
+            "min": null,
+            "max": null
+          },
+          "styles": {
+            "bgColor": null,
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 114,
+      "w": 320,
+      "h": 50,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 12,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "div",
+          "x": 12,
+          "y": 124,
+          "w": 296,
+          "h": 14,
+          "text": "Brightness",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              107,
+              114,
+              128,
+              255
+            ],
+            "borderColor": [
+              107,
+              114,
+              128,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 12,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "input",
+          "x": 12,
+          "y": 144,
+          "w": 296,
+          "h": 16,
+          "text": null,
+          "attrs": {
+            "type": "range",
+            "value": "70",
+            "placeholder": null,
+            "checked": false,
+            "min": "0",
+            "max": "100"
+          },
+          "styles": {
+            "bgColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "color": [
+              157,
+              150,
+              142,
+              255
+            ],
+            "borderColor": [
+              157,
+              150,
+              142,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "button",
+      "x": 12,
+      "y": 200,
+      "w": 296,
+      "h": 30,
+      "text": "Save",
+      "attrs": {},
+      "styles": {
+        "bgColor": [
+          15,
+          118,
+          110,
+          255
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 6,
+        "fontSize": 13,
+        "padLeft": 0,
+        "textAlign": "center",
+        "opacity": 1
+      },
+      "children": []
+    }
+  ]
+}

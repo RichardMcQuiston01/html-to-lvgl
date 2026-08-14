@@ -1,0 +1,372 @@
+{
+  "tag": "body",
+  "x": 0,
+  "y": 0,
+  "w": 320,
+  "h": 240,
+  "text": null,
+  "attrs": {},
+  "styles": {
+    "bgColor": [
+      26,
+      26,
+      46,
+      255
+    ],
+    "color": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderWidth": 0,
+    "radius": 0,
+    "fontSize": 16,
+    "padLeft": 0,
+    "textAlign": "start",
+    "opacity": 1
+  },
+  "children": [
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 0,
+      "w": 320,
+      "h": 36,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 14,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "span",
+          "x": 14,
+          "y": 10,
+          "w": 78,
+          "h": 16,
+          "text": "Living Room",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              224,
+              224,
+              224,
+              255
+            ],
+            "borderColor": [
+              224,
+              224,
+              224,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 14,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "span",
+          "x": 254,
+          "y": 11,
+          "w": 52,
+          "h": 14,
+          "text": "HEATING",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderColor": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 12,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 44,
+      "w": 320,
+      "h": 54,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 0,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "button",
+          "x": 51,
+          "y": 49,
+          "w": 44,
+          "h": 44,
+          "text": "-",
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              22,
+              33,
+              62,
+              255
+            ],
+            "color": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderColor": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderWidth": 2,
+            "radius": 22,
+            "fontSize": 22,
+            "padLeft": 0,
+            "textAlign": "center",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "span",
+          "x": 115,
+          "y": 44,
+          "w": 90,
+          "h": 54,
+          "text": "21.5",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 46,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        },
+        {
+          "tag": "button",
+          "x": 225,
+          "y": 49,
+          "w": 44,
+          "h": 44,
+          "text": "+",
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              22,
+              33,
+              62,
+              255
+            ],
+            "color": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderColor": [
+              78,
+              204,
+              163,
+              255
+            ],
+            "borderWidth": 2,
+            "radius": 22,
+            "fontSize": 22,
+            "padLeft": 0,
+            "textAlign": "center",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 104,
+      "w": 320,
+      "h": 14,
+      "text": "Target: 22.0 C",
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          154,
+          154,
+          176,
+          255
+        ],
+        "borderColor": [
+          154,
+          154,
+          176,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 12,
+        "padLeft": 0,
+        "textAlign": "center",
+        "opacity": 1
+      },
+      "children": []
+    },
+    {
+      "tag": "div",
+      "x": 0,
+      "y": 118,
+      "w": 320,
+      "h": 34,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "padLeft": 24,
+        "textAlign": "start",
+        "opacity": 1
+      },
+      "children": [
+        {
+          "tag": "input",
+          "x": 24,
+          "y": 132,
+          "w": 272,
+          "h": 16,
+          "text": null,
+          "attrs": {
+            "type": "range",
+            "value": "22",
+            "placeholder": null,
+            "checked": false,
+            "min": "10",
+            "max": "30"
+          },
+          "styles": {
+            "bgColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "color": [
+              157,
+              150,
+              142,
+              255
+            ],
+            "borderColor": [
+              157,
+              150,
+              142,
+              255
+            ],
+            "borderWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "padLeft": 0,
+            "textAlign": "start",
+            "opacity": 1
+          },
+          "children": []
+        }
+      ]
+    }
+  ]
+}
