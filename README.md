@@ -24,6 +24,9 @@ node src/cli.mjs examples/react/panel.jsx -o out/
 
 # Also save the Chromium reference screenshot and the extracted UI tree
 node src/cli.mjs examples/dashboard.html -o out/ --screenshot --debug
+
+# Watch mode: rebuild on save and serve a live side-by-side preview
+node src/cli.mjs examples/dashboard.html -o out/ --watch
 ```
 
 This produces `out/dashboard.xml`, ready to load with LVGL v9.4's XML runtime:
@@ -61,6 +64,25 @@ lv_xml_create(lv_screen_active(), "dashboard", NULL);
 
 An optimizer pass collapses visually inert single-child wrapper divs (framework "wrapper soup") so they never become on-device widgets.
 
+### Watch mode and live preview
+
+`--watch` rebuilds whenever you save and serves a preview at `http://localhost:8377` (override with `--port`): the Chromium reference next to the LVGL render, a live fidelity score, converter warnings, and the generated XML. The page refreshes itself over SSE after each build, so the edit → see-it-on-LVGL loop is a browser tab away.
+
+The LVGL pane needs the render harness — `spike/build/render` by default, or point at another build with `--render-bin`. Without it the preview still serves the reference and the XML and tells you how to build one. Broken saves surface the error in the page instead of killing the server.
+
+### Annotation attributes
+
+When the automatic mapping needs a nudge, annotate the source HTML (React works too — put them on the JSX element):
+
+| Attribute | Effect |
+|---|---|
+| `data-lv-widget="switch\|checkbox\|slider\|bar\|button\|label\|textarea\|dropdown\|table\|image"` | Force the widget, overriding tag and heuristic classification — e.g. a hand-rolled `<div>` toggle becomes an `lv_switch` |
+| `data-lv-name="pump_enable"` | Set the widget's `name`, instead of deriving it from `id`/`class` — useful for looking the widget up with `lv_obj_get_child_by_name()` |
+| `data-lv-ignore` | Drop the element and its subtree — design-time guides, print-only content, debug overlays |
+| `data-lv-component="Name"` | Mark a component boundary by hand, giving plain HTML the same componentization React gets automatically |
+
+`examples/annotations.html` exercises all of them.
+
 ### React input (Phase 3)
 
 Point the CLI at a `.jsx`/`.tsx` file whose default export is a component; it is bundled with esbuild, mounted in headless Chromium, and each function component's DOM subtree is identified by walking the React fiber tree. The componentizer then turns repeated components into **reusable LVGL XML components with props**:
@@ -96,11 +118,11 @@ CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance 
 
 ## Project layout
 
-- `src/` — the `html2lvgl` CLI: `extract.mjs` (Playwright), `convert.mjs` (mapping), `emit-xml.mjs`, `fonts.mjs`
-- `examples/` — sample pages to convert
+- `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
+- `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
 - `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
 - `spike/` — the Phase 0 proof-of-concept and the C render harness used for CI validation
-- `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout)
+- `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout) and the fidelity scorer
 
 ## Development
 

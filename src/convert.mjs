@@ -53,7 +53,7 @@ export function convert(input, { name = 'page' } = {}) {
 /* ---------------------------------------------------------------- helpers */
 
 function uid(ctx, node, fallback) {
-  const base = sanitize(node.id || node.className || fallback || node.tag);
+  const base = sanitize(node.lvName || node.id || node.className || fallback || node.tag);
   const n = (ctx.names.get(base) ?? 0) + 1;
   ctx.names.set(base, n);
   return n === 1 ? base : `${base}_${n}`;
@@ -275,6 +275,13 @@ function emit(node, parent, ctx, index = 0) {
 }
 
 function emitByTag(node, parent, ctx, index) {
+  // data-lv-widget overrides tag-based and heuristic classification
+  if (node.widget) {
+    const forced = emitForced(node, parent, ctx, index);
+    if (forced) return forced;
+    ctx.warnings.push(`data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`);
+  }
+
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
@@ -286,6 +293,30 @@ function emitByTag(node, parent, ctx, index) {
     return emitText(node, parent, ctx, index);
   }
   return emitContainer(node, parent, ctx, index);
+}
+
+/**
+ * Honor data-lv-widget. Widgets backed by <input> reuse emitInput with a
+ * synthesized `type`; emitInput consults node.widget for the switch vs
+ * checkbox decision instead of its aspect-ratio heuristic.
+ */
+function emitForced(node, parent, ctx, index) {
+  switch (node.widget) {
+    case 'button': return emitButton(node, parent, ctx, index);
+    case 'label': return emitText(node, parent, ctx, index);
+    case 'dropdown': return emitDropdown(node, parent, ctx, index);
+    case 'bar': return emitBar(node, parent, ctx, index);
+    case 'table': return emitTable(node, parent, ctx, index);
+    case 'image': return emitImage(node, parent, ctx, index);
+    case 'switch':
+    case 'checkbox':
+    case 'slider':
+    case 'textarea': {
+      const type = { switch: 'checkbox', checkbox: 'checkbox', slider: 'range', textarea: 'text' }[node.widget];
+      return emitInput({ ...node, attrs: { ...node.attrs, type } }, parent, ctx, index);
+    }
+    default: return null;
+  }
 }
 
 function emitContainer(node, parent, ctx, index) {
@@ -378,8 +409,12 @@ function emitInput(node, parent, ctx, index) {
   }
 
   if (t === 'checkbox') {
-    // A wide, styled checkbox is almost always meant as a toggle.
-    const widget = node.w >= node.h * 1.5 ? 'lv_switch' : 'lv_checkbox';
+    // A wide, styled checkbox is almost always meant as a toggle, unless
+    // data-lv-widget says otherwise.
+    const widget =
+      node.widget === 'switch' ? 'lv_switch'
+      : node.widget === 'checkbox' ? 'lv_checkbox'
+      : node.w >= node.h * 1.5 ? 'lv_switch' : 'lv_checkbox';
     return el(widget, {
       name: uid(ctx, node, widget === 'lv_switch' ? 'switch' : 'checkbox'),
       ...placement(node, parent, { size: widget === 'lv_switch', gridIndex: index }),
@@ -429,7 +464,9 @@ function emitBar(node, parent, ctx, index) {
     name: uid(ctx, node, 'bar'),
     ...placement(node, parent, { gridIndex: index }),
     min_value: 0,
-    max_value: node.attrs.max ?? 1,
+    // <progress> defaults to max=1 per HTML; a div forced to a bar with
+    // data-lv-widget has no such convention, so use a percentage range.
+    max_value: node.attrs.max ?? (node.tag === 'progress' ? 1 : 100),
     value: node.attrs.value ?? 0,
   });
 }

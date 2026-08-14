@@ -116,6 +116,43 @@ test('optimizer keeps wrappers that carry visuals or manage layout', () => {
   assert.equal(removed, 0);
 });
 
+test('data-lv-name overrides id/class for the widget name', () => {
+  const node = {
+    tag: 'div', id: 'ignored-id', className: 'ignored-class', lvName: 'pump_enable',
+    x: 10, y: 10, w: 44, h: 24, text: null, attrs: {}, styles: base(), layout: block(), children: [],
+  };
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [node] };
+  const { xml } = convert(tree);
+  assert.match(xml, /name="pump_enable"/);
+  assert.doesNotMatch(xml, /ignored/);
+});
+
+test('data-lv-widget forces the widget mapping', () => {
+  const mk = (widget) => ({
+    tag: 'div', widget, x: 10, y: 10, w: 44, h: 24, text: null, attrs: {},
+    styles: base(), layout: block(), children: [],
+  });
+  const wrap = (child) => ({ tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [child] });
+
+  // A styled div would normally become lv_obj
+  assert.match(convert(wrap(mk('switch'))).xml, /<lv_switch/);
+  assert.match(convert(wrap(mk('slider'))).xml, /<lv_slider/);
+  assert.match(convert(wrap(mk('bar'))).xml, /<lv_bar[^>]*max_value="100"/);
+  assert.match(convert(wrap(mk('checkbox'))).xml, /<lv_checkbox/);
+  assert.match(convert(wrap(mk('textarea'))).xml, /<lv_textarea/);
+});
+
+test('an unknown data-lv-widget warns and falls back', () => {
+  const node = {
+    tag: 'div', widget: 'hologram', x: 0, y: 0, w: 40, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [],
+  };
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [node] };
+  const { xml, warnings } = convert(tree);
+  assert.ok(warnings.some((w) => w.includes('hologram')));
+  assert.match(xml, /<lv_obj/); // default mapping still applied
+});
+
 function base() {
   return {
     bgColor: null, color: [0, 0, 0, 255], borderColor: null, borderWidth: 0,

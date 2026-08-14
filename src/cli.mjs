@@ -29,12 +29,19 @@ const { values: opts, positionals } = parseArgs({
     format: { type: 'string', short: 'f', default: 'xml' },
     screenshot: { type: 'boolean', default: false },
     debug: { type: 'boolean', default: false },
+    watch: { type: 'boolean', short: 'w', default: false },
+    port: { type: 'string', default: '8377' },
+    'render-bin': { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
 
 if (opts.help || positionals.length !== 1) {
-  console.error('usage: html2lvgl <input.html> [--size WxH] [-o outdir] [--name component] [--format xml|c|both] [--screenshot] [--debug]');
+  console.error(
+    'usage: html2lvgl <input.html|input.jsx> [--size WxH] [-o outdir] [--name component]\n' +
+    '                 [--format xml|c|both] [--screenshot] [--debug]\n' +
+    '                 [--watch [--port 8377] [--render-bin path]]'
+  );
   process.exit(opts.help ? 0 : 1);
 }
 if (!['xml', 'c', 'both'].includes(opts.format)) {
@@ -54,6 +61,31 @@ const name = opts.name ?? basename(input).replace(/\.[a-z]+$/i, '').replace(/[^a
 mkdirSync(opts.output, { recursive: true });
 
 const reactMode = /\.(jsx|tsx)$/i.test(input);
+
+if (opts.watch) {
+  // Watch mode owns the build loop: it rebuilds on save and serves a live
+  // side-by-side preview until interrupted.
+  const { startPreview } = await import('./preview.mjs');
+  const port = Number(opts.port);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    console.error(`invalid --port "${opts.port}"`);
+    process.exit(1);
+  }
+  await startPreview(input, {
+    width,
+    height,
+    name,
+    reactMode,
+    outputDir: opts.output,
+    port,
+    renderBin: opts['render-bin'],
+  });
+  // Server and watcher keep the process alive.
+} else {
+  await buildOnce();
+}
+
+async function buildOnce() {
 const extractor = reactMode ? extractReactPage : extractPage;
 const tree = await extractor(input, {
   width,
@@ -104,3 +136,4 @@ console.log(`wrote ${written.join(', ')}`);
 if (collapsed > 0) console.log(`optimizer: collapsed ${collapsed} inert wrapper${collapsed === 1 ? '' : 's'}`);
 if (assets.length) console.log(`assets: ${assets.map((a) => a.src).join(', ')} -> ${assetDir}/`);
 for (const w of warnings) console.warn(`warning: ${w}`);
+}
