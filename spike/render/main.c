@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "lvgl.h"
 
 #define HOR_RES 320
@@ -85,6 +86,17 @@ static int write_bmp(const char * path)
     return fclose(f) == 0 ? 0 : -1;
 }
 
+/** True when the document's root element is <screen> rather than <component>. */
+static bool is_screen_root(const char * xml)
+{
+    for(const char * p = xml; *p; p++) {
+        if(*p != '<') continue;
+        if(p[1] == '?' || p[1] == '!') continue;   /* declaration or comment */
+        return strncmp(p + 1, "screen", 6) == 0 && (p[7] == '>' || p[7] == ' ' || p[7] == '\n');
+    }
+    return false;
+}
+
 /** "path/to/stat_card.xml" -> "stat_card" (caller-owned buffer) */
 static void component_name_from_path(const char * path, char * out, size_t out_size)
 {
@@ -95,11 +107,34 @@ static void component_name_from_path(const char * path, char * out, size_t out_s
     out[i] = '\0';
 }
 
+/** Depth-first search for a widget by its `name` attribute. */
+static lv_obj_t * find_by_name(lv_obj_t * parent, const char * name)
+{
+    uint32_t count = lv_obj_get_child_count(parent);
+    for(uint32_t i = 0; i < count; i++) {
+        lv_obj_t * child = lv_obj_get_child(parent, i);
+        const char * child_name = lv_obj_get_name(child);
+        if(child_name && strcmp(child_name, name) == 0) return child;
+        lv_obj_t * found = find_by_name(child, name);
+        if(found) return found;
+    }
+    return NULL;
+}
+
 int main(int argc, char ** argv)
 {
     if(argc < 3) {
-        fprintf(stderr, "usage: %s <page.xml> <out.bmp> [component.xml ...]\n", argv[0]);
+        fprintf(stderr,
+                "usage: %s <page.xml> <out.bmp> [--click=<widget-name>] [component.xml ...]\n",
+                argv[0]);
         return 1;
+    }
+
+    /* --click=<name> sends LV_EVENT_CLICKED to that widget before capturing,
+     * which is how screen navigation gets exercised without an input device. */
+    const char * click_name = NULL;
+    for(int i = 3; i < argc; i++) {
+        if(strncmp(argv[i], "--click=", 8) == 0) click_name = argv[i] + 8;
     }
 
     char * xml = read_file(argv[1]);
@@ -134,6 +169,7 @@ int main(int argc, char ** argv)
 
     /* Register dependency components first (e.g. the componentizer's output) */
     for(int i = 3; i < argc; i++) {
+        if(strncmp(argv[i], "--", 2) == 0) continue;
         char * comp_xml = read_file(argv[i]);
         if(!comp_xml) {
             fprintf(stderr, "cannot read %s\n", argv[i]);
@@ -148,23 +184,51 @@ int main(int argc, char ** argv)
         free(comp_xml);
     }
 
-    if(lv_xml_register_component_from_data("page", xml) != LV_RESULT_OK) {
+    /* Register under the file's own basename so sibling screens referenced by
+     * <screen_create_event screen="..."/> resolve by name. */
+    char page_name[128];
+    component_name_from_path(argv[1], page_name, sizeof(page_name));
+    if(lv_xml_register_component_from_data(page_name, xml) != LV_RESULT_OK) {
         fprintf(stderr, "failed to register XML component from %s\n", argv[1]);
         return 1;
     }
+    const bool screen_root = is_screen_root(xml);
     free(xml);
 
-    lv_obj_t * page = lv_xml_create(lv_screen_active(), "page", NULL);
+    lv_obj_t * page;
+    if(screen_root) {
+        /* Screens are their own root object and must be loaded, not parented */
+        page = lv_xml_create(NULL, page_name, NULL);
+        if(page) lv_screen_load(page);
+    }
+    else {
+        page = lv_xml_create(lv_screen_active(), page_name, NULL);
+        if(page) lv_obj_set_pos(page, 0, 0);
+    }
     if(page == NULL) {
         fprintf(stderr, "failed to instantiate XML component\n");
         return 1;
     }
-    lv_obj_set_pos(page, 0, 0);
 
     /* Advance a few frames so layout + rendering settle */
     for(int i = 0; i < 30; i++) {
         lv_tick_inc(16);
         lv_timer_handler();
+    }
+
+    if(click_name) {
+        lv_obj_t * target = find_by_name(lv_screen_active(), click_name);
+        if(target == NULL) {
+            fprintf(stderr, "no widget named `%s` to click\n", click_name);
+            return 1;
+        }
+        lv_obj_send_event(target, LV_EVENT_CLICKED, NULL);
+        for(int i = 0; i < 30; i++) {
+            lv_tick_inc(16);
+            lv_timer_handler();
+        }
+        printf("clicked `%s` -> active screen is `%s`\n",
+               click_name, lv_obj_get_name(lv_screen_active()));
     }
 
     if(write_bmp(argv[2]) != 0) {

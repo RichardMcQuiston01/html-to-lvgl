@@ -27,6 +27,9 @@ node src/cli.mjs examples/dashboard.html -o out/ --screenshot --debug
 
 # Watch mode: rebuild on save and serve a live side-by-side preview
 node src/cli.mjs examples/dashboard.html -o out/ --watch
+
+# Several pages become several screens, with links between them wired up
+node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 ```
 
 This produces `out/dashboard.xml`, ready to load with LVGL v9.4's XML runtime:
@@ -63,6 +66,26 @@ lv_xml_create(lv_screen_active(), "dashboard", NULL);
 | Colors, borders (incl. side-specific), radius, padding, opacity, text styles | LVGL style properties |
 
 An optimizer pass collapses visually inert single-child wrapper divs (framework "wrapper soup") so they never become on-device widgets.
+
+### Multi-screen navigation
+
+Pass more than one page and each becomes a `<screen>` rather than a `<component>`, with `<a href>` links between them turned into navigation buttons:
+
+```xml
+<!-- home.xml -->
+<screen>
+  <view ...>
+    <lv_button name="to_settings" width="160" height="34" ...>
+      <lv_label align="center" text="Settings" .../>
+      <screen_create_event screen="settings" />
+    </lv_button>
+  </view>
+</screen>
+```
+
+`screen_create_event` instantiates the target on demand, so navigation works before a screen has ever been visited — no start-up ordering to manage. Links to external URLs or to pages outside the converted set stay plain text. Load a screen with `lv_xml_create(NULL, "home", NULL)` followed by `lv_screen_load()`; the render harness does exactly this and can simulate a click with `--click=<widget-name>` to verify a transition.
+
+In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; navigation itself is left as a commented stub, since flattened C has no screen registry to look names up in.
 
 ### Watch mode and live preview
 

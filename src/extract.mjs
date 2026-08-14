@@ -194,6 +194,9 @@ export function buildTree() {
     if (el.tagName === 'IMG') {
       node.attrs.src = el.getAttribute('src');
     }
+    if (el.tagName === 'A') {
+      node.attrs.href = el.getAttribute('href');
+    }
     if (el.tagName === 'PROGRESS') {
       node.attrs.value = el.value;
       node.attrs.max = el.max;

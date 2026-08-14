@@ -21,11 +21,22 @@ const fixtures = readdirSync(join(here, 'fixtures')).filter((f) => f.endsWith('.
 
 assert.ok(fixtures.length >= 4, 'expected at least 4 fixtures');
 
+const navScreens = new Set(fixtures.filter((f) => f.endsWith('.nav.json')).map((f) => f.replace(/\.nav\.json$/, '')));
+
 for (const file of fixtures) {
   const react = file.endsWith('.react.json');
-  const name = file.replace(/(\.react)?\.json$/, '');
+  const nav = file.endsWith('.nav.json');
+  const name = file.replace(/(\.react|\.nav)?\.json$/, '');
+  const convertOpts = { name, screenMode: nav, screens: nav ? navScreens : null };
 
-  if (react) {
+  if (nav) {
+    test(`golden nav: ${name}`, () => {
+      const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+      const { xml } = convert(tree, convertOpts);
+      assert.equal(xml, readFileSync(join(here, 'golden-nav', `${name}.xml`), 'utf8'));
+      assert.match(xml, /^<screen>/); // screens are loadable roots, not components
+    });
+  } else if (react) {
     test(`golden react: ${name}`, () => {
       const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
       const { view } = convert(tree, { name });
@@ -50,12 +61,39 @@ for (const file of fixtures) {
 
   test(`golden c: ${name}`, () => {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
-    const { view } = convert(tree, { name });
-    const { c, h, unit } = emitC(view, { name });
+    const { view } = convert(tree, convertOpts);
+    const cName = nav ? `nav_${name}` : name;
+    const { c, h, unit } = emitC(view, { name: cName, symbol: nav ? `ui_${cName}_create` : 'ui_create' });
     assert.equal(c, readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
   });
 }
+
+test('links to sibling screens become navigation buttons', () => {
+  const link = (href, text) => ({
+    tag: 'a', x: 10, y: 10, w: 120, h: 30, text, attrs: { href },
+    styles: base(), layout: block(), children: [],
+  });
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {},
+    styles: base(), layout: block(),
+    children: [link('settings.html', 'Settings'), link('./deep/settings.html#top', 'Anchor'), link('https://lvgl.io', 'External'), link('missing.html', 'Missing')],
+  };
+  const { xml } = convert(tree, { screens: new Set(['settings']), screenMode: true });
+
+  // Both forms of the resolvable link navigate; hash and path are stripped
+  assert.equal(xml.match(/<screen_create_event screen="settings" \/>/g).length, 2);
+  assert.match(xml, /<lv_button name="to_settings"/);
+  // External and unresolvable links stay plain text
+  assert.match(xml, /<lv_label[^>]*text="External"/);
+  assert.match(xml, /<lv_label[^>]*text="Missing"/);
+});
+
+test('screen mode wraps the view in <screen>, component mode in <component>', () => {
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
+  assert.match(convert(tree, { screenMode: true }).xml, /^<screen>[\s\S]*<\/screen>\n$/);
+  assert.match(convert(tree).xml, /^<component>[\s\S]*<\/component>\n$/);
+});
 
 test('componentizer parameterizes text and color, keeps structure', () => {
   const label = (name, text) => ({ tag: 'lv_label', attrs: { name, text, style_text_color: '0xffffff' }, children: [] });

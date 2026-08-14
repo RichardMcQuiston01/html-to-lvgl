@@ -33,9 +33,15 @@ const JUSTIFY = {
   'space-between': 'space_between', 'space-around': 'space_around', 'space-evenly': 'space_evenly',
 };
 
-export function convert(input, { name = 'page' } = {}) {
+/**
+ * @param screens  Set of sibling screen names. When provided, <a href> links
+ *                 pointing at one become navigation buttons.
+ * @param screenMode  Wrap the output in <screen> instead of <component>, so
+ *                 LVGL registers it as a loadable screen.
+ */
+export function convert(input, { name = 'page', screens = null, screenMode = false } = {}) {
   const { tree, removed } = optimize(structuredClone(input));
-  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed };
+  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed, screens };
 
   const rootAttrs = {
     width: tree.w,
@@ -46,7 +52,8 @@ export function convert(input, { name = 'page' } = {}) {
     ...textStyles(tree, nearestSize(tree.styles.fontSize)),
   };
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
-  const xml = `<component>\n${render(view, 1)}\n</component>\n`;
+  const wrapper = screenMode ? 'screen' : 'component';
+  const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
   return { xml, view, warnings: ctx.warnings, assets: ctx.assets, name, collapsed: ctx.collapsed };
 }
 
@@ -282,6 +289,12 @@ function emitByTag(node, parent, ctx, index) {
     ctx.warnings.push(`data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`);
   }
 
+  // <a> pointing at a sibling screen becomes a navigation button
+  if (node.tag === 'a' && ctx.screens) {
+    const target = resolveScreen(node.attrs.href, ctx.screens);
+    if (target) return emitLink(node, parent, ctx, index, target);
+  }
+
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
@@ -382,6 +395,43 @@ function emitButton(node, parent, ctx, index) {
   }
   return el('lv_button', {
     name: uid(ctx, node, 'button'),
+    ...placement(node, parent, { gridIndex: index }),
+    ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
+  }, children);
+}
+
+/**
+ * Resolve an href against the set of screens being converted.
+ * "./settings.html#top" -> "settings" when that screen exists.
+ */
+function resolveScreen(href, screens) {
+  if (!href) return null;
+  const path = href.split(/[?#]/)[0];
+  if (!path || /^[a-z]+:/i.test(path)) return null; // external / mailto: / etc.
+  const file = path.split('/').pop() ?? '';
+  const target = sanitize(file.replace(/\.[a-z]+$/i, ''));
+  return screens.has(target) ? target : null;
+}
+
+/**
+ * A link to another screen: an lv_button whose click creates and loads the
+ * target. screen_create_event (rather than screen_load_event) instantiates
+ * the screen on demand, so navigation works before it has ever been visited.
+ */
+function emitLink(node, parent, ctx, index, screen) {
+  const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  if (node.text) {
+    const { size } = fitText(node, ctx);
+    children.unshift(el('lv_label', {
+      name: uid(ctx, node, 'label'),
+      align: 'center',
+      text: node.text,
+      ...textStyles(node, size),
+    }));
+  }
+  children.push(el('screen_create_event', { screen }));
+  return el('lv_button', {
+    name: uid(ctx, node, `to_${screen}`),
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
   }, children);

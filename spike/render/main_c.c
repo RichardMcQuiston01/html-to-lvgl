@@ -14,7 +14,14 @@
 #include <stdint.h>
 #include "lvgl.h"
 
-extern lv_obj_t * ui_create(lv_obj_t * parent);
+/* Single-page output exports ui_create; each screen of a multi-screen UI
+ * exports ui_<screen>_create, so the entry point is selectable at build time:
+ *   gcc -DUI_CREATE_SYMBOL=ui_home_create ... */
+#ifndef UI_CREATE_SYMBOL
+#define UI_CREATE_SYMBOL ui_create
+#endif
+
+extern lv_obj_t * UI_CREATE_SYMBOL(lv_obj_t * parent);
 
 #define HOR_RES 320
 #define VER_RES 240
@@ -83,7 +90,7 @@ int main(int argc, char ** argv)
                            LV_DISPLAY_RENDER_MODE_DIRECT);
     lv_display_set_flush_cb(disp, flush_cb);
 
-    lv_obj_t * page = ui_create(lv_screen_active());
+    lv_obj_t * page = UI_CREATE_SYMBOL(lv_screen_active());
     if(page == NULL) {
         fprintf(stderr, "ui_create failed\n");
         return 1;
