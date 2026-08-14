@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  test:
+    name: Unit and golden-file tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  validate-xml:
+    name: Validate golden XML against LVGL v9.4
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache LVGL checkout
+        id: lvgl-cache
+        uses: actions/cache@v4
+        with:
+          path: lvgl
+          key: lvgl-v9.4.0
+
+      - name: Clone LVGL v9.4.0
+        if: steps.lvgl-cache.outputs.cache-hit != 'true'
+        run: git clone --depth 1 --branch v9.4.0 https://github.com/lvgl/lvgl.git lvgl
+
+      - name: Build render harness
+        run: |
+          cmake -S spike/render -B build -DLVGL_DIR="$GITHUB_WORKSPACE/lvgl" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+
+      - name: Render every golden XML through the lv_xml runtime
+        run: |
+          for xml in tests/golden/*.xml; do
+            echo "validating $xml"
+            ./build/render "$xml" /tmp/out.bmp
+          done

@@ -1,0 +1,22 @@
+{
+  "name": "html-to-lvgl",
+  "version": "0.1.0",
+  "description": "Convert plain HTML or React-rendered pages into LVGL XML for embedded devices",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "bin": {
+    "html2lvgl": "src/cli.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "golden:update": "node tests/update-golden.mjs",
+    "metrics": "node scripts/gen-font-metrics.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
