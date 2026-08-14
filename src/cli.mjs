@@ -62,10 +62,19 @@ const [width, height] = [Number(m[1]), Number(m[2])];
 
 const screenName = (p) => basename(p).replace(/\.[a-z]+$/i, '').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
 
+// Distinct files can still derive the same screen name (home-page.html and
+// home_page.html both give home_page), which would silently overwrite output.
+const screenNames = positionals.map(screenName);
+const duplicates = screenNames.filter((n, i) => screenNames.indexOf(n) !== i);
+if (duplicates.length) {
+  console.error(`input pages must have unique names; "${duplicates[0]}" is derived from more than one file`);
+  process.exit(1);
+}
+
 // Several inputs means a multi-screen UI: every page becomes a <screen> and
 // links between them resolve to navigation events.
 const screenMode = positionals.length > 1;
-const screens = screenMode ? new Set(positionals.map(screenName)) : null;
+const screens = screenMode ? new Set(screenNames) : null;
 if (screenMode && opts.name) {
   console.error('--name applies to a single page; drop it when converting several screens');
   process.exit(1);
@@ -88,7 +97,8 @@ if (opts.watch) {
   // side-by-side preview until interrupted.
   const { startPreview } = await import('./preview.mjs');
   const port = Number(opts.port);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  // 0 is valid: it asks the OS for a free port, which startPreview reports back
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
     console.error(`invalid --port "${opts.port}"`);
     process.exit(1);
   }

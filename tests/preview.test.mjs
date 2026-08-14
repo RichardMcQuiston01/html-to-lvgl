@@ -39,7 +39,10 @@ test('preview server serves the page, state, and SSE endpoint', async () => {
 
     const state = await (await fetch(`${base}/state`)).json();
     assert.ok(['ready', 'error'].includes(state.status));
-    assert.equal(state.hasRender, false); // render bin does not exist
+    // Harness availability and this build's render result are tracked apart,
+    // so a stale bitmap can never be shown or scored
+    assert.equal(state.hasRenderBin, false); // render bin does not exist
+    assert.equal(state.renderOk, false);
     assert.ok(Array.isArray(state.warnings));
     assert.ok(state.version >= 1);
 

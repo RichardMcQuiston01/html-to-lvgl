@@ -177,7 +177,8 @@ test('data-lv-widget forces the widget mapping', () => {
   assert.match(convert(wrap(mk('slider'))).xml, /<lv_slider/);
   assert.match(convert(wrap(mk('bar'))).xml, /<lv_bar[^>]*max_value="100"/);
   assert.match(convert(wrap(mk('checkbox'))).xml, /<lv_checkbox/);
-  assert.match(convert(wrap(mk('textarea'))).xml, /<lv_textarea/);
+  // "textarea" means a multi-line box; single-line is what <input type=text> maps to
+  assert.match(convert(wrap(mk('textarea'))).xml, /<lv_textarea[^>]*one_line="false"/);
 });
 
 test('an unknown data-lv-widget warns and falls back', () => {

@@ -474,10 +474,13 @@ function emitInput(node, parent, ctx, index) {
   }
 
   const { size } = fitText({ ...node, text: node.attrs.placeholder ?? node.attrs.value ?? '' }, ctx);
+  // <input type=text> is a single line; <textarea> and an explicit
+  // data-lv-widget="textarea" mean a multi-line box.
+  const oneLine = node.widget !== 'textarea' && node.tag !== 'textarea';
   return el('lv_textarea', {
     name: uid(ctx, node, 'textarea'),
     ...placement(node, parent, { gridIndex: index }),
-    one_line: 'true',
+    one_line: oneLine ? 'true' : 'false',
     ...(node.attrs.placeholder ? { placeholder_text: node.attrs.placeholder } : {}),
     ...(node.attrs.value ? { text: node.attrs.value } : {}),
     ...(t === 'password' ? { password_mode: 'true' } : {}),

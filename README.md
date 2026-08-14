@@ -91,7 +91,9 @@ In C output each screen exports `ui_<screen>_create` instead of `ui_create` so t
 
 `--watch` rebuilds whenever you save and serves a preview at `http://localhost:8377` (override with `--port`): the Chromium reference next to the LVGL render, a live fidelity score, converter warnings, and the generated XML. The page refreshes itself over SSE after each build, so the edit → see-it-on-LVGL loop is a browser tab away.
 
-The LVGL pane needs the render harness — `spike/build/render` by default, or point at another build with `--render-bin`. Without it the preview still serves the reference and the XML and tells you how to build one. Broken saves surface the error in the page instead of killing the server.
+The LVGL pane needs the render harness — `spike/build/render` by default, or point at another build with `--render-bin`. Without it the preview still serves the reference and the XML and tells you how to build one. Broken saves surface the error in the page instead of killing the server, and a failed render is reported rather than leaving the previous frame on screen.
+
+Watch scope: the input file's own directory tree is watched (recursively), so page, CSS and co-located JSX imports all trigger rebuilds. Edits to files imported from *outside* that directory won't — keep a React app's sources under one root, or re-run the CLI.
 
 ### Annotation attributes
 
@@ -99,7 +101,7 @@ When the automatic mapping needs a nudge, annotate the source HTML (React works 
 
 | Attribute | Effect |
 |---|---|
-| `data-lv-widget="switch\|checkbox\|slider\|bar\|button\|label\|textarea\|dropdown\|table\|image"` | Force the widget, overriding tag and heuristic classification — e.g. a hand-rolled `<div>` toggle becomes an `lv_switch` |
+| `data-lv-widget="switch\|checkbox\|slider\|bar\|button\|label\|textarea\|dropdown\|table\|image"` | Force the widget, overriding tag and heuristic classification — e.g. a hand-rolled `<div>` toggle becomes an `lv_switch`. `textarea` produces a multi-line box; single-line inputs come from `<input type=text>` |
 | `data-lv-name="pump_enable"` | Set the widget's `name`, instead of deriving it from `id`/`class` — useful for looking the widget up with `lv_obj_get_child_by_name()` |
 | `data-lv-ignore` | Drop the element and its subtree — design-time guides, print-only content, debug overlays |
 | `data-lv-component="Name"` | Mark a component boundary by hand, giving plain HTML the same componentization React gets automatically |

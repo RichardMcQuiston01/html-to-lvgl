@@ -13,7 +13,7 @@ import { createServer } from 'node:http';
 import { watch, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { join, resolve, dirname, basename, extname } from 'node:path';
+import { join, resolve, dirname, basename, extname, sep } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
@@ -26,6 +26,8 @@ const execFileAsync = promisify(execFile);
 const SOURCE_EXT = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.ts', '.tsx']);
 const DEBOUNCE_MS = 150;
 const DEFAULT_RENDER_BIN = 'spike/build/render';
+/** A hung harness must not wedge the rebuild loop forever. */
+const RENDER_TIMEOUT_MS = 30_000;
 
 export async function startPreview(input, options) {
   const { width, height, name, reactMode, outputDir, port = 8377 } = options;
@@ -68,7 +70,10 @@ export async function startPreview(input, options) {
       let render = null;
       if (renderBin) {
         try {
-          await execFileAsync(renderBin, [xmlPath, lvglBmp, ...componentPaths]);
+          await execFileAsync(renderBin, [xmlPath, lvglBmp, ...componentPaths], {
+            timeout: RENDER_TIMEOUT_MS,
+            killSignal: 'SIGKILL',
+          });
           render = { ok: true };
         } catch (err) {
           render = { ok: false, message: (err.stderr || err.message).trim() };
@@ -116,7 +121,9 @@ export async function startPreview(input, options) {
   const watcher = watch(watchDir, { recursive: true }, (_event, filename) => {
     if (!filename) return;
     const full = resolve(watchDir, filename);
-    if (full.startsWith(outAbs)) return;             // ignore our own output
+    // Ignore our own output — matching on a path boundary so a sibling
+    // directory like `outdated/` next to `out/` is not swallowed too.
+    if (full === outAbs || full.startsWith(outAbs + sep)) return;
     if (!SOURCE_EXT.has(extname(filename))) return;  // ignore generated artifacts
     clearTimeout(timer);
     timer = setTimeout(trigger, DEBOUNCE_MS);
@@ -137,7 +144,10 @@ export async function startPreview(input, options) {
         render: state.render,
         ms: state.ms ?? null,
         xml: state.xml,
-        hasRender: Boolean(renderBin),
+        // Whether a harness exists at all is separate from whether *this*
+        // build rendered: a stale bitmap must never be shown or scored.
+        hasRenderBin: Boolean(renderBin),
+        renderOk: Boolean(state.render && state.render.ok),
       }));
     }
 
@@ -292,37 +302,61 @@ function score() {
   out.innerHTML = '<span class="score">' + pct + '%</span> <span class="hint">of pixels within tolerance ' + TOLERANCE + '</span>';
 }
 
+// Build messages carry source-derived text (page content, harness stderr),
+// so they are only ever inserted as text nodes — never parsed as markup.
+function textEl(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  node.textContent = text;
+  return node;
+}
+
+function showMessages(s) {
+  const warn = document.getElementById('warnings');
+  warn.replaceChildren();
+  if (s.error) return warn.appendChild(textEl('div', 'err', s.error));
+  if (s.render && !s.render.ok) {
+    return warn.appendChild(textEl('div', 'err', 'render harness: ' + s.render.message));
+  }
+  if (!s.warnings.length) return warn.appendChild(textEl('p', 'empty', 'None.'));
+  const list = document.createElement('ul');
+  for (const w of s.warnings) list.appendChild(textEl('li', null, w));
+  warn.appendChild(list);
+}
+
 async function refresh() {
   const s = await (await fetch('/state')).json();
+
   const status = document.getElementById('status');
-  const color = s.status === 'error' ? 'var(--err)' : 'var(--ok)';
-  status.innerHTML = '<span class="dot" style="background:' + color + '"></span>' +
-    (s.status === 'error' ? 'build failed' : 'built' + (s.ms ? ' in ' + s.ms + 'ms' : ''));
+  status.replaceChildren();
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dot.style.background = s.status === 'error' ? 'var(--err)' : 'var(--ok)';
+  status.appendChild(dot);
+  status.appendChild(document.createTextNode(
+    s.status === 'error' ? 'build failed' : 'built' + (s.ms ? ' in ' + s.ms + 'ms' : '')
+  ));
 
-  const warn = document.getElementById('warnings');
-  if (s.error) {
-    warn.innerHTML = '<div class="err">' + s.error + '</div>';
-  } else if (s.render && !s.render.ok) {
-    warn.innerHTML = '<div class="err">render harness: ' + s.render.message + '</div>';
-  } else if (s.warnings.length) {
-    warn.innerHTML = '<ul>' + s.warnings.map(w => '<li>' + w + '</li>').join('') + '</ul>';
-  } else {
-    warn.innerHTML = '<p class="empty">None.</p>';
-  }
-
+  showMessages(s);
   document.getElementById('xml').textContent = s.xml;
 
   const web = document.getElementById('web'), lvgl = document.getElementById('lvgl');
-  let pendingImages = s.hasRender ? 2 : 1;
+  const fidelity = document.getElementById('fidelity');
+
+  // Only the current build's render may be shown or scored
+  let pendingImages = s.renderOk ? 2 : 1;
   const done = () => { if (--pendingImages === 0) score(); };
   web.onload = done; web.onerror = done;
   web.src = '/web.png?v=' + s.version;
-  if (s.hasRender) {
+
+  if (s.renderOk) {
     lvgl.onload = done; lvgl.onerror = done;
     lvgl.src = '/lvgl.bmp?v=' + s.version;
   } else {
     lvgl.removeAttribute('src');
-    document.getElementById('fidelity').textContent = 'No render harness — build spike/build/render to enable the LVGL pane.';
+    fidelity.textContent = s.hasRenderBin
+      ? 'No render for this build — see the message above.'
+      : 'No render harness — build spike/build/render to enable the LVGL pane.';
   }
 }
 
