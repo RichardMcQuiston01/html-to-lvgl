@@ -49,3 +49,15 @@ jobs:
             echo "validating $xml"
             ./build/render "$xml" /tmp/out.bmp
           done
+
+      - name: Compile and render every golden C file against plain LVGL
+        run: |
+          for c in tests/golden-c/*.c; do
+            echo "validating $c"
+            gcc -O1 -o /tmp/render_c \
+              -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-c \
+              spike/render/main_c.c "$c" \
+              build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+            /tmp/render_c /tmp/out.bmp
+          done

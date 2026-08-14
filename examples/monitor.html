@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #eef2f7; overflow: hidden;
+         display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 36px 1fr 1fr;
+         gap: 6px; padding: 6px; }
+  .header { grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; border-radius: 6px; color: #ffffff;
+            background: linear-gradient(to right, #1e3a8a, #3b82f6); }
+  .header span { font-size: 13px; }
+  .ack { width: 64px; height: 24px; border: none; border-radius: 4px; font-size: 11px;
+         color: #1e3a8a; background-color: #ffffff; }
+  .ack:active { background-color: #93c5fd; }
+  .alarms { grid-column: 1; grid-row: 2 / span 2; background-color: #ffffff; border-radius: 6px;
+            box-shadow: rgba(15, 23, 42, 0.25) 0px 2px 6px 0px; padding: 8px; overflow-y: auto; }
+  .alarms-title { font-size: 11px; color: #64748b; margin-bottom: 6px; }
+  .alarm { font-size: 11px; color: #0f172a; margin-bottom: 8px; }
+  table { grid-column: 2; grid-row: 2 / span 2; background-color: #ffffff; border-radius: 6px;
+          box-shadow: rgba(15, 23, 42, 0.25) 0px 2px 6px 0px; border-collapse: collapse;
+          font-size: 10px; color: #0f172a; }
+  td, th { text-align: left; padding: 2px 4px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <span>Line 3 Monitor</span>
+    <button class="ack">ACK</button>
+  </div>
+  <div class="alarms">
+    <div class="alarms-title">ACTIVE ALARMS</div>
+    <div class="alarm">07:12 Temp high zone 2</div>
+    <div class="alarm">07:20 Belt speed low</div>
+    <div class="alarm">07:41 Hopper level 15%</div>
+    <div class="alarm">08:05 Vibration warning</div>
+    <div class="alarm">08:19 Filter dP rising</div>
+    <div class="alarm">08:33 Coolant temp high</div>
+    <div class="alarm">08:47 Motor current spike</div>
+  </div>
+  <table>
+    <tr><th>Chan</th><th>Val</th></tr>
+    <tr><td>Temp</td><td>82.4</td></tr>
+    <tr><td>Speed</td><td>1.20</td></tr>
+    <tr><td>Level</td><td>15%</td></tr>
+    <tr><td>Amps</td><td>12.7</td></tr>
+  </table>
+</body>
+</html>
