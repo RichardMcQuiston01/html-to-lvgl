@@ -46,6 +46,43 @@ export function buildTree() {
 
   const px = (v) => Math.round(parseFloat(v) || 0);
 
+  /** getComputedStyle returns the whole stack; the first entry is what rendered. */
+  function firstFamily(stack) {
+    const first = (stack || '').split(',')[0].trim();
+    return first.replace(/^["']|["']$/g, '') || 'sans-serif';
+  }
+
+  /** CSS keywords to numeric weights, so 'bold' and 700 agree. */
+  function normalizeWeight(w) {
+    if (w === 'normal') return 400;
+    if (w === 'bold') return 700;
+    const n = parseInt(w, 10);
+    return Number.isFinite(n) ? n : 400;
+  }
+
+  /**
+   * @font-face family -> source URL, so a page carrying its own webfont can
+   * be converted without the caller naming the file.
+   */
+  function collectFontFaces() {
+    const faces = {};
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch { continue; }
+      for (const rule of rules) {
+        if (rule.constructor.name !== 'CSSFontFaceRule' && rule.type !== 5) continue;
+        const family = firstFamily(rule.style.fontFamily);
+        const src = rule.style.src || '';
+        const url = src.match(/url\(["']?([^"')]+)["']?\)/);
+        if (!family || !url) continue;
+        const weight = normalizeWeight((rule.style.fontWeight || '400').split(' ')[0]);
+        const italic = (rule.style.fontStyle || '') === 'italic';
+        faces[`${family}|${weight}|${italic ? 'i' : 'n'}`] = url[1];
+      }
+    }
+    return faces;
+  }
+
   /** Two-stop linear-gradient -> {from, to, dir}; anything fancier is null. */
   function parseGradient(backgroundImage) {
     const m = backgroundImage && backgroundImage.match(/^linear-gradient\(([^)]*(?:\([^)]*\)[^)]*)*)\)$/);
@@ -143,6 +180,10 @@ export function buildTree() {
         borderBottomWidth: px(cs.borderBottomWidth),
         radius: px(cs.borderTopLeftRadius),
         fontSize: px(cs.fontSize) || 16,
+        // Identity of the typeface actually used, for lv_font_conv
+        fontFamily: firstFamily(cs.fontFamily),
+        fontWeight: normalizeWeight(cs.fontWeight),
+        fontItalic: cs.fontStyle === 'italic' || cs.fontStyle === 'oblique',
         textAlign: cs.textAlign,
         opacity: parseFloat(cs.opacity),
         padLeft: px(cs.paddingLeft),
@@ -219,5 +260,9 @@ export function buildTree() {
     return node;
   }
 
-  return walk(document.body);
+  const tree = walk(document.body);
+  // Page-level font sources ride along on the root node so the tree stays a
+  // single serializable value (fixtures, --debug output, preview state).
+  if (tree) tree.fontFaces = collectFontFaces();
+  return tree;
 }

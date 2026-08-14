@@ -12,6 +12,12 @@
 #define LV_USE_XML 1
 #define LV_USE_OBJ_NAME 1
 
+/* Load lv_font_conv .bin fonts from disk so converted pages can render in
+ * their own typeface without recompiling the harness. */
+#define LV_USE_FS_POSIX 1
+#define LV_FS_POSIX_LETTER 'A'
+#define LV_FS_POSIX_PATH ""
+
 /* Font sizes the HTML converter can map CSS font-size onto */
 #define LV_FONT_MONTSERRAT_10 1
 #define LV_FONT_MONTSERRAT_12 1

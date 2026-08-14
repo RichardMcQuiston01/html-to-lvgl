@@ -87,6 +87,29 @@ Pass more than one page and each becomes a `<screen>` rather than a `<component>
 
 In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; navigation itself is left as a commented stub, since flattened C has no screen registry to look names up in.
 
+### Custom fonts
+
+By default text renders in LVGL's built-in Montserrat at the nearest available size. Point a CSS family at a font file and the page renders in its real typeface instead:
+
+```sh
+node src/cli.mjs examples/typography.html -o out/ \
+  --font-map "Liberation Sans=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" \
+  --font-map "Liberation Sans:700=/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+```
+
+Every distinct family/weight/size the page uses is converted with [`lv_font_conv`](https://github.com/lvgl/lv_font_conv) at that **exact** pixel size — no rounding to a built-in size — and **subset to the characters the page actually renders**, so the fonts stay small. `@font-face` rules with local `url(...)` sources are picked up automatically; `Family:700` maps a single weight. Anything left unmapped falls back to Montserrat with one warning per family.
+
+Each font is emitted twice, into `out/fonts/`:
+
+- `<name>.c` — compile alongside the generated C; it is declared `extern` for you
+- `<name>.bin` — load at runtime with `lv_binfont_create()`, which is how the XML path and the render harness use it:
+
+```sh
+./spike/build/render out/typography.xml out.bmp --font=liberation_sans_700_28=out/fonts/liberation_sans_700_28.bin
+```
+
+Text measurement uses the generated font's real advance widths, so labels are sized from the typeface that will actually draw them. Generated C includes `"lvgl.h"`; pass `--lv-include lvgl/lvgl.h` if your project puts LVGL's parent directory on the include path.
+
 ### Watch mode and live preview
 
 `--watch` rebuilds whenever you save and serves a preview at `http://localhost:8377` (override with `--port`): the Chromium reference next to the LVGL render, a live fidelity score, converter warnings, and the generated XML. The page refreshes itself over SSE after each build, so the edit → see-it-on-LVGL loop is a browser tab away.
@@ -139,7 +162,7 @@ Differing label texts become string props, differing colors become color props, 
 
 `node scripts/fidelity.mjs <web.png> <lvgl.png|bmp>` pixel-scores a conversion. Current examples score 79–94% (tolerance 32, mostly font antialiasing differences), in line with the 80–90% expectation set in RESEARCH.md.
 
-CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance widths extracted from LVGL's font sources (`scripts/gen-font-metrics.mjs`), so labels never clip or wrap unexpectedly.
+CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance widths extracted from LVGL's font sources (`scripts/gen-font-metrics.mjs`), so labels never clip or wrap unexpectedly — or supply the real typeface and skip the approximation entirely (see [Custom fonts](#custom-fonts)).
 
 ## Project layout
 
@@ -147,7 +170,7 @@ CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance 
 - `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
 - `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
 - `spike/` — the Phase 0 proof-of-concept and the C render harness used for CI validation
-- `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout) and the fidelity scorer
+- `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout), the fidelity scorer, and `convert-fixture.mjs` for browser-free conversion from a committed fixture
 
 ## Development
 

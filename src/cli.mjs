@@ -19,6 +19,8 @@ import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { emitC } from './emit-c.mjs';
 import { render } from './emit-xml.mjs';
+import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
+import { builtinFonts, customFonts } from './fonts.mjs';
 
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
@@ -29,6 +31,8 @@ const { values: opts, positionals } = parseArgs({
     format: { type: 'string', short: 'f', default: 'xml' },
     screenshot: { type: 'boolean', default: false },
     debug: { type: 'boolean', default: false },
+    'font-map': { type: 'string', multiple: true, default: [] },
+    'lv-include': { type: 'string', default: 'lvgl.h' },
     watch: { type: 'boolean', short: 'w', default: false },
     port: { type: 'string', default: '8377' },
     'render-bin': { type: 'string' },
@@ -41,10 +45,15 @@ if (opts.help || positionals.length === 0) {
     'usage: html2lvgl <input.html|input.jsx> [more-pages.html ...]\n' +
     '                 [--size WxH] [-o outdir] [--name component]\n' +
     '                 [--format xml|c|both] [--screenshot] [--debug]\n' +
+    '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
-    'them (<a href="other.html">) become navigation buttons.'
+    'them (<a href="other.html">) become navigation buttons.\n' +
+    '\n' +
+    '--font-map points a CSS family at a font file, which is converted with\n' +
+    'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
+    'picked up automatically. Unmapped families fall back to Montserrat.'
   );
   process.exit(opts.help ? 0 : 1);
 }
@@ -87,6 +96,17 @@ mkdirSync(opts.output, { recursive: true });
 
 const reactMode = /\.(jsx|tsx)$/i.test(input);
 
+// --font-map "Family=path.ttf", or "Family:700=path-bold.ttf" for one weight
+const fontMap = {};
+for (const spec of opts['font-map']) {
+  const at = spec.indexOf('=');
+  if (at < 1) {
+    console.error(`invalid --font-map "${spec}" (expected "Family=path.ttf")`);
+    process.exit(1);
+  }
+  fontMap[spec.slice(0, at).trim()] = spec.slice(at + 1).trim();
+}
+
 if (opts.watch && screenMode) {
   console.error('--watch previews a single page at a time');
   process.exit(1);
@@ -110,6 +130,8 @@ if (opts.watch) {
     outputDir: opts.output,
     port,
     renderBin: opts['render-bin'],
+    fontMap,
+    lvInclude: opts['lv-include'],
   });
   // Server and watcher keep the process alive.
 } else {
@@ -132,7 +154,19 @@ if (!tree) {
 }
 if (opts.debug) writeFileSync(join(opts.output, `${name}.json`), JSON.stringify(tree, null, 2));
 
-const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode });
+// Convert the page's own typefaces at the exact sizes it uses, subsetted to
+// the characters it renders. Anything unresolvable stays on Montserrat.
+const plan = planFonts(tree);
+const { built, unresolved } = await buildFonts(plan, join(opts.output, 'fonts'), {
+  fontMap,
+  faces: tree.fontFaces ?? {},
+  baseDir: dirname(input),
+  lvInclude: opts['lv-include'],
+});
+const fonts = built.length ? customFonts(built) : builtinFonts();
+
+const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+warnings.push(...fontWarnings(unresolved));
 const written = [];
 if (opts.format !== 'c') {
   let pageXml = xml;

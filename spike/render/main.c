@@ -125,7 +125,8 @@ int main(int argc, char ** argv)
 {
     if(argc < 3) {
         fprintf(stderr,
-                "usage: %s <page.xml> <out.bmp> [--click=<widget-name>] [component.xml ...]\n",
+                "usage: %s <page.xml> <out.bmp> [--click=<widget-name>]\n"
+                "          [--font=<name>=<path.bin>] [component.xml ...]\n",
                 argv[0]);
         return 1;
     }
@@ -135,6 +136,14 @@ int main(int argc, char ** argv)
     const char * click_name = NULL;
     for(int i = 3; i < argc; i++) {
         if(strncmp(argv[i], "--click=", 8) == 0) click_name = argv[i] + 8;
+    }
+
+    /* --font=<name>=<path.bin> registers an lv_font_conv font under `name`,
+     * matching the style_text_font references html2lvgl emits. */
+    const char * font_args[32];
+    int font_count = 0;
+    for(int i = 3; i < argc && font_count < 32; i++) {
+        if(strncmp(argv[i], "--font=", 7) == 0) font_args[font_count++] = argv[i] + 7;
     }
 
     char * xml = read_file(argv[1]);
@@ -166,6 +175,28 @@ int main(int argc, char ** argv)
     lv_xml_register_font(NULL, "montserrat_36", &lv_font_montserrat_36);
     lv_xml_register_font(NULL, "montserrat_40", &lv_font_montserrat_40);
     lv_xml_register_font(NULL, "montserrat_48", &lv_font_montserrat_48);
+
+    /* Converted fonts, loaded from disk. The POSIX driver is mounted on 'A',
+     * so an absolute path becomes "A:/abs/path.bin". */
+    for(int i = 0; i < font_count; i++) {
+        char spec[512];
+        lv_strlcpy(spec, font_args[i], sizeof(spec));
+        char * eq = strchr(spec, '=');
+        if(eq == NULL) {
+            fprintf(stderr, "expected --font=<name>=<path.bin>, got `%s`\n", font_args[i]);
+            return 1;
+        }
+        *eq = '\0';
+
+        char fs_path[512];
+        snprintf(fs_path, sizeof(fs_path), "A:%s", eq + 1);
+        lv_font_t * font = lv_binfont_create(fs_path);
+        if(font == NULL) {
+            fprintf(stderr, "cannot load font `%s` from %s\n", spec, eq + 1);
+            return 1;
+        }
+        lv_xml_register_font(NULL, spec, font);
+    }
 
     /* Register dependency components first (e.g. the componentizer's output) */
     for(int i = 3; i < argc; i++) {

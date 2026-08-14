@@ -19,6 +19,8 @@ import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { render as renderXml } from './emit-xml.mjs';
+import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
+import { builtinFonts, customFonts } from './fonts.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -52,7 +54,18 @@ export async function startPreview(input, options) {
       const tree = await extractor(input, { width, height, screenshotPath: webPng });
       if (!tree) throw new Error('extraction produced no visible content');
 
-      const { xml, view, warnings } = convert(tree, { name });
+      // Rebuild fonts each pass: editing the CSS can change which sizes and
+      // weights the page needs.
+      const { built, unresolved } = await buildFonts(planFonts(tree), join(outputDir, 'fonts'), {
+        fontMap: options.fontMap ?? {},
+        faces: tree.fontFaces ?? {},
+        baseDir: dirname(resolve(input)),
+        lvInclude: options.lvInclude,
+      });
+      const fonts = built.length ? customFonts(built) : builtinFonts();
+
+      const { xml, view, warnings } = convert(tree, { name, fonts });
+      warnings.push(...fontWarnings(unresolved));
       let pageXml = xml;
       const componentPaths = [];
       if (reactMode) {
@@ -70,7 +83,8 @@ export async function startPreview(input, options) {
       let render = null;
       if (renderBin) {
         try {
-          await execFileAsync(renderBin, [xmlPath, lvglBmp, ...componentPaths], {
+          const fontArgs = built.map((f) => `--font=${f.key}=${resolve(f.binFile)}`);
+          await execFileAsync(renderBin, [xmlPath, lvglBmp, ...fontArgs, ...componentPaths], {
             timeout: RENDER_TIMEOUT_MS,
             killSignal: 'SIGKILL',
           });
