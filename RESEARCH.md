@@ -1,7 +1,7 @@
 # Feasibility Research: HTML → LVGL Converter
 
 **Date:** August 2026
-**Status:** Phase 1 in progress — `html2lvgl` CLI with flex mapping, font metrics, tests, and CI (see [README](README.md)); Phase 0 spike complete (see [`spike/`](spike/README.md))
+**Status:** Phase 2 in progress — grid, gradients/shadows, pressed states, tables, wrapper-collapse optimizer, fidelity scoring, and direct C emission alongside XML (see [README](README.md)); Phase 0 spike + Phase 1 CLI complete
 **Question:** How feasible is it to build a library or application that transforms plain HTML (or React-generated HTML) into LVGL code for devices like Arduino or ESP32?
 
 > **Phase 0 spike result (August 2026):** the proposed pipeline was built end-to-end and works. Three sample device-UI pages were converted automatically — headless Chromium extraction → LVGL XML → rendered by the stock LVGL v9.4 `lv_xml` runtime on a virtual 320×240 display — at roughly 90% visual fidelity. Side-by-side screenshots, code, and findings are in [`spike/`](spike/README.md). One material update from the spike: the `lv_xml` runtime module has been **removed from LVGL's `master` branch** (XML tooling is consolidating into LVGL Pro, which compiles XML to C), so the project should pin **LVGL v9.4.0** — the last release with the in-tree runtime parser — and treat direct C emission (already planned for Phase 2) as a first-class output alongside XML.

@@ -46,6 +46,62 @@ function buildTree() {
 
   const px = (v) => Math.round(parseFloat(v) || 0);
 
+  /** Two-stop linear-gradient -> {from, to, dir}; anything fancier is null. */
+  function parseGradient(backgroundImage) {
+    const m = backgroundImage && backgroundImage.match(/^linear-gradient\(([^)]*(?:\([^)]*\)[^)]*)*)\)$/);
+    if (!m) return null;
+    const body = m[1];
+    const colors = [...body.matchAll(/rgba?\([\d.,\s]+\)/g)].map((c) => parseColor(c[0]));
+    if (colors.length !== 2 || !colors[0] || !colors[1]) return null;
+    let dir = 'ver'; // CSS default: top -> bottom
+    const d = body.match(/^(to\s+[a-z\s]+|-?[\d.]+deg)\s*,/);
+    if (d) {
+      const spec = d[1].trim();
+      if (spec === 'to right' || spec === 'to left' || spec === '90deg' || spec === '270deg' || spec === '-90deg') dir = 'hor';
+      else if (spec !== 'to bottom' && spec !== 'to top' && spec !== '180deg' && spec !== '0deg') return null;
+      if (spec === 'to left' || spec === 'to top' || spec === '0deg' || spec === '270deg' || spec === '-90deg') colors.reverse();
+    }
+    return { from: colors[0], to: colors[1], dir };
+  }
+
+  /** First box-shadow -> {color, x, y, blur, spread}; "none" -> null. */
+  function parseShadow(boxShadow) {
+    if (!boxShadow || boxShadow === 'none') return null;
+    const m = boxShadow.match(/(rgba?\([\d.,\s]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px(?:\s+(-?[\d.]+)px)?/);
+    if (!m) return null;
+    const color = parseColor(m[1]);
+    if (!color) return null;
+    return { color, x: Math.round(+m[2]), y: Math.round(+m[3]), blur: Math.round(+m[4]), spread: Math.round(+m[5] || 0) };
+  }
+
+  /**
+   * Map :hover/:active declarations from same-origin stylesheets onto the
+   * elements they match. LVGL has no hover on touch targets, so both map to
+   * the pressed state.
+   */
+  const pressedStyles = new Map(); // element -> {bgColor?, color?}
+  function collectPressedRules() {
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch { continue; }
+      for (const rule of rules) {
+        if (!rule.selectorText || !/:(hover|active)/.test(rule.selectorText)) continue;
+        const base = rule.selectorText.replace(/:(hover|active)/g, '').trim();
+        let els;
+        try { els = base ? document.querySelectorAll(base) : []; } catch { continue; }
+        for (const el of els) {
+          const entry = pressedStyles.get(el) ?? {};
+          const bg = parseColor(rule.style.backgroundColor);
+          const fg = parseColor(rule.style.color);
+          if (bg) entry.bgColor = bg;
+          if (fg) entry.color = fg;
+          if (Object.keys(entry).length) pressedStyles.set(el, entry);
+        }
+      }
+    }
+  }
+  collectPressedRules();
+
   function ownText(el) {
     let t = '';
     for (const n of el.childNodes) {
@@ -86,6 +142,10 @@ function buildTree() {
         padRight: px(cs.paddingRight),
         padTop: px(cs.paddingTop),
         padBottom: px(cs.paddingBottom),
+        gradient: parseGradient(cs.backgroundImage),
+        shadow: parseShadow(cs.boxShadow),
+        scrollable: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
+        pressed: pressedStyles.get(el) ?? null,
       },
       layout: {
         display: cs.display,
@@ -101,6 +161,13 @@ function buildTree() {
         marginTop: px(cs.marginTop),
         marginBottom: px(cs.marginBottom),
         position: cs.position,
+        // Computed grid templates resolve to px track lists ("60px 100px")
+        gridColumns: cs.display === 'grid' ? cs.gridTemplateColumns.split(' ').map((v) => px(v)) : null,
+        gridRows: cs.display === 'grid' ? cs.gridTemplateRows.split(' ').map((v) => px(v)) : null,
+        gridColumnStart: cs.gridColumnStart,
+        gridColumnEnd: cs.gridColumnEnd,
+        gridRowStart: cs.gridRowStart,
+        gridRowEnd: cs.gridRowEnd,
       },
       children: [],
     };
@@ -123,6 +190,16 @@ function buildTree() {
     if (el.tagName === 'PROGRESS') {
       node.attrs.value = el.value;
       node.attrs.max = el.max;
+    }
+    if (el.tagName === 'TABLE') {
+      const rows = [...el.querySelectorAll('tr')];
+      node.attrs.cells = rows.map((tr) =>
+        [...tr.querySelectorAll('th, td')].map((cell) => cell.textContent.replace(/\s+/g, ' ').trim())
+      );
+      const firstRow = rows[0]?.querySelectorAll('th, td') ?? [];
+      node.attrs.columnWidths = [...firstRow].map((c) => Math.round(c.getBoundingClientRect().width));
+      node.children = []; // handled as a single lv_table; don't recurse
+      return node;
     }
 
     for (const child of el.children) {
