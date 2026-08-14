@@ -1,0 +1,21 @@
+<component>
+  <view width="320" height="240" style_bg_color="0x1a1a2e" style_border_width="0" style_radius="0" style_pad_all="0" style_shadow_width="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="box_3" x="0" y="0" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0" style_shadow_width="0" scrollable="false">
+      <lv_label name="label_1" x="14" y="10" text="Living Room" style_text_font="montserrat_14" style_text_color="0xe0e0e0" />
+      <lv_label name="label_2" x="254" y="11" text="HEATING" style_text_font="montserrat_12" style_text_color="0x4ecca3" />
+    </lv_obj>
+    <lv_obj name="box_9" x="0" y="44" width="320" height="54" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0" style_shadow_width="0" scrollable="false">
+      <lv_button name="button_5" x="51" y="5" width="44" height="44" style_bg_color="0x16213e" style_border_width="2" style_border_color="0x4ecca3" style_radius="22" style_pad_all="0" style_shadow_width="0">
+        <lv_label name="label_4" align="center" text="-" style_text_font="montserrat_22" style_text_color="0x4ecca3" style_text_align="center" />
+      </lv_button>
+      <lv_label name="label_6" x="115" y="0" text="21.5" style_text_font="montserrat_40" style_text_color="0xffffff" />
+      <lv_button name="button_8" x="225" y="5" width="44" height="44" style_bg_color="0x16213e" style_border_width="2" style_border_color="0x4ecca3" style_radius="22" style_pad_all="0" style_shadow_width="0">
+        <lv_label name="label_7" align="center" text="+" style_text_font="montserrat_22" style_text_color="0x4ecca3" style_text_align="center" />
+      </lv_button>
+    </lv_obj>
+    <lv_label name="label_10" x="0" y="104" width="320" text="Target: 22.0 C" style_text_font="montserrat_12" style_text_color="0x9a9ab0" style_text_align="center" />
+    <lv_obj name="box_12" x="0" y="118" width="320" height="34" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0" style_shadow_width="0" scrollable="false">
+      <lv_slider name="slider_11" x="24" y="18" width="272" height="8" min_value="10" max_value="30" value="22" />
+    </lv_obj>
+  </view>
+</component>

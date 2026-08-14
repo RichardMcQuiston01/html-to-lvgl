@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #1a1a2e; overflow: hidden; }
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
+  .title { color: #e0e0e0; font-size: 14px; }
+  .status { color: #4ecca3; font-size: 12px; }
+  .temp-row { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 8px; }
+  .temp { color: #ffffff; font-size: 46px; }
+  .adjust { width: 44px; height: 44px; border-radius: 22px; background-color: #16213e;
+            border: 2px solid #4ecca3; color: #4ecca3; font-size: 22px; }
+  .target { color: #9a9ab0; font-size: 12px; text-align: center; margin-top: 6px; }
+  .slider-zone { padding: 14px 24px 0 24px; }
+  input[type=range] { width: 100%; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <span class="title">Living Room</span>
+    <span class="status">HEATING</span>
+  </div>
+  <div class="temp-row">
+    <button class="adjust">-</button>
+    <span class="temp">21.5</span>
+    <button class="adjust">+</button>
+  </div>
+  <div class="target">Target: 22.0 C</div>
+  <div class="slider-zone">
+    <input type="range" min="10" max="30" value="22">
+  </div>
+</body>
+</html>
