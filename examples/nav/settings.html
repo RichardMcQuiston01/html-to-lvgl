@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #0b1220; overflow: hidden;
+         display: flex; flex-direction: column; }
+  .bar { height: 34px; background-color: #1d4ed8; color: #ffffff; font-size: 14px;
+         display: flex; align-items: center; padding-left: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center;
+         height: 40px; padding: 0 12px; border-bottom: 1px solid #1e293b; }
+  .label { font-size: 13px; color: #cbd5e1; }
+  input[type=checkbox] { width: 40px; height: 22px; }
+  .nav { display: flex; justify-content: center; padding-top: 16px; }
+  a { width: 160px; height: 34px; border-radius: 6px; background-color: #334155;
+      color: #ffffff; font-size: 13px; text-decoration: none;
+      display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="bar">Settings</div>
+  <div class="row">
+    <span class="label">Eco mode</span>
+    <input type="checkbox" checked>
+  </div>
+  <div class="row">
+    <span class="label">Night dimming</span>
+    <input type="checkbox">
+  </div>
+  <div class="nav">
+    <a href="home.html">Back to Home</a>
+  </div>
+</body>
+</html>

@@ -21,11 +21,22 @@ const fixtures = readdirSync(join(here, 'fixtures')).filter((f) => f.endsWith('.
 
 assert.ok(fixtures.length >= 4, 'expected at least 4 fixtures');
 
+const navScreens = new Set(fixtures.filter((f) => f.endsWith('.nav.json')).map((f) => f.replace(/\.nav\.json$/, '')));
+
 for (const file of fixtures) {
   const react = file.endsWith('.react.json');
-  const name = file.replace(/(\.react)?\.json$/, '');
+  const nav = file.endsWith('.nav.json');
+  const name = file.replace(/(\.react|\.nav)?\.json$/, '');
+  const convertOpts = { name, screenMode: nav, screens: nav ? navScreens : null };
 
-  if (react) {
+  if (nav) {
+    test(`golden nav: ${name}`, () => {
+      const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+      const { xml } = convert(tree, convertOpts);
+      assert.equal(xml, readFileSync(join(here, 'golden-nav', `${name}.xml`), 'utf8'));
+      assert.match(xml, /^<screen>/); // screens are loadable roots, not components
+    });
+  } else if (react) {
     test(`golden react: ${name}`, () => {
       const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
       const { view } = convert(tree, { name });
@@ -50,12 +61,39 @@ for (const file of fixtures) {
 
   test(`golden c: ${name}`, () => {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
-    const { view } = convert(tree, { name });
-    const { c, h, unit } = emitC(view, { name });
+    const { view } = convert(tree, convertOpts);
+    const cName = nav ? `nav_${name}` : name;
+    const { c, h, unit } = emitC(view, { name: cName, symbol: nav ? `ui_${cName}_create` : 'ui_create' });
     assert.equal(c, readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
   });
 }
+
+test('links to sibling screens become navigation buttons', () => {
+  const link = (href, text) => ({
+    tag: 'a', x: 10, y: 10, w: 120, h: 30, text, attrs: { href },
+    styles: base(), layout: block(), children: [],
+  });
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {},
+    styles: base(), layout: block(),
+    children: [link('settings.html', 'Settings'), link('./deep/settings.html#top', 'Anchor'), link('https://lvgl.io', 'External'), link('missing.html', 'Missing')],
+  };
+  const { xml } = convert(tree, { screens: new Set(['settings']), screenMode: true });
+
+  // Both forms of the resolvable link navigate; hash and path are stripped
+  assert.equal(xml.match(/<screen_create_event screen="settings" \/>/g).length, 2);
+  assert.match(xml, /<lv_button name="to_settings"/);
+  // External and unresolvable links stay plain text
+  assert.match(xml, /<lv_label[^>]*text="External"/);
+  assert.match(xml, /<lv_label[^>]*text="Missing"/);
+});
+
+test('screen mode wraps the view in <screen>, component mode in <component>', () => {
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
+  assert.match(convert(tree, { screenMode: true }).xml, /^<screen>[\s\S]*<\/screen>\n$/);
+  assert.match(convert(tree).xml, /^<component>[\s\S]*<\/component>\n$/);
+});
 
 test('componentizer parameterizes text and color, keeps structure', () => {
   const label = (name, text) => ({ tag: 'lv_label', attrs: { name, text, style_text_color: '0xffffff' }, children: [] });
@@ -114,6 +152,44 @@ test('optimizer keeps wrappers that carry visuals or manage layout', () => {
   const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [styled, flex] };
   const { removed } = optimize(structuredClone(tree));
   assert.equal(removed, 0);
+});
+
+test('data-lv-name overrides id/class for the widget name', () => {
+  const node = {
+    tag: 'div', id: 'ignored-id', className: 'ignored-class', lvName: 'pump_enable',
+    x: 10, y: 10, w: 44, h: 24, text: null, attrs: {}, styles: base(), layout: block(), children: [],
+  };
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [node] };
+  const { xml } = convert(tree);
+  assert.match(xml, /name="pump_enable"/);
+  assert.doesNotMatch(xml, /ignored/);
+});
+
+test('data-lv-widget forces the widget mapping', () => {
+  const mk = (widget) => ({
+    tag: 'div', widget, x: 10, y: 10, w: 44, h: 24, text: null, attrs: {},
+    styles: base(), layout: block(), children: [],
+  });
+  const wrap = (child) => ({ tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [child] });
+
+  // A styled div would normally become lv_obj
+  assert.match(convert(wrap(mk('switch'))).xml, /<lv_switch/);
+  assert.match(convert(wrap(mk('slider'))).xml, /<lv_slider/);
+  assert.match(convert(wrap(mk('bar'))).xml, /<lv_bar[^>]*max_value="100"/);
+  assert.match(convert(wrap(mk('checkbox'))).xml, /<lv_checkbox/);
+  // "textarea" means a multi-line box; single-line is what <input type=text> maps to
+  assert.match(convert(wrap(mk('textarea'))).xml, /<lv_textarea[^>]*one_line="false"/);
+});
+
+test('an unknown data-lv-widget warns and falls back', () => {
+  const node = {
+    tag: 'div', widget: 'hologram', x: 0, y: 0, w: 40, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [],
+  };
+  const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [node] };
+  const { xml, warnings } = convert(tree);
+  assert.ok(warnings.some((w) => w.includes('hologram')));
+  assert.match(xml, /<lv_obj/); // default mapping still applied
 });
 
 function base() {

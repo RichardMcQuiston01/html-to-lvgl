@@ -112,6 +112,7 @@ export function buildTree() {
 
   function walk(el) {
     if (SKIP.has(el.tagName)) return null;
+    if (el.hasAttribute('data-lv-ignore')) return null; // author opt-out
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden') return null;
     const r = el.getBoundingClientRect();
@@ -124,6 +125,9 @@ export function buildTree() {
       // Component boundary: stamped by the React fiber walk, or set manually
       // in plain HTML via data-lv-component="Name"
       component: el.getAttribute('data-lv-component') || null,
+      // Author overrides: force a widget mapping / an explicit widget name
+      widget: el.getAttribute('data-lv-widget') || null,
+      lvName: el.getAttribute('data-lv-name') || null,
       x: Math.round(r.x),
       y: Math.round(r.y),
       w: Math.round(r.width),
@@ -189,6 +193,9 @@ export function buildTree() {
     }
     if (el.tagName === 'IMG') {
       node.attrs.src = el.getAttribute('src');
+    }
+    if (el.tagName === 'A') {
+      node.attrs.href = el.getAttribute('href');
     }
     if (el.tagName === 'PROGRESS') {
       node.attrs.value = el.value;

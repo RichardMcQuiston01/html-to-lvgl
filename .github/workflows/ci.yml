@@ -59,12 +59,28 @@ jobs:
             ./build/render "$dir$name.xml" /tmp/out.bmp $components
           done
 
+      - name: Render multi-screen goldens and exercise navigation
+        run: |
+          for xml in tests/golden-nav/*.xml; do
+            siblings=$(ls tests/golden-nav/*.xml | grep -v "^$xml$")
+            echo "validating $xml"
+            ./build/render "$xml" /tmp/out.bmp $siblings
+          done
+          # Clicking the generated link must actually load the other screen
+          ./build/render tests/golden-nav/home.xml /tmp/out.bmp \
+            tests/golden-nav/settings.xml --click=to_settings | tee /tmp/nav.log
+          grep -q 'active screen is `settings`' /tmp/nav.log
+
       - name: Compile and render every golden C file against plain LVGL
         run: |
           for c in tests/golden-c/*.c; do
-            echo "validating $c"
+            # Each unit declares its own entry point (ui_create, or
+            # ui_<screen>_create for a screen); read it from the header.
+            symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${c%.c}.h" | grep -oE 'ui_[a-z0-9_]+')
+            echo "validating $c (entry: $symbol)"
             gcc -O1 -o /tmp/render_c \
               -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -DUI_CREATE_SYMBOL="$symbol" \
               -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-c \
               spike/render/main_c.c "$c" \
               build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread

@@ -1,0 +1,21 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0x0b1220" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="bar" width="320" height="34" style_bg_color="0x1d4ed8" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="bar_2" align="left_mid" x="12" text="Settings" style_text_font="montserrat_14" style_text_color="0xffffff" />
+    </lv_obj>
+    <lv_obj name="row" width="320" height="40" style_bg_opa="0" style_border_width="1" style_border_color="0x1e293b" style_border_side="bottom" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label" text="Eco mode" style_text_font="montserrat_12" style_text_color="0xcbd5e1" />
+      <lv_switch name="switch" width="40" height="22" checked="true" />
+    </lv_obj>
+    <lv_obj name="row_2" width="320" height="40" style_bg_opa="0" style_border_width="1" style_border_color="0x1e293b" style_border_side="bottom" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_2" text="Night dimming" style_text_font="montserrat_12" style_text_color="0xcbd5e1" />
+      <lv_switch name="switch_2" width="40" height="22" />
+    </lv_obj>
+    <lv_obj name="nav" width="320" height="50" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="16" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_button name="to_home" width="160" height="34" style_bg_color="0x334155" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="label_3" align="center" text="Back to Home" style_text_font="montserrat_12" style_text_color="0xffffff" />
+        <screen_create_event screen="home" />
+      </lv_button>
+    </lv_obj>
+  </view>
+</screen>

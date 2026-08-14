@@ -33,9 +33,15 @@ const JUSTIFY = {
   'space-between': 'space_between', 'space-around': 'space_around', 'space-evenly': 'space_evenly',
 };
 
-export function convert(input, { name = 'page' } = {}) {
+/**
+ * @param screens  Set of sibling screen names. When provided, <a href> links
+ *                 pointing at one become navigation buttons.
+ * @param screenMode  Wrap the output in <screen> instead of <component>, so
+ *                 LVGL registers it as a loadable screen.
+ */
+export function convert(input, { name = 'page', screens = null, screenMode = false } = {}) {
   const { tree, removed } = optimize(structuredClone(input));
-  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed };
+  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed, screens };
 
   const rootAttrs = {
     width: tree.w,
@@ -46,14 +52,15 @@ export function convert(input, { name = 'page' } = {}) {
     ...textStyles(tree, nearestSize(tree.styles.fontSize)),
   };
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
-  const xml = `<component>\n${render(view, 1)}\n</component>\n`;
+  const wrapper = screenMode ? 'screen' : 'component';
+  const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
   return { xml, view, warnings: ctx.warnings, assets: ctx.assets, name, collapsed: ctx.collapsed };
 }
 
 /* ---------------------------------------------------------------- helpers */
 
 function uid(ctx, node, fallback) {
-  const base = sanitize(node.id || node.className || fallback || node.tag);
+  const base = sanitize(node.lvName || node.id || node.className || fallback || node.tag);
   const n = (ctx.names.get(base) ?? 0) + 1;
   ctx.names.set(base, n);
   return n === 1 ? base : `${base}_${n}`;
@@ -275,6 +282,19 @@ function emit(node, parent, ctx, index = 0) {
 }
 
 function emitByTag(node, parent, ctx, index) {
+  // data-lv-widget overrides tag-based and heuristic classification
+  if (node.widget) {
+    const forced = emitForced(node, parent, ctx, index);
+    if (forced) return forced;
+    ctx.warnings.push(`data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`);
+  }
+
+  // <a> pointing at a sibling screen becomes a navigation button
+  if (node.tag === 'a' && ctx.screens) {
+    const target = resolveScreen(node.attrs.href, ctx.screens);
+    if (target) return emitLink(node, parent, ctx, index, target);
+  }
+
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
@@ -286,6 +306,30 @@ function emitByTag(node, parent, ctx, index) {
     return emitText(node, parent, ctx, index);
   }
   return emitContainer(node, parent, ctx, index);
+}
+
+/**
+ * Honor data-lv-widget. Widgets backed by <input> reuse emitInput with a
+ * synthesized `type`; emitInput consults node.widget for the switch vs
+ * checkbox decision instead of its aspect-ratio heuristic.
+ */
+function emitForced(node, parent, ctx, index) {
+  switch (node.widget) {
+    case 'button': return emitButton(node, parent, ctx, index);
+    case 'label': return emitText(node, parent, ctx, index);
+    case 'dropdown': return emitDropdown(node, parent, ctx, index);
+    case 'bar': return emitBar(node, parent, ctx, index);
+    case 'table': return emitTable(node, parent, ctx, index);
+    case 'image': return emitImage(node, parent, ctx, index);
+    case 'switch':
+    case 'checkbox':
+    case 'slider':
+    case 'textarea': {
+      const type = { switch: 'checkbox', checkbox: 'checkbox', slider: 'range', textarea: 'text' }[node.widget];
+      return emitInput({ ...node, attrs: { ...node.attrs, type } }, parent, ctx, index);
+    }
+    default: return null;
+  }
 }
 
 function emitContainer(node, parent, ctx, index) {
@@ -356,6 +400,43 @@ function emitButton(node, parent, ctx, index) {
   }, children);
 }
 
+/**
+ * Resolve an href against the set of screens being converted.
+ * "./settings.html#top" -> "settings" when that screen exists.
+ */
+function resolveScreen(href, screens) {
+  if (!href) return null;
+  const path = href.split(/[?#]/)[0];
+  if (!path || /^[a-z]+:/i.test(path)) return null; // external / mailto: / etc.
+  const file = path.split('/').pop() ?? '';
+  const target = sanitize(file.replace(/\.[a-z]+$/i, ''));
+  return screens.has(target) ? target : null;
+}
+
+/**
+ * A link to another screen: an lv_button whose click creates and loads the
+ * target. screen_create_event (rather than screen_load_event) instantiates
+ * the screen on demand, so navigation works before it has ever been visited.
+ */
+function emitLink(node, parent, ctx, index, screen) {
+  const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  if (node.text) {
+    const { size } = fitText(node, ctx);
+    children.unshift(el('lv_label', {
+      name: uid(ctx, node, 'label'),
+      align: 'center',
+      text: node.text,
+      ...textStyles(node, size),
+    }));
+  }
+  children.push(el('screen_create_event', { screen }));
+  return el('lv_button', {
+    name: uid(ctx, node, `to_${screen}`),
+    ...placement(node, parent, { gridIndex: index }),
+    ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
+  }, children);
+}
+
 function emitInput(node, parent, ctx, index) {
   const t = node.attrs.type;
 
@@ -378,8 +459,12 @@ function emitInput(node, parent, ctx, index) {
   }
 
   if (t === 'checkbox') {
-    // A wide, styled checkbox is almost always meant as a toggle.
-    const widget = node.w >= node.h * 1.5 ? 'lv_switch' : 'lv_checkbox';
+    // A wide, styled checkbox is almost always meant as a toggle, unless
+    // data-lv-widget says otherwise.
+    const widget =
+      node.widget === 'switch' ? 'lv_switch'
+      : node.widget === 'checkbox' ? 'lv_checkbox'
+      : node.w >= node.h * 1.5 ? 'lv_switch' : 'lv_checkbox';
     return el(widget, {
       name: uid(ctx, node, widget === 'lv_switch' ? 'switch' : 'checkbox'),
       ...placement(node, parent, { size: widget === 'lv_switch', gridIndex: index }),
@@ -389,10 +474,13 @@ function emitInput(node, parent, ctx, index) {
   }
 
   const { size } = fitText({ ...node, text: node.attrs.placeholder ?? node.attrs.value ?? '' }, ctx);
+  // <input type=text> is a single line; <textarea> and an explicit
+  // data-lv-widget="textarea" mean a multi-line box.
+  const oneLine = node.widget !== 'textarea' && node.tag !== 'textarea';
   return el('lv_textarea', {
     name: uid(ctx, node, 'textarea'),
     ...placement(node, parent, { gridIndex: index }),
-    one_line: 'true',
+    one_line: oneLine ? 'true' : 'false',
     ...(node.attrs.placeholder ? { placeholder_text: node.attrs.placeholder } : {}),
     ...(node.attrs.value ? { text: node.attrs.value } : {}),
     ...(t === 'password' ? { password_mode: 'true' } : {}),
@@ -429,7 +517,9 @@ function emitBar(node, parent, ctx, index) {
     name: uid(ctx, node, 'bar'),
     ...placement(node, parent, { gridIndex: index }),
     min_value: 0,
-    max_value: node.attrs.max ?? 1,
+    // <progress> defaults to max=1 per HTML; a div forced to a bar with
+    // data-lv-widget has no such convention, so use a percentage range.
+    max_value: node.attrs.max ?? (node.tag === 'progress' ? 1 : 100),
     value: node.attrs.value ?? 0,
   });
 }
