@@ -1,0 +1,1218 @@
+{
+  "tag": "body",
+  "id": null,
+  "className": null,
+  "x": 0,
+  "y": 0,
+  "w": 320,
+  "h": 240,
+  "text": null,
+  "attrs": {},
+  "styles": {
+    "bgColor": [
+      241,
+      245,
+      249,
+      255
+    ],
+    "color": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderWidth": 0,
+    "borderBottomColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderBottomWidth": 0,
+    "radius": 0,
+    "fontSize": 16,
+    "textAlign": "start",
+    "opacity": 1,
+    "padLeft": 0,
+    "padRight": 0,
+    "padTop": 0,
+    "padBottom": 0
+  },
+  "layout": {
+    "display": "flex",
+    "flexDirection": "column",
+    "flexWrap": "nowrap",
+    "justifyContent": "normal",
+    "alignItems": "normal",
+    "rowGap": 0,
+    "columnGap": 0,
+    "flexGrow": 0,
+    "marginLeft": 0,
+    "marginRight": 0,
+    "marginTop": 0,
+    "marginBottom": 0,
+    "position": "static"
+  },
+  "children": [
+    {
+      "tag": "div",
+      "id": null,
+      "className": "topbar",
+      "x": 0,
+      "y": 0,
+      "w": 320,
+      "h": 32,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 10,
+        "padRight": 10,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "flex",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": [
+        {
+          "tag": "span",
+          "id": null,
+          "className": null,
+          "x": 10,
+          "y": 9,
+          "w": 78,
+          "h": 15,
+          "text": "Pump Station",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderWidth": 0,
+            "borderBottomColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderBottomWidth": 0,
+            "radius": 0,
+            "fontSize": 13,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "normal",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": []
+        },
+        {
+          "tag": "select",
+          "id": null,
+          "className": "mode",
+          "x": 200,
+          "y": 5,
+          "w": 110,
+          "h": 22,
+          "text": null,
+          "attrs": {
+            "options": [
+              "Automatic",
+              "Manual",
+              "Maintenance"
+            ],
+            "selectedIndex": 0
+          },
+          "styles": {
+            "bgColor": [
+              239,
+              239,
+              239,
+              255
+            ],
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              118,
+              118,
+              118,
+              255
+            ],
+            "borderWidth": 1,
+            "borderBottomColor": [
+              118,
+              118,
+              118,
+              255
+            ],
+            "borderBottomWidth": 1,
+            "radius": 0,
+            "fontSize": 12,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "center",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "id": null,
+      "className": "cards",
+      "x": 0,
+      "y": 32,
+      "w": 320,
+      "h": 80,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 10,
+        "padRight": 10,
+        "padTop": 8,
+        "padBottom": 8
+      },
+      "layout": {
+        "display": "flex",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 8,
+        "columnGap": 8,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": [
+        {
+          "tag": "div",
+          "id": null,
+          "className": "card",
+          "x": 10,
+          "y": 40,
+          "w": 114,
+          "h": 64,
+          "text": null,
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderWidth": 1,
+            "borderBottomColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderBottomWidth": 1,
+            "radius": 8,
+            "fontSize": 16,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "flex",
+            "flexDirection": "column",
+            "flexWrap": "nowrap",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "rowGap": 4,
+            "columnGap": 4,
+            "flexGrow": 1,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": [
+            {
+              "tag": "div",
+              "id": null,
+              "className": "value",
+              "x": 48,
+              "y": 53,
+              "w": 39,
+              "h": 23,
+              "text": "48.2",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 20,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            },
+            {
+              "tag": "div",
+              "id": null,
+              "className": "label",
+              "x": 35,
+              "y": 80,
+              "w": 64,
+              "h": 12,
+              "text": "FLOW L/MIN",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 11,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "id": null,
+          "className": "card",
+          "x": 132,
+          "y": 40,
+          "w": 78,
+          "h": 64,
+          "text": null,
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderWidth": 1,
+            "borderBottomColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderBottomWidth": 1,
+            "radius": 8,
+            "fontSize": 16,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "flex",
+            "flexDirection": "column",
+            "flexWrap": "nowrap",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "rowGap": 4,
+            "columnGap": 4,
+            "flexGrow": 1,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": [
+            {
+              "tag": "div",
+              "id": null,
+              "className": "value",
+              "x": 158,
+              "y": 53,
+              "w": 28,
+              "h": 23,
+              "text": "3.1",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 20,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            },
+            {
+              "tag": "div",
+              "id": null,
+              "className": "label",
+              "x": 160,
+              "y": 80,
+              "w": 23,
+              "h": 12,
+              "text": "BAR",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 11,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "id": null,
+          "className": "card",
+          "x": 218,
+          "y": 40,
+          "w": 92,
+          "h": 64,
+          "text": null,
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderWidth": 1,
+            "borderBottomColor": [
+              226,
+              232,
+              240,
+              255
+            ],
+            "borderBottomWidth": 1,
+            "radius": 8,
+            "fontSize": 16,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "flex",
+            "flexDirection": "column",
+            "flexWrap": "nowrap",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "rowGap": 4,
+            "columnGap": 4,
+            "flexGrow": 1,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": [
+            {
+              "tag": "div",
+              "id": null,
+              "className": "value",
+              "x": 253,
+              "y": 53,
+              "w": 22,
+              "h": 23,
+              "text": "62",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  15,
+                  23,
+                  42,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 20,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            },
+            {
+              "tag": "div",
+              "id": null,
+              "className": "label",
+              "x": 244,
+              "y": 80,
+              "w": 41,
+              "h": 12,
+              "text": "TEMP C",
+              "attrs": {},
+              "styles": {
+                "bgColor": null,
+                "color": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderWidth": 0,
+                "borderBottomColor": [
+                  100,
+                  116,
+                  139,
+                  255
+                ],
+                "borderBottomWidth": 0,
+                "radius": 0,
+                "fontSize": 11,
+                "textAlign": "start",
+                "opacity": 1,
+                "padLeft": 0,
+                "padRight": 0,
+                "padTop": 0,
+                "padBottom": 0
+              },
+              "layout": {
+                "display": "block",
+                "flexDirection": "row",
+                "flexWrap": "nowrap",
+                "justifyContent": "normal",
+                "alignItems": "normal",
+                "rowGap": 0,
+                "columnGap": 0,
+                "flexGrow": 0,
+                "marginLeft": 0,
+                "marginRight": 0,
+                "marginTop": 0,
+                "marginBottom": 0,
+                "position": "static"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "id": null,
+      "className": "usage",
+      "x": 0,
+      "y": 112,
+      "w": 320,
+      "h": 36,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 10,
+        "padRight": 10,
+        "padTop": 2,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": [
+        {
+          "tag": "div",
+          "id": null,
+          "className": "usage-label",
+          "x": 10,
+          "y": 114,
+          "w": 300,
+          "h": 12,
+          "text": "Daily capacity used",
+          "attrs": {},
+          "styles": {
+            "bgColor": null,
+            "color": [
+              100,
+              116,
+              139,
+              255
+            ],
+            "borderColor": [
+              100,
+              116,
+              139,
+              255
+            ],
+            "borderWidth": 0,
+            "borderBottomColor": [
+              100,
+              116,
+              139,
+              255
+            ],
+            "borderBottomWidth": 0,
+            "radius": 0,
+            "fontSize": 11,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "normal",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 4,
+            "position": "static"
+          },
+          "children": []
+        },
+        {
+          "tag": "progress",
+          "id": null,
+          "className": null,
+          "x": 10,
+          "y": 137,
+          "w": 300,
+          "h": 10,
+          "text": null,
+          "attrs": {
+            "value": 68,
+            "max": 100
+          },
+          "styles": {
+            "bgColor": null,
+            "color": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderWidth": 0,
+            "borderBottomColor": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "borderBottomWidth": 0,
+            "radius": 0,
+            "fontSize": 16,
+            "textAlign": "start",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "inline-block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "normal",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "tag": "div",
+      "id": null,
+      "className": "actions",
+      "x": 0,
+      "y": 148,
+      "w": 320,
+      "h": 42,
+      "text": null,
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 16,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 0,
+        "padRight": 0,
+        "padTop": 12,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "flex",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "center",
+        "alignItems": "normal",
+        "rowGap": 10,
+        "columnGap": 10,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": [
+        {
+          "tag": "button",
+          "id": null,
+          "className": "start",
+          "x": 65,
+          "y": 160,
+          "w": 90,
+          "h": 30,
+          "text": "Start",
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              22,
+              163,
+              74,
+              255
+            ],
+            "color": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderWidth": 0,
+            "borderBottomColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderBottomWidth": 0,
+            "radius": 6,
+            "fontSize": 12,
+            "textAlign": "center",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "normal",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": []
+        },
+        {
+          "tag": "button",
+          "id": null,
+          "className": "stop",
+          "x": 165,
+          "y": 160,
+          "w": 90,
+          "h": 30,
+          "text": "Stop",
+          "attrs": {},
+          "styles": {
+            "bgColor": [
+              220,
+              38,
+              38,
+              255
+            ],
+            "color": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderWidth": 0,
+            "borderBottomColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderBottomWidth": 0,
+            "radius": 6,
+            "fontSize": 12,
+            "textAlign": "center",
+            "opacity": 1,
+            "padLeft": 0,
+            "padRight": 0,
+            "padTop": 0,
+            "padBottom": 0
+          },
+          "layout": {
+            "display": "block",
+            "flexDirection": "row",
+            "flexWrap": "nowrap",
+            "justifyContent": "normal",
+            "alignItems": "normal",
+            "rowGap": 0,
+            "columnGap": 0,
+            "flexGrow": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "position": "static"
+          },
+          "children": []
+        }
+      ]
+    }
+  ]
+}

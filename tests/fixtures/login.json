@@ -1,0 +1,383 @@
+{
+  "tag": "body",
+  "id": null,
+  "className": null,
+  "x": 0,
+  "y": 0,
+  "w": 320,
+  "h": 240,
+  "text": null,
+  "attrs": {},
+  "styles": {
+    "bgColor": [
+      244,
+      245,
+      247,
+      255
+    ],
+    "color": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderWidth": 0,
+    "borderBottomColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "borderBottomWidth": 0,
+    "radius": 0,
+    "fontSize": 16,
+    "textAlign": "start",
+    "opacity": 1,
+    "padLeft": 0,
+    "padRight": 0,
+    "padTop": 18,
+    "padBottom": 0
+  },
+  "layout": {
+    "display": "flex",
+    "flexDirection": "column",
+    "flexWrap": "nowrap",
+    "justifyContent": "normal",
+    "alignItems": "center",
+    "rowGap": 0,
+    "columnGap": 0,
+    "flexGrow": 0,
+    "marginLeft": 0,
+    "marginRight": 0,
+    "marginTop": 0,
+    "marginBottom": 0,
+    "position": "static"
+  },
+  "children": [
+    {
+      "tag": "h1",
+      "id": null,
+      "className": null,
+      "x": 104,
+      "y": 18,
+      "w": 112,
+      "h": 21,
+      "text": "Device Login",
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          32,
+          33,
+          36,
+          255
+        ],
+        "borderColor": [
+          32,
+          33,
+          36,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          32,
+          33,
+          36,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 18,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 0,
+        "padRight": 0,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 14,
+        "position": "static"
+      },
+      "children": []
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "className": null,
+      "x": 40,
+      "y": 53,
+      "w": 240,
+      "h": 34,
+      "text": null,
+      "attrs": {
+        "type": "text",
+        "value": "",
+        "placeholder": "Username",
+        "checked": false,
+        "min": null,
+        "max": null
+      },
+      "styles": {
+        "bgColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "color": [
+          32,
+          33,
+          36,
+          255
+        ],
+        "borderColor": [
+          184,
+          188,
+          196,
+          255
+        ],
+        "borderWidth": 1,
+        "borderBottomColor": [
+          184,
+          188,
+          196,
+          255
+        ],
+        "borderBottomWidth": 1,
+        "radius": 6,
+        "fontSize": 13,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 10,
+        "padRight": 10,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 10,
+        "position": "static"
+      },
+      "children": []
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "className": null,
+      "x": 40,
+      "y": 97,
+      "w": 240,
+      "h": 34,
+      "text": null,
+      "attrs": {
+        "type": "password",
+        "value": "",
+        "placeholder": "Password",
+        "checked": false,
+        "min": null,
+        "max": null
+      },
+      "styles": {
+        "bgColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "color": [
+          32,
+          33,
+          36,
+          255
+        ],
+        "borderColor": [
+          184,
+          188,
+          196,
+          255
+        ],
+        "borderWidth": 1,
+        "borderBottomColor": [
+          184,
+          188,
+          196,
+          255
+        ],
+        "borderBottomWidth": 1,
+        "radius": 6,
+        "fontSize": 13,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 10,
+        "padRight": 10,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 0,
+        "marginBottom": 10,
+        "position": "static"
+      },
+      "children": []
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "className": "login",
+      "x": 40,
+      "y": 147,
+      "w": 240,
+      "h": 38,
+      "text": "Sign In",
+      "attrs": {},
+      "styles": {
+        "bgColor": [
+          37,
+          99,
+          235,
+          255
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 6,
+        "fontSize": 14,
+        "textAlign": "center",
+        "opacity": 1,
+        "padLeft": 0,
+        "padRight": 0,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 6,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": []
+    },
+    {
+      "tag": "div",
+      "id": null,
+      "className": "hint",
+      "x": 76,
+      "y": 197,
+      "w": 169,
+      "h": 12,
+      "text": "Forgot password? Hold SET for 5s",
+      "attrs": {},
+      "styles": {
+        "bgColor": null,
+        "color": [
+          122,
+          127,
+          136,
+          255
+        ],
+        "borderColor": [
+          122,
+          127,
+          136,
+          255
+        ],
+        "borderWidth": 0,
+        "borderBottomColor": [
+          122,
+          127,
+          136,
+          255
+        ],
+        "borderBottomWidth": 0,
+        "radius": 0,
+        "fontSize": 11,
+        "textAlign": "start",
+        "opacity": 1,
+        "padLeft": 0,
+        "padRight": 0,
+        "padTop": 0,
+        "padBottom": 0
+      },
+      "layout": {
+        "display": "block",
+        "flexDirection": "row",
+        "flexWrap": "nowrap",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "rowGap": 0,
+        "columnGap": 0,
+        "flexGrow": 0,
+        "marginLeft": 0,
+        "marginRight": 0,
+        "marginTop": 12,
+        "marginBottom": 0,
+        "position": "static"
+      },
+      "children": []
+    }
+  ]
+}

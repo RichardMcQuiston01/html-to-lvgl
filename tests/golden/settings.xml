@@ -1,0 +1,22 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="bar" x="0" y="0" width="320" height="34" style_bg_color="0x0f766e" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="bar_2" align="left_mid" x="12" text="Settings" style_text_font="montserrat_14" style_text_color="0xffffff" />
+    </lv_obj>
+    <lv_obj name="row" x="0" y="34" width="320" height="40" style_bg_opa="0" style_border_width="1" style_border_color="0xe5e7eb" style_border_side="bottom" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" scrollable="false">
+      <lv_label name="row_label" text="Wi-Fi" style_text_font="montserrat_12" style_text_color="0x1f2937" />
+      <lv_switch name="switch" width="40" height="22" checked="true" />
+    </lv_obj>
+    <lv_obj name="row_2" x="0" y="74" width="320" height="40" style_bg_opa="0" style_border_width="1" style_border_color="0xe5e7eb" style_border_side="bottom" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" scrollable="false">
+      <lv_label name="row_label_2" text="Bluetooth" style_text_font="montserrat_12" style_text_color="0x1f2937" />
+      <lv_switch name="switch_2" width="40" height="22" />
+    </lv_obj>
+    <lv_obj name="brightness" x="0" y="114" width="320" height="50" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="brightness_label" x="12" y="10" text="Brightness" style_text_font="montserrat_12" style_text_color="0x6b7280" />
+      <lv_slider name="slider" x="12" y="34" width="296" height="8" min_value="0" max_value="100" value="70" />
+    </lv_obj>
+    <lv_button name="save_2" x="12" y="200" width="296" height="30" style_bg_color="0x0f766e" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+      <lv_label name="save" align="center" text="Save" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+    </lv_button>
+  </view>
+</component>
