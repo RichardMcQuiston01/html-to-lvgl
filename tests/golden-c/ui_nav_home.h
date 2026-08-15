@@ -4,6 +4,14 @@
 
 #include "lvgl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 lv_obj_t * ui_nav_home_create(lv_obj_t * parent);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* UI_NAV_HOME_H */

@@ -113,3 +113,42 @@ jobs:
               build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
             /tmp/render_c /tmp/out.bmp
           done
+
+      - name: Compile and render every golden C++ file against plain LVGL
+        run: |
+          # main_c.c is dual-mode: compiling it with g++ (instead of gcc) proves
+          # --format cpp output links correctly, including against the always-C
+          # lv_font_conv font files below.
+          for cpp in tests/golden-cpp/*.cpp; do
+            symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${cpp%.cpp}.hpp" | grep -oE 'ui_[a-z0-9_]+')
+            echo "validating $cpp (entry: $symbol)"
+            g++ -std=c++17 -O1 -o /tmp/render_cpp \
+              -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -DUI_CREATE_SYMBOL="$symbol" \
+              -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-cpp \
+              spike/render/main_c.c "$cpp" \
+              build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+            /tmp/render_cpp /tmp/out.bmp
+          done
+
+      - name: Convert with custom fonts as C++ and link against the C-compiled font files
+        run: |
+          # Proves the C++/C linkage trap fix: a C-compiled lv_font_conv font
+          # file must link into a C++ translation unit that references it.
+          L=/usr/share/fonts/truetype/liberation
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/cpp-fonts-demo \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf" \
+            --format cpp
+          grep -q 'extern "C" const lv_font_t liberation_sans_700_28' /tmp/cpp-fonts-demo/ui_typography.cpp
+          mkdir -p /tmp/cpp-font-objs
+          for f in /tmp/cpp-fonts-demo/fonts/*.c; do
+            gcc -O1 -c -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -I "$GITHUB_WORKSPACE/lvgl" -o "/tmp/cpp-font-objs/$(basename "${f%.c}.o")" "$f"
+          done
+          g++ -std=c++17 -O1 -o /tmp/render_cpp_fonts \
+            -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+            -I "$GITHUB_WORKSPACE/lvgl" -I /tmp/cpp-fonts-demo \
+            spike/render/main_c.c /tmp/cpp-fonts-demo/ui_typography.cpp /tmp/cpp-font-objs/*.o \
+            build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+          /tmp/render_cpp_fonts /tmp/out.bmp

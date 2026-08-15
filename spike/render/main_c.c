@@ -1,10 +1,15 @@
 /**
- * Headless renderer for html2lvgl's generated C output (--format c).
+ * Headless renderer for html2lvgl's generated C/C++ output (--format c/cpp).
  *
- * Links against one generated ui_<name>.c (fixed symbol ui_create), renders
- * it on a virtual 320x240 display, and writes the framebuffer as BMP —
- * the C-output counterpart of main.c's XML path, used by CI to prove the
- * generated code compiles and runs against plain LVGL.
+ * Links against one generated ui_<name> unit (fixed symbol ui_create),
+ * renders it on a virtual 320x240 display, and writes the framebuffer as
+ * BMP — the C-output counterpart of main.c's XML path, used by CI to prove
+ * the generated code compiles and runs against plain LVGL.
+ *
+ * Dual-mode on purpose: this file compiles unchanged with either a C or a
+ * C++ compiler (gcc or g++), so the same harness proves both --format c and
+ * --format cpp output link correctly — including against the C-compiled
+ * font files that a C++ build must reference with correct ("C") linkage.
  *
  * Usage: render_c <out.bmp>
  */
@@ -21,7 +26,10 @@
 #define UI_CREATE_SYMBOL ui_create
 #endif
 
-extern lv_obj_t * UI_CREATE_SYMBOL(lv_obj_t * parent);
+#ifdef __cplusplus
+extern "C"
+#endif
+lv_obj_t * UI_CREATE_SYMBOL(lv_obj_t * parent);
 
 #define HOR_RES 320
 #define VER_RES 240
@@ -56,7 +64,7 @@ static int write_bmp(const char * path)
     memcpy(header + 34, &image_size, 4);
     if(fwrite(header, 1, 54, f) != 54) { fclose(f); return -1; }
 
-    uint8_t * row = malloc((size_t)row_bytes);
+    uint8_t * row = (uint8_t *)malloc((size_t)row_bytes);
     if(!row) { fclose(f); return -1; }
     memset(row, 0, (size_t)row_bytes);
     for(int y = VER_RES - 1; y >= 0; y--) {

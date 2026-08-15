@@ -1,7 +1,7 @@
 # Plan: MicroPython and C++ Output Targets
 
 **Date:** August 2026
-**Status:** Proposal — not started
+**Status:** C++ output shipped; MicroPython spike not started.
 **Question:** What would it take for `html2lvgl` to target LVGL from MicroPython and from C++, and is either already supported?
 
 ---
@@ -10,7 +10,7 @@
 
 | Target | Supported today? | What it really takes |
 |---|---|---|
-| **C++** | **Effectively yes, undocumented.** The generated C compiles as C++17 unmodified. | A thin `--format cpp` variant, one asset-linkage rule, docs, and CI proof. Small. |
+| **C++** | **Yes — shipped.** `--format cpp` emits `.cpp`/`.hpp`; CI compiles and links every golden as C++17, including the font-linkage-trap case, against real LVGL v9.4.0. | Done. See §2.3. |
 | **MicroPython** | **No.** MicroPython uses a separate auto-generated binding with a different API shape. | A new emitter plus a `lv_micropython` build for validation. Medium, and the validation harness is most of the cost. |
 
 Neither needs changes to extraction, conversion, layout, or the font pipeline. Both are **emitter-level** work: the existing element tree and the mapping tables in `src/emit-c.mjs` already encode the semantics; what changes is how they are spelled.
@@ -65,16 +65,18 @@ Three ways out, in preference order:
 2. **Emit a `.cpp` shim** per asset that wraps the include in `extern "C" { }`. Works if a project's build refuses to mix languages.
 3. **Post-process** `lv_font_conv` output to prepend `extern`. Rejected — it means owning a patch against a third-party generator.
 
-### 2.3 Proposed C++ work
+### 2.3 Proposed C++ work — delivered
 
 | Step | Detail |
 |---|---|
-| `--format cpp` | Emit `ui_<name>.cpp` / `.hpp` from the same element tree. The `.hpp` declares `ui_create` inside `extern "C"` (or a namespace, see below); asset externs are emitted inside `extern "C" { }`. |
-| Namespace + naming | Wrap generated symbols in a configurable namespace (`--cpp-namespace ui`) so several screens can coexist without the `ui_<screen>_create` prefixing the C target needs. |
-| Docs | State plainly that the C output is C++-consumable today, and that asset `.c` files stay C. |
-| CI | Add a job compiling every golden as C++17 and linking against C-compiled fonts — this is what would have caught the linkage trap. |
+| `--format cpp` | Emits `ui_<name>.cpp` / `.hpp` from the same element tree as `--format c`. The `.hpp` declares `ui_create` inside `extern "C" { }`; font/image `extern` declarations say `extern "C"`. `--format` now also takes a comma-separated list (`xml,c,cpp`); `both` stays a back-compat alias for `xml,c`. |
+| Namespace + naming | **Skipped `--cpp-namespace`.** Per-screen symbol names (`ui_<screen>_create`) already prevent collisions across screens without needing C++ namespacing, and adding one would be unused surface for a first cut. |
+| Docs | README's "Output formats" section documents `--format cpp` and states the linkage rule plainly. |
+| CI | New steps in the `validate-xml` job compile every `tests/golden-cpp/*.cpp` with `g++ -std=c++17` and link against LVGL, plus a dedicated step that converts a fixture with real `lv_font_conv` fonts under `--format cpp` and links the C++ unit against the C-compiled font `.o` files — this is exactly the case that would have caught the linkage trap. |
 
-**Effort: ~1–2 days.** Mostly a variant of an existing emitter plus a CI job.
+`spike/render/main_c.c` was made dual-mode (compiles unchanged under `gcc` or `g++`) rather than adding a parallel C++ harness, so the same file validates both `--format c` and `--format cpp` output — avoiding drift between two near-identical harnesses.
+
+**Actual effort: about half a day**, in line with the estimate.
 
 ### 2.4 Optional: an idiomatic C++ wrapper
 
