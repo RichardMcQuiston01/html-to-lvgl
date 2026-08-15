@@ -4,7 +4,7 @@
 
 Transform plain HTML or React based HTML pages into LVGL code for use on devices like Arduino or ESP32.
 
-The converter renders your page in headless Chromium at the target display resolution, extracts the resolved layout and styles, and emits [LVGL XML](https://lvgl.io/docs/open/xml) (v9.4 `lv_xml` runtime syntax). CSS flexbox maps onto LVGL's flex layout; everything else uses exact coordinates from the browser's layout engine. See [RESEARCH.md](RESEARCH.md) for the feasibility study and [spike/](spike/README.md) for the proof-of-concept with side-by-side screenshots.
+The converter renders your page in headless Chromium at the target display resolution, extracts the resolved layout and styles, and emits [LVGL XML](https://lvgl.io/docs/open/xml) (v9.4 `lv_xml` runtime syntax), plain C, or C++ — see [Output formats](#output-formats). CSS flexbox maps onto LVGL's flex layout; everything else uses exact coordinates from the browser's layout engine. See [RESEARCH.md](RESEARCH.md) for the feasibility study, [spike/](spike/README.md) for the proof-of-concept with side-by-side screenshots, and [PLAN.md](PLAN.md) for the C++ output design notes and MicroPython feasibility research.
 
 ## Usage
 
@@ -17,6 +17,9 @@ node src/cli.mjs examples/dashboard.html --size 320x240 -o out/
 # Emit plain C instead of (or alongside) XML — works on any LVGL 9.x,
 # no lv_xml runtime needed
 node src/cli.mjs examples/monitor.html -o out/ --format both
+
+# Emit C++ (.cpp/.hpp) for a project that only compiles C++
+node src/cli.mjs examples/monitor.html -o out/ --format cpp
 
 # Convert a React app: each function component becomes a reusable,
 # parameterized LVGL XML component
@@ -174,7 +177,7 @@ CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance 
 - `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
 - `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
 - `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
-- `spike/` — the Phase 0 proof-of-concept and the C render harness used for CI validation
+- `spike/` — the Phase 0 proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike (see [PLAN.md](PLAN.md))
 - `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout), the fidelity scorer, and `convert-fixture.mjs` for browser-free conversion from a committed fixture
 
 ## Development
@@ -184,7 +187,7 @@ npm test                 # unit + golden-file tests
 npm run golden:update    # refresh goldens after an intentional converter change
 ```
 
-CI runs the test suite and additionally builds the spike render harness against LVGL v9.4.0, then loads every golden XML through the stock `lv_xml` runtime.
+CI runs the test suite and additionally builds the spike render harness against LVGL v9.4.0: every golden XML loads through the stock `lv_xml` runtime, and every golden C and C++ file is compiled (`gcc` / `g++ -std=c++17`) and linked against real LVGL and, for the font-linkage case, real `lv_font_conv` output.
 
 Note: the project pins **LVGL v9.4.0** — the last release with the in-tree `lv_xml` runtime (XML tooling is consolidating into LVGL Pro upstream).
 
