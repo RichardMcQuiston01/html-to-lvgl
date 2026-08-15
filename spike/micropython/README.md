@@ -13,8 +13,14 @@ the XML path.
 1. **`lv_xml_create()` / `lv_xml_component_register_from_data()` etc. are
    auto-bound** once `LV_USE_XML` is turned on in the binding's `lv_conf.h`.
    `render_xml.py` in this directory registers `tests/golden/dashboard.xml`
-   completely unmodified and renders it headless — pixel-identical to the C
-   harness's render of the same file. See `patches/lv_binding_micropython-lv_conf.patch`.
+   (a `<component>`-rooted page) completely unmodified and renders it
+   headless — pixel-identical to the C harness's render of the same file.
+   `tests/golden-nav/home.xml` (a `<screen>`-rooted page, used by the
+   multi-screen nav goldens) also renders correctly: `render_xml.py` detects
+   the root element the same way `spike/render/main.c` does and switches
+   between `lv.xml_create(parent, name, None)` + `set_pos` for components and
+   `lv.xml_create(None, name, None)` + `lv.screen_load(page)` for screens.
+   See `patches/lv_binding_micropython-lv_conf.patch`.
 2. **`lv_binfont_create()` is reachable**, and loads html2lvgl's real
    `lv_font_conv` `.bin` output. Verified end-to-end: converted
    `tests/fixtures/typography.json` with real fonts, loaded the `.bin` files

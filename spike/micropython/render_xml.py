@@ -6,7 +6,7 @@ Mirrors spike/render/main.c: registers Montserrat fonts under the XML
 "globals" scope, registers the page as an XML component, instantiates it,
 ticks a few frames, and dumps the framebuffer as a 24-bit BMP.
 
-Usage: ./micropython render_xml.py <page.xml> <out.bmp>
+Usage: ./micropython render_xml.py <page.xml> <out.bmp> [fonts-dir]
 """
 import sys
 import os
@@ -14,6 +14,18 @@ import lvgl as lv
 
 HOR_RES = 320
 VER_RES = 240
+
+
+def is_screen_root(xml):
+    """True when the document's root element is <screen> rather than
+    <component> — same scan as spike/render/main.c's is_screen_root()."""
+    i = xml.find('<')
+    while i != -1 and i + 1 < len(xml) and xml[i + 1] in '?!':
+        i = xml.find('<', i + 1)
+    if i == -1:
+        return False
+    tail = xml[i + 1:i + 8]
+    return tail.startswith('screen') and len(tail) > 6 and tail[6] in '> \n'
 
 
 def write_bmp(path, buf, w, h):
@@ -97,14 +109,23 @@ def main():
         print("FAILED to register component")
         raise SystemExit(1)
 
-    blob = lv.xml_create(lv.screen_active(), name, None)
+    screen_root = is_screen_root(xml)
+    if screen_root:
+        # Screens are their own root object and must be loaded, not
+        # parented — same distinction spike/render/main.c makes.
+        blob = lv.xml_create(None, name, None)
+    else:
+        blob = lv.xml_create(lv.screen_active(), name, None)
     if blob is None:
         print("FAILED to instantiate component")
         raise SystemExit(1)
     # lv_xml_create returns void*; the binding can't know it's an lv_obj_t,
     # so it comes back as an untyped Blob and needs an explicit cast.
     page = lv.obj.__cast__(blob)
-    page.set_pos(0, 0)
+    if screen_root:
+        lv.screen_load(page)
+    else:
+        page.set_pos(0, 0)
 
     for _ in range(30):
         lv.tick_inc(16)

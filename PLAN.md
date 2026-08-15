@@ -11,7 +11,7 @@
 | Target | Supported today? | What it really takes |
 |---|---|---|
 | **C++** | **Yes — shipped.** `--format cpp` emits `.cpp`/`.hpp`; CI compiles and links every golden as C++17, including the font-linkage-trap case, against real LVGL v9.4.0. | Done. See §2.3. |
-| **MicroPython** | **Yes, via existing `--format xml` output — spiked, not yet shipped.** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. No new emitter needed. | Docs + a CI job (build the unix port, render every golden XML). Small — see §3.4. |
+| **MicroPython** | **Validated in Phase 0; not shipped.** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML (both `<component>` and `<screen>` roots) renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. No new emitter needed to ship this. | Docs + a CI job (build the unix port, render every golden XML). Small — see §3.4. |
 
 Neither needs changes to extraction, conversion, layout, or the font pipeline. Both are **emitter-level** work: the existing element tree and the mapping tables in `src/emit-c.mjs` already encode the semantics; what changes is how they are spelled.
 
@@ -138,7 +138,7 @@ Mechanical rules, mirroring `emit-c.mjs`:
 
 The enum rule (strip `LV_`, split prefix from value) is derived from the C enum names and should be **verified against a real generated binding** rather than assumed — see open questions.
 
-### 3.3 The hard parts — resolved by the Phase 0 spike
+### 3.3 The hard parts — mostly resolved by the Phase 0 spike
 
 1. **Assets — resolved: `.bin` + `lv_binfont_create` works.** Verified end-to-end: loaded a real `lv_font_conv`-converted `.bin` file via `lv.binfont_create()` on `lv_micropython`'s unix port, registered it into the XML scope, and rendered — the converted glyphs show up, not a Montserrat fallback. No firmware rebuild needed. `lv_binfont_create` isn't bound by default though — see the spike's second patch below.
 2. **Validation — resolved, and cheaper than expected.** The `lv_micropython` **unix port** with a direct-mode framebuffer (no SDL window needed, same trick as `spike/render/main.c`) renders headless and dumps a BMP. `spike/micropython/render_xml.py` does exactly this. A full build (mpy-cross + unix port) takes well under a minute once the binding submodules are cached.
@@ -162,7 +162,7 @@ The Phase 0 spike changed the shape of this work: shipping the existing `--forma
 
 ---
 
-## 4. Open questions — resolved by the Phase 0 spike
+## 4. Open questions — mostly resolved by the Phase 0 spike
 
 1. ~~Does `lv_binding_micropython` expose `lv_xml_*` when `LV_USE_XML` is enabled?~~ **Yes.** Confirmed by rendering unmodified `--format xml` golden output on `lv_micropython`'s unix port.
 2. ~~Is `lv_binfont_create` reachable from MicroPython with a filesystem driver?~~ **Yes**, after one small patch — see `spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch`. `lv_micropython`'s Makefile preprocesses only `lvgl_private.h` (a `_private.h`-only umbrella) for the binding generator, and `lv_binfont_loader.h` has no `_private.h` counterpart pulling it in — a build-wiring gap, not an `lv_conf.h` setting.
