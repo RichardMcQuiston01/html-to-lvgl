@@ -18,14 +18,31 @@ VER_RES = 240
 
 def is_screen_root(xml):
     """True when the document's root element is <screen> rather than
-    <component> — same scan as spike/render/main.c's is_screen_root()."""
-    i = xml.find('<')
-    while i != -1 and i + 1 < len(xml) and xml[i + 1] in '?!':
-        i = xml.find('<', i + 1)
-    if i == -1:
-        return False
-    tail = xml[i + 1:i + 8]
-    return tail.startswith('screen') and len(tail) > 6 and tail[6] in '> \n'
+    <component>. Skips declarations (<?...?>), comments (<!--...-->) and
+    doctype-style markup (<!...>) in full — including any '<' they contain
+    — rather than main.c's char-by-char scan, which mishandles a literal
+    '<' inside a comment body. MicroPython's `re` module doesn't reliably
+    support DOTALL/non-greedy, so this is a plain hand-rolled scanner."""
+    i = 0
+    n = len(xml)
+    while i < n:
+        if xml[i] != '<':
+            i += 1
+            continue
+        if xml[i:i + 4] == '<!--':
+            end = xml.find('-->', i + 4)
+            i = (end + 3) if end != -1 else n
+            continue
+        if xml[i:i + 2] == '<?' or xml[i:i + 1] == '<!':
+            end = xml.find('>', i + 1)
+            i = (end + 1) if end != -1 else n
+            continue
+        # Root element start: read the tag name (up to whitespace, '/', '>')
+        j = i + 1
+        while j < n and xml[j] not in ' \t\r\n/>':
+            j += 1
+        return xml[i + 1:j] == 'screen'
+    return False
 
 
 def write_bmp(path, buf, w, h):
@@ -61,7 +78,7 @@ def write_bmp(path, buf, w, h):
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: render_xml.py <page.xml> <out.bmp>")
+        print("usage: render_xml.py <page.xml> <out.bmp> [fonts-dir]")
         raise SystemExit(1)
 
     # lv_init() runs automatically on `import lvgl` in this binding.
