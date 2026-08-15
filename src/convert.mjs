@@ -18,7 +18,7 @@
  * overflow its box, try one size smaller; if it still overflows, let the
  * label auto-size and report a warning.
  */
-import { fontName, nearestSize, measure, FONT_SIZES } from './fonts.mjs';
+import { builtinFonts } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 
@@ -39,17 +39,17 @@ const JUSTIFY = {
  * @param screenMode  Wrap the output in <screen> instead of <component>, so
  *                 LVGL registers it as a loadable screen.
  */
-export function convert(input, { name = 'page', screens = null, screenMode = false } = {}) {
+export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts() } = {}) {
   const { tree, removed } = optimize(structuredClone(input));
-  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed, screens };
+  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed, screens, fonts };
 
   const rootAttrs = {
     width: tree.w,
     height: tree.h,
     ...boxStyles(tree, ctx, { transparentDefault: false }),
-    ...containerLayout(tree),
+    ...containerLayout(tree, ctx),
     scrollable: 'false',
-    ...textStyles(tree, nearestSize(tree.styles.fontSize)),
+    ...textStyles(tree, ctx.fonts.for(tree.styles)),
   };
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
   const wrapper = screenMode ? 'screen' : 'component';
@@ -190,7 +190,7 @@ function boxStyles(node, ctx, { transparentDefault = true, pad = null } = {}) {
 }
 
 /** Layout attributes for a flex or grid container node (empty otherwise). */
-function containerLayout(node) {
+function containerLayout(node, ctx) {
   if (isGrid(node)) {
     const l = node.layout;
     // Computed grid templates are resolved px tracks at the target
@@ -213,6 +213,10 @@ function containerLayout(node) {
   const attrs = { flex_flow: `${dir}${wrap}${rev}` };
   const main = JUSTIFY[l.justifyContent];
   const cross = JUSTIFY[l.alignItems];
+  if (l.alignItems === 'baseline' && ctx) {
+    // LVGL flex aligns by box edges only; there is no baseline mode.
+    ctx.warnings.push('align-items: baseline has no LVGL equivalent; items are aligned to the track start instead');
+  }
   if (main && main !== 'start') attrs.style_flex_main_place = main;
   if (cross && cross !== 'start') {
     // LVGL flex tracks are content-sized, unlike CSS lines which fill the
@@ -227,9 +231,9 @@ function containerLayout(node) {
   return attrs;
 }
 
-function textStyles(node, size) {
+function textStyles(node, font) {
   const s = node.styles;
-  const attrs = { style_text_font: fontName(size) };
+  const attrs = { style_text_font: font.name };
   if (s.color) attrs.style_text_color = hex(s.color);
   if (s.textAlign === 'center') attrs.style_text_align = 'center';
   else if (s.textAlign === 'right') attrs.style_text_align = 'right';
@@ -237,33 +241,32 @@ function textStyles(node, size) {
 }
 
 /**
- * Pick a font size for a text node and decide label sizing.
- * Returns { size, width } where width is null for an auto-sized label.
+ * Choose the font for a text node and decide label sizing.
+ * Returns { font, width } where width is null for an auto-sized label.
  *
  * A label's width is a hard wrap boundary in LVGL, so a kept width must never
  * be smaller than the measured text — flex-managed and left-aligned labels
  * simply auto-size, and centered labels get max(box, measured).
  */
 function fitText(node, ctx, { managed = false } = {}) {
-  let size = nearestSize(node.styles.fontSize);
-  if (!node.text) return { size, width: managed ? null : node.w };
+  let font = ctx.fonts.for(node.styles);
+  if (!node.text) return { font, width: managed ? null : node.w };
 
   const multiline = node.h >= node.styles.fontSize * 2;
-  if (multiline) return { size, width: node.w }; // keep box, let LVGL wrap
+  if (multiline) return { font, width: node.w }; // keep box, let LVGL wrap
 
-  if (managed) return { size, width: null }; // flex places and sizes it
+  if (managed) return { font, width: null }; // flex places and sizes it
 
-  // Absolute placement: honor the browser box; step one size down if the
-  // LVGL font renders wider than the box allows.
-  if (measure(size, node.text) > node.w + FIT_TOLERANCE) {
-    const smallerIdx = FONT_SIZES.indexOf(size) - 1;
-    if (smallerIdx >= 0 && measure(FONT_SIZES[smallerIdx], node.text) <= node.w + FIT_TOLERANCE) {
-      size = FONT_SIZES[smallerIdx];
-    }
+  // Absolute placement: honor the browser box. A converted font is already
+  // the exact CSS size so it measures like the browser did; a built-in
+  // substitute may run wider, and can try one size smaller.
+  if (font.measure(node.text) > node.w + FIT_TOLERANCE) {
+    const smaller = font.stepDown();
+    if (smaller && smaller.measure(node.text) <= node.w + FIT_TOLERANCE) font = smaller;
   }
   const centered = node.styles.textAlign === 'center' || node.styles.textAlign === 'right';
-  if (centered) return { size, width: Math.max(node.w, measure(size, node.text)) };
-  return { size, width: null }; // auto-size; keeps left edge, avoids clipping
+  if (centered) return { font, width: Math.max(node.w, font.measure(node.text)) };
+  return { font, width: null }; // auto-size; keeps left edge, avoids clipping
 }
 
 /* ------------------------------------------------------------------ emit */
@@ -335,14 +338,14 @@ function emitForced(node, parent, ctx, index) {
 function emitContainer(node, parent, ctx, index) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
   if (node.text) {
-    const { size } = fitText(node, ctx);
-    children.unshift(el('lv_label', { name: uid(ctx, node, 'label'), text: node.text, ...textStyles(node, size) }));
+    const { font } = fitText(node, ctx);
+    children.unshift(el('lv_label', { name: uid(ctx, node, 'label'), text: node.text, ...textStyles(node, font) }));
   }
   return el('lv_obj', {
     name: uid(ctx, node, 'box'),
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx),
-    ...containerLayout(node),
+    ...containerLayout(node, ctx),
     scrollable: node.styles.scrollable ? 'true' : 'false',
   }, children);
 }
@@ -350,7 +353,7 @@ function emitContainer(node, parent, ctx, index) {
 function emitText(node, parent, ctx, index) {
   const s = node.styles;
   const managed = isManaged(parent) && !outOfFlow(node);
-  const { size, width } = fitText(node, ctx, { managed });
+  const { font, width } = fitText(node, ctx, { managed });
 
   if (s.bgColor || (s.borderWidth > 0 && s.borderColor)) {
     // Decorated text block (title bar, badge): box + vertically centered label,
@@ -367,7 +370,7 @@ function emitText(node, parent, ctx, index) {
         align,
         ...(align === 'left_mid' && s.padLeft ? { x: s.padLeft } : {}),
         text: node.text,
-        ...textStyles(node, size),
+        ...textStyles(node, font),
       }),
     ]);
   }
@@ -377,7 +380,7 @@ function emitText(node, parent, ctx, index) {
     ...placement(node, parent, { size: false, gridIndex: index }),
     ...(width !== null ? { width } : {}),
     text: node.text,
-    ...textStyles(node, size),
+    ...textStyles(node, font),
   };
   return el('lv_label', attrs);
 }
@@ -385,12 +388,12 @@ function emitText(node, parent, ctx, index) {
 function emitButton(node, parent, ctx, index) {
   const children = node.children.map((c) => emit(c, node, ctx)).filter(Boolean);
   if (node.text) {
-    const { size } = fitText(node, ctx);
+    const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
       name: uid(ctx, node, 'label'),
       align: 'center',
       text: node.text,
-      ...textStyles(node, size),
+      ...textStyles(node, font),
     }));
   }
   return el('lv_button', {
@@ -421,12 +424,12 @@ function resolveScreen(href, screens) {
 function emitLink(node, parent, ctx, index, screen) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
   if (node.text) {
-    const { size } = fitText(node, ctx);
+    const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
       name: uid(ctx, node, 'label'),
       align: 'center',
       text: node.text,
-      ...textStyles(node, size),
+      ...textStyles(node, font),
     }));
   }
   children.push(el('screen_create_event', { screen }));
@@ -473,7 +476,7 @@ function emitInput(node, parent, ctx, index) {
     });
   }
 
-  const { size } = fitText({ ...node, text: node.attrs.placeholder ?? node.attrs.value ?? '' }, ctx);
+  const { font } = fitText({ ...node, text: node.attrs.placeholder ?? node.attrs.value ?? '' }, ctx);
   // <input type=text> is a single line; <textarea> and an explicit
   // data-lv-widget="textarea" mean a multi-line box.
   const oneLine = node.widget !== 'textarea' && node.tag !== 'textarea';
@@ -486,7 +489,7 @@ function emitInput(node, parent, ctx, index) {
     ...(t === 'password' ? { password_mode: 'true' } : {}),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 8 }),
     style_pad_hor: node.styles.padLeft || 8,
-    ...textStyles(node, size),
+    ...textStyles(node, font),
   });
 }
 
@@ -496,7 +499,7 @@ function emitDropdown(node, parent, ctx, index) {
     ...placement(node, parent, { gridIndex: index }),
     options: (node.attrs.options ?? []).join('\n'),
     ...(node.attrs.selectedIndex > 0 ? { selected: node.attrs.selectedIndex } : {}),
-    ...textStyles(node, nearestSize(node.styles.fontSize)),
+    ...textStyles(node, ctx.fonts.for(node.styles)),
   });
 }
 
@@ -541,6 +544,6 @@ function emitTable(node, parent, ctx, index) {
     ...placement(node, parent, { gridIndex: index }),
     column_count: columnCount,
     row_count: cells.length,
-    ...textStyles(node, nearestSize(node.styles.fontSize)),
+    ...textStyles(node, ctx.fonts.for(node.styles)),
   }, children);
 }

@@ -18,6 +18,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The font-conversion test needs a real TTF; without one it skips
+      - name: Install a test typeface
+        run: sudo apt-get update && sudo apt-get install -y fonts-liberation
       - run: npm ci
       - run: npm test
 
@@ -70,6 +73,30 @@ jobs:
           ./build/render tests/golden-nav/home.xml /tmp/out.bmp \
             tests/golden-nav/settings.xml --click=to_settings | tee /tmp/nav.log
           grep -q 'active screen is `settings`' /tmp/nav.log
+
+      - name: Install Node (for lv_font_conv, an npm-distributed tool)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Convert fonts with lv_font_conv and render with them
+        run: |
+          sudo apt-get update && sudo apt-get install -y fonts-liberation
+          L=/usr/share/fonts/truetype/liberation
+          # Fixtures are browser-free, so the whole font path runs here
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/fonts-demo \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf"
+          test -n "$(ls /tmp/fonts-demo/fonts/*.bin)" || { echo "no fonts generated"; exit 1; }
+          # The generated XML must reference the converted fonts, not Montserrat
+          grep -q 'style_text_font="liberation_sans_700_28"' /tmp/fonts-demo/typography.xml
+          FONTS=""
+          for f in /tmp/fonts-demo/fonts/*.bin; do
+            FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
+          done
+          ./build/render /tmp/fonts-demo/typography.xml /tmp/out.bmp $FONTS
 
       - name: Compile and render every golden C file against plain LVGL
         run: |
