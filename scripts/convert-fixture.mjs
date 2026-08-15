@@ -59,7 +59,7 @@ if (values.format === 'xml') {
   const ext = values.format === 'cpp' ? { c: 'cpp', h: 'hpp' } : { c: 'c', h: 'h' };
   writeFileSync(join(outDir, `${unit}.${ext.c}`), c);
   writeFileSync(join(outDir, `${unit}.${ext.h}`), h);
-  console.log(`wrote ${join(outDir, `${unit}.${ext.c}`)}/.${ext.h} with ${built.length} converted font(s)`);
+  console.log(`wrote ${join(outDir, `${unit}.${ext.c}`)}, ${join(outDir, `${unit}.${ext.h}`)} with ${built.length} converted font(s)`);
 }
 for (const f of built) console.log(`  ${f.key}  <- ${f.source}`);
 for (const w of fontWarnings(unresolved)) console.log(`  (fallback) ${w}`);
