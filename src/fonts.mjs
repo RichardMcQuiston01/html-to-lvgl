@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lookupKey } from './fonts-build.mjs';
 
 const metrics = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'font-metrics.json'), 'utf8')
@@ -69,14 +70,17 @@ export function builtinFonts() {
  * typeface that could not be resolved to a file.
  */
 export function customFonts(built) {
-  const byKey = new Map(built.map((f) => [f.key, f]));
+  // Keyed by the same exact-identity lookupKey buildFonts() planned with —
+  // not a recomputed slug — so two families that slug identically (and so
+  // got a collision-disambiguated output key) still resolve correctly.
+  const byKey = new Map(built.map((f) => [lookupKey(f.family, f.weight, f.italic, f.size), f]));
   const fallback = builtinFonts();
 
   return {
     builtinOnly: false,
     fonts: built,
     for(styles) {
-      const key = `${slugFamily(styles.fontFamily)}_${styles.fontWeight}${styles.fontItalic ? 'i' : ''}_${styles.fontSize}`;
+      const key = lookupKey(styles.fontFamily, styles.fontWeight, styles.fontItalic, styles.fontSize);
       const f = byKey.get(key);
       if (!f) return fallback.for(styles);
       const avg = average(f.adv);
@@ -95,8 +99,6 @@ export function customFonts(built) {
     },
   };
 }
-
-const slugFamily = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
 function average(adv) {
   const values = Object.values(adv);

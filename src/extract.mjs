@@ -46,10 +46,59 @@ export function buildTree() {
 
   const px = (v) => Math.round(parseFloat(v) || 0);
 
-  /** getComputedStyle returns the whole stack; the first entry is what rendered. */
-  function firstFamily(stack) {
-    const first = (stack || '').split(',')[0].trim();
-    return first.replace(/^["']|["']$/g, '') || 'sans-serif';
+  /** Split a CSS font-family stack into individual family names. */
+  function splitFamilyStack(stack) {
+    return (stack || '')
+      .split(',')
+      .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+      .filter(Boolean);
+  }
+
+  const GENERIC_FAMILY_KEYWORDS = new Set([
+    'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy',
+    'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace',
+  ]);
+
+  /**
+   * getComputedStyle(el).fontFamily returns the whole CSS fallback stack, not
+   * the family the browser actually rendered with — the first entry may not
+   * be installed. document.fonts.check() cannot tell either: it reports true
+   * for names it has never heard of (verified empirically), because it only
+   * describes the document's loaded @font-face set, not local availability.
+   *
+   * So availability is tested the classic way: render a wide sample string
+   * with the candidate family plus a reference generic, and with the generic
+   * alone; if the measured widths differ, the candidate substituted a real
+   * font. A generic keyword is trivially "available" — it's the browser's
+   * own fallback, there's nothing further to test.
+   */
+  const fontAvailabilityCache = new Map();
+  const measureCanvas = document.createElement('canvas').getContext('2d');
+  function isFontAvailable(family, weight, sizePx) {
+    const cacheKey = `${family}|${weight}|${sizePx}`;
+    if (fontAvailabilityCache.has(cacheKey)) return fontAvailabilityCache.get(cacheKey);
+    const testString = 'mmmmmmmmmmlli';
+    const probeSize = '72px'; // large probe exaggerates any metric difference
+    let available = false;
+    for (const ref of ['monospace', 'serif', 'sans-serif']) {
+      measureCanvas.font = `${weight} ${probeSize} ${ref}`;
+      const baseline = measureCanvas.measureText(testString).width;
+      measureCanvas.font = `${weight} ${probeSize} "${family}", ${ref}`;
+      if (measureCanvas.measureText(testString).width !== baseline) { available = true; break; }
+    }
+    fontAvailabilityCache.set(cacheKey, available);
+    return available;
+  }
+
+  /** The first family in the stack that the browser can actually render. */
+  function resolveFontFamily(cs) {
+    const weight = cs.fontWeight;
+    const sizePx = parseFloat(cs.fontSize) || 16;
+    for (const family of splitFamilyStack(cs.fontFamily)) {
+      if (GENERIC_FAMILY_KEYWORDS.has(family.toLowerCase())) return family;
+      if (isFontAvailable(family, weight, sizePx)) return family;
+    }
+    return 'sans-serif';
   }
 
   /** CSS keywords to numeric weights, so 'bold' and 700 agree. */
@@ -61,23 +110,33 @@ export function buildTree() {
   }
 
   /**
-   * @font-face family -> source URL, so a page carrying its own webfont can
-   * be converted without the caller naming the file.
+   * @font-face descriptors, so a page carrying its own webfont can be
+   * converted without the caller naming the file. font-weight may be a
+   * single value or a range ("100 900", common for variable fonts) —
+   * normalized to an inclusive [min, max] so a node requesting any weight
+   * in that range can match. "oblique" (with or without an angle) renders
+   * slanted like italic and is treated the same way.
    */
   function collectFontFaces() {
-    const faces = {};
+    const faces = [];
     for (const sheet of document.styleSheets) {
       let rules;
       try { rules = sheet.cssRules; } catch { continue; }
       for (const rule of rules) {
         if (rule.constructor.name !== 'CSSFontFaceRule' && rule.type !== 5) continue;
-        const family = firstFamily(rule.style.fontFamily);
+        const family = splitFamilyStack(rule.style.fontFamily)[0];
         const src = rule.style.src || '';
         const url = src.match(/url\(["']?([^"')]+)["']?\)/);
         if (!family || !url) continue;
-        const weight = normalizeWeight((rule.style.fontWeight || '400').split(' ')[0]);
-        const italic = (rule.style.fontStyle || '') === 'italic';
-        faces[`${family}|${weight}|${italic ? 'i' : 'n'}`] = url[1];
+
+        const weightTokens = (rule.style.fontWeight || '400').trim().split(/\s+/);
+        const weightMin = normalizeWeight(weightTokens[0]);
+        const weightMax = weightTokens[1] ? normalizeWeight(weightTokens[1]) : weightMin;
+
+        const styleValue = (rule.style.fontStyle || 'normal').trim();
+        const italic = styleValue === 'italic' || styleValue.startsWith('oblique');
+
+        faces.push({ family, weightMin, weightMax, italic, url: url[1] });
       }
     }
     return faces;
@@ -181,7 +240,7 @@ export function buildTree() {
         radius: px(cs.borderTopLeftRadius),
         fontSize: px(cs.fontSize) || 16,
         // Identity of the typeface actually used, for lv_font_conv
-        fontFamily: firstFamily(cs.fontFamily),
+        fontFamily: resolveFontFamily(cs),
         fontWeight: normalizeWeight(cs.fontWeight),
         fontItalic: cs.fontStyle === 'italic' || cs.fontStyle === 'oblique',
         textAlign: cs.textAlign,

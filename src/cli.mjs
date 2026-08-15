@@ -135,74 +135,102 @@ if (opts.watch) {
   });
   // Server and watcher keep the process alive.
 } else {
+  await buildAll();
+}
+
+async function buildAll() {
+  // Extract every page before touching fonts: a font used differently by two
+  // screens (e.g. a heading on one, body text on the other) needs the union
+  // of both screens' glyphs in one shared file, not whichever screen's
+  // buildFonts() call happened to run last silently overwriting the other's.
+  const pages = [];
   for (const page of positionals) {
-    await buildOnce(page, screenMode ? screenName(page) : name);
+    const pageName = screenMode ? screenName(page) : name;
+    const pageReactMode = /\.(jsx|tsx)$/i.test(page);
+    const extractor = pageReactMode ? extractReactPage : extractPage;
+    const tree = await extractor(page, {
+      width,
+      height,
+      screenshotPath: opts.screenshot ? join(opts.output, `${pageName}_web.png`) : undefined,
+    });
+    if (!tree) {
+      console.error(`extraction produced no visible content for ${page}`);
+      process.exit(1);
+    }
+    if (opts.debug) writeFileSync(join(opts.output, `${pageName}.json`), JSON.stringify(tree, null, 2));
+    pages.push({ input: page, name: pageName, reactMode: pageReactMode, tree });
   }
-}
 
-async function buildOnce(input, name) {
-const reactMode = /\.(jsx|tsx)$/i.test(input);
-const extractor = reactMode ? extractReactPage : extractPage;
-const tree = await extractor(input, {
-  width,
-  height,
-  screenshotPath: opts.screenshot ? join(opts.output, `${name}_web.png`) : undefined,
-});
-if (!tree) {
-  console.error('extraction produced no visible content');
-  process.exit(1);
-}
-if (opts.debug) writeFileSync(join(opts.output, `${name}.json`), JSON.stringify(tree, null, 2));
-
-// Convert the page's own typefaces at the exact sizes it uses, subsetted to
-// the characters it renders. Anything unresolvable stays on Montserrat.
-const plan = planFonts(tree);
-const { built, unresolved } = await buildFonts(plan, join(opts.output, 'fonts'), {
-  fontMap,
-  faces: tree.fontFaces ?? {},
-  baseDir: dirname(input),
-  lvInclude: opts['lv-include'],
-});
-const fonts = built.length ? customFonts(built) : builtinFonts();
-
-const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
-warnings.push(...fontWarnings(unresolved));
-const written = [];
-if (opts.format !== 'c') {
-  let pageXml = xml;
-  if (reactMode) {
-    // Split React component boundaries into reusable LVGL XML components.
-    const { view: pageView, components } = componentize(view, { warnings });
-    pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
-    for (const [cname, cxml] of components) {
-      const cPath = join(opts.output, `${cname}.xml`);
-      writeFileSync(cPath, cxml);
-      written.push(cPath);
+  // Merge font plans by lookupKey (exact family/weight/italic/size identity)
+  // so a shared font's artifact carries every glyph any screen needs.
+  const mergedPlan = new Map();
+  for (const { tree } of pages) {
+    for (const entry of planFonts(tree)) {
+      const existing = mergedPlan.get(entry.lookupKey);
+      if (existing) for (const ch of entry.chars) existing.chars.add(ch);
+      else mergedPlan.set(entry.lookupKey, entry);
     }
   }
-  const xmlPath = join(opts.output, `${name}.xml`);
-  writeFileSync(xmlPath, pageXml);
-  written.push(xmlPath);
-}
-if (opts.format !== 'xml') {
-  // Each screen needs its own entry point; a single page keeps ui_create.
-  const { c, h, unit } = emitC(view, { name, symbol: screenMode ? `ui_${name}_create` : 'ui_create' });
-  writeFileSync(join(opts.output, `${unit}.c`), c);
-  writeFileSync(join(opts.output, `${unit}.h`), h);
-  written.push(join(opts.output, `${unit}.c`), join(opts.output, `${unit}.h`));
+  // A multi-screen UI's pages conventionally live together; @font-face
+  // sources and relative-URL resolution use the first page's, which is
+  // exact for the common single-directory case and a documented limit
+  // otherwise (screens in different directories should share --font-map).
+  const { built, unresolved } = await buildFonts([...mergedPlan.values()], join(opts.output, 'fonts'), {
+    fontMap,
+    faces: pages[0]?.tree.fontFaces ?? [],
+    baseDir: dirname(pages[0]?.input ?? '.'),
+    lvInclude: opts['lv-include'],
+  });
+  const fonts = built.length ? customFonts(built) : builtinFonts();
+  const sharedFontWarnings = fontWarnings(unresolved);
+
+  for (const page of pages) await emitPage(page, fonts);
+
+  for (const w of sharedFontWarnings) console.warn(`warning: ${w}`);
 }
 
-const assetDir = join(opts.output, 'assets');
-for (const asset of assets) {
-  const from = resolve(dirname(input), asset.src);
-  if (existsSync(from)) {
-    mkdirSync(assetDir, { recursive: true });
-    copyFileSync(from, join(assetDir, basename(asset.src)));
+async function emitPage({ input, name, reactMode, tree }, fonts) {
+  const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+  const written = [];
+  if (opts.format !== 'c') {
+    let pageXml = xml;
+    if (reactMode) {
+      // Split React component boundaries into reusable LVGL XML components.
+      const { view: pageView, components } = componentize(view, { warnings });
+      pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
+      for (const [cname, cxml] of components) {
+        const cPath = join(opts.output, `${cname}.xml`);
+        writeFileSync(cPath, cxml);
+        written.push(cPath);
+      }
+    }
+    const xmlPath = join(opts.output, `${name}.xml`);
+    writeFileSync(xmlPath, pageXml);
+    written.push(xmlPath);
   }
-}
+  if (opts.format !== 'xml') {
+    // Each screen needs its own entry point; a single page keeps ui_create.
+    const { c, h, unit } = emitC(view, {
+      name,
+      symbol: screenMode ? `ui_${name}_create` : 'ui_create',
+      lvInclude: opts['lv-include'],
+    });
+    writeFileSync(join(opts.output, `${unit}.c`), c);
+    writeFileSync(join(opts.output, `${unit}.h`), h);
+    written.push(join(opts.output, `${unit}.c`), join(opts.output, `${unit}.h`));
+  }
 
-console.log(`wrote ${written.join(', ')}`);
-if (collapsed > 0) console.log(`optimizer: collapsed ${collapsed} inert wrapper${collapsed === 1 ? '' : 's'}`);
-if (assets.length) console.log(`assets: ${assets.map((a) => a.src).join(', ')} -> ${assetDir}/`);
-for (const w of warnings) console.warn(`warning: ${w}`);
+  const assetDir = join(opts.output, 'assets');
+  for (const asset of assets) {
+    const from = resolve(dirname(input), asset.src);
+    if (existsSync(from)) {
+      mkdirSync(assetDir, { recursive: true });
+      copyFileSync(from, join(assetDir, basename(asset.src)));
+    }
+  }
+
+  console.log(`wrote ${written.join(', ')}`);
+  if (collapsed > 0) console.log(`optimizer: collapsed ${collapsed} inert wrapper${collapsed === 1 ? '' : 's'}`);
+  if (assets.length) console.log(`assets: ${assets.map((a) => a.src).join(', ')} -> ${assetDir}/`);
+  for (const w of warnings) console.warn(`warning: ${w}`);
 }

@@ -74,6 +74,13 @@ jobs:
             tests/golden-nav/settings.xml --click=to_settings | tee /tmp/nav.log
           grep -q 'active screen is `settings`' /tmp/nav.log
 
+      - name: Install Node (for lv_font_conv, an npm-distributed tool)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
       - name: Convert fonts with lv_font_conv and render with them
         run: |
           sudo apt-get update && sudo apt-get install -y fonts-liberation

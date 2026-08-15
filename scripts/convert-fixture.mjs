@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { parseArgs } from 'node:util';
 import { convert } from '../src/convert.mjs';
-import { planFonts, buildFonts } from '../src/fonts-build.mjs';
+import { planFonts, buildFonts, fontWarnings } from '../src/fonts-build.mjs';
 import { builtinFonts, customFonts } from '../src/fonts.mjs';
 
 const { values, positionals } = parseArgs({
@@ -41,7 +41,7 @@ for (const spec of values['font-map']) {
 mkdirSync(outDir, { recursive: true });
 const { built, unresolved } = await buildFonts(planFonts(tree), join(outDir, 'fonts'), {
   fontMap,
-  faces: tree.fontFaces ?? {},
+  faces: tree.fontFaces ?? [],
 });
 
 const { xml } = convert(tree, { name, fonts: built.length ? customFonts(built) : builtinFonts() });
@@ -49,4 +49,4 @@ writeFileSync(join(outDir, `${name}.xml`), xml);
 
 console.log(`wrote ${join(outDir, `${name}.xml`)} with ${built.length} converted font(s)`);
 for (const f of built) console.log(`  ${f.key}  <- ${f.source}`);
-for (const u of unresolved) console.log(`  (fallback) ${u.key}: ${u.reason}`);
+for (const w of fontWarnings(unresolved)) console.log(`  (fallback) ${w}`);

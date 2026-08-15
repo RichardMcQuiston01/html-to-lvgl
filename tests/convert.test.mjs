@@ -192,6 +192,40 @@ test('an unknown data-lv-widget warns and falls back', () => {
   assert.match(xml, /<lv_obj/); // default mapping still applied
 });
 
+test('emitC does not mistake a custom font key for a built-in Montserrat name', () => {
+  // A custom family literally named "Montserrat" produces a key like
+  // "montserrat_400_16" (family-slug + weight + size), which shares the
+  // "montserrat_" prefix with real built-ins but is a different symbol —
+  // built-ins are named just "montserrat_<size>", nothing else.
+  const label = {
+    tag: 'lv_label',
+    attrs: { name: 'label', text: 'hi', style_text_font: 'montserrat_400_16' },
+    children: [],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [label] };
+  const { c, h } = emitC(view, { name: 'page' });
+
+  // Must reference its own generated symbol, not the nonexistent built-in
+  // &lv_font_montserrat_400_16 (built-ins only exist at the plain sizes,
+  // e.g. lv_font_montserrat_16).
+  assert.match(c, /lv_obj_set_style_text_font\(label, &montserrat_400_16, 0\);/);
+  assert.doesNotMatch(c, /&lv_font_montserrat_400_16/);
+  assert.match(c, /extern const lv_font_t montserrat_400_16;/);
+
+  // A genuine built-in still gets the lv_font_ prefix and no extern decl
+  const builtinLabel = { tag: 'lv_label', attrs: { name: 'l2', text: 'x', style_text_font: 'montserrat_16' }, children: [] };
+  const { c: c2 } = emitC({ tag: 'view', attrs: {}, children: [builtinLabel] }, { name: 'page2' });
+  assert.match(c2, /&lv_font_montserrat_16/);
+  assert.doesNotMatch(c2, /extern const lv_font_t montserrat_16;/);
+  void h; // header content isn't under test here
+});
+
+test('emitC honors a custom lvInclude for the generated header', () => {
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [] };
+  const { h } = emitC(view, { name: 'page', lvInclude: 'lvgl/lvgl.h' });
+  assert.match(h, /#include "lvgl\/lvgl\.h"/);
+});
+
 function base() {
   return {
     bgColor: null, color: [0, 0, 0, 255], borderColor: null, borderWidth: 0,

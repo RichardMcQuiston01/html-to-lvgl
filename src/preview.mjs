@@ -58,7 +58,7 @@ export async function startPreview(input, options) {
       // weights the page needs.
       const { built, unresolved } = await buildFonts(planFonts(tree), join(outputDir, 'fonts'), {
         fontMap: options.fontMap ?? {},
-        faces: tree.fontFaces ?? {},
+        faces: tree.fontFaces ?? [],
         baseDir: dirname(resolve(input)),
         lvInclude: options.lvInclude,
       });
