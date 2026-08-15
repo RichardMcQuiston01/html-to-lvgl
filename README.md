@@ -151,12 +151,17 @@ Point the CLI at a `.jsx`/`.tsx` file whose default export is a component; it is
 <stat_card flex_grow="1" width="92" height="78" label="311" label_2="CORE K"/>
 ```
 
-Differing label texts become string props, differing colors become color props, and placement stays on the instances. Structurally inconsistent instances fall back to inline output with a warning. Plain HTML can opt into the same mechanism with `data-lv-component="Name"` attributes. C output (`--format c/both`) stays flattened and works for React input too.
+Differing label texts become string props, differing colors become color props, and placement stays on the instances. Structurally inconsistent instances fall back to inline output with a warning. Plain HTML can opt into the same mechanism with `data-lv-component="Name"` attributes. C/C++ output (`--format c/cpp/both`) stays flattened and works for React input too.
 
 ### Output formats
 
+`--format` accepts a comma-separated list (`xml`, `c`, `cpp`); `both` is a back-compat alias for `xml,c`.
+
 - **XML** (default): for LVGL v9.4's `lv_xml` runtime and the LVGL Editor toolchain.
-- **C** (`--format c` or `both`): self-contained `ui_<name>.c/.h` exporting `lv_obj_t * ui_create(lv_obj_t * parent)` — no XML runtime dependency, works on any LVGL 9.x. Both backends emit from the same widget tree; their renders are pixel-identical.
+- **C** (`--format c` or `both`): self-contained `ui_<name>.c/.h` exporting `lv_obj_t * ui_create(lv_obj_t * parent)` — no XML runtime dependency, works on any LVGL 9.x. A single-page conversion exports `ui_create`; converting several pages together (multi-screen) exports one `ui_<screen>_create` per screen instead.
+- **C++** (`--format cpp`): the same generated UI code as `ui_<name>.cpp/.hpp`, for a project that only compiles C++. LVGL's public headers already carry `extern "C"` guards, so the plain LVGL calls inside the generated function compile unchanged under C++17 — what differs from the C output is linkage: the header wraps `ui_create` in `extern "C" { ... }` and font/image `extern` declarations say `extern "C"`, so the generated `.cpp` links correctly against `lv_font_conv`'s font `.c` files. Those asset files must still be compiled as C (or otherwise given C linkage) regardless of `--format` — only the generated UI sources are C++; a C++ translation unit that omits `extern "C"` when referencing a C-compiled asset symbol asks the linker for a mangled name the C compiler never produced.
+
+All three backends emit from the same widget tree; their renders are pixel-identical.
 
 ### Fidelity
 

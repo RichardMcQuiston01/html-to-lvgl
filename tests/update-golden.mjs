@@ -11,16 +11,18 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convert } from '../src/convert.mjs';
 import { componentize } from '../src/componentize.mjs';
-import { emitC } from '../src/emit-c.mjs';
+import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { render } from '../src/emit-xml.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, 'fixtures');
 const goldenDir = join(here, 'golden');
 const goldenCDir = join(here, 'golden-c');
+const goldenCppDir = join(here, 'golden-cpp');
 const goldenReactDir = join(here, 'golden-react');
 const goldenNavDir = join(here, 'golden-nav');
 mkdirSync(goldenCDir, { recursive: true });
+mkdirSync(goldenCppDir, { recursive: true });
 
 const fixtureFiles = readdirSync(fixtureDir).filter((f) => f.endsWith('.json'));
 // *.nav.json fixtures form one multi-screen set that links to each other
@@ -59,8 +61,14 @@ for (const file of fixtureFiles) {
   // prefixed here only to keep golden filenames unique alongside the
   // single-page fixture of the same name.
   const cName = nav ? `nav_${name}` : name;
-  const { c, h, unit } = emitC(view, { name: cName, symbol: nav ? `ui_${cName}_create` : 'ui_create' });
+  const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+  const { c, h, unit } = emitC(view, { name: cName, symbol });
   writeFileSync(join(goldenCDir, `${unit}.c`), c);
   writeFileSync(join(goldenCDir, `${unit}.h`), h);
   console.log(`updated golden-c/${unit}.c/.h`);
+
+  const cpp = emitCpp(view, { name: cName, symbol });
+  writeFileSync(join(goldenCppDir, `${cpp.unit}.cpp`), cpp.c);
+  writeFileSync(join(goldenCppDir, `${cpp.unit}.hpp`), cpp.h);
+  console.log(`updated golden-cpp/${cpp.unit}.cpp/.hpp`);
 }

@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convert } from '../src/convert.mjs';
 import { componentize } from '../src/componentize.mjs';
-import { emitC } from '../src/emit-c.mjs';
+import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { render } from '../src/emit-xml.mjs';
 import { optimize } from '../src/optimize.mjs';
 
@@ -63,9 +63,26 @@ for (const file of fixtures) {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
     const { view } = convert(tree, convertOpts);
     const cName = nav ? `nav_${name}` : name;
-    const { c, h, unit } = emitC(view, { name: cName, symbol: nav ? `ui_${cName}_create` : 'ui_create' });
+    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const { c, h, unit } = emitC(view, { name: cName, symbol });
     assert.equal(c, readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
+  });
+
+  test(`golden cpp: ${name}`, () => {
+    const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+    const { view } = convert(tree, convertOpts);
+    const cName = nav ? `nav_${name}` : name;
+    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const { c, h, unit } = emitCpp(view, { name: cName, symbol });
+    assert.equal(c, readFileSync(join(here, 'golden-cpp', `${unit}.cpp`), 'utf8'));
+    assert.equal(h, readFileSync(join(here, 'golden-cpp', `${unit}.hpp`), 'utf8'));
+    // Emitted body must not differ from the C output — only the header's
+    // linkage wrapping and the extern declarations' "C" linkage should.
+    const cGolden = readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8');
+    const cBody = cGolden.replace(/^#include ".*"\n/m, '').replace(/extern (?!"C")/g, 'extern "C" ');
+    const cppBody = c.replace(/^#include ".*"\n/m, '');
+    assert.equal(cppBody, cBody, 'emitCpp must emit the same statements as emitC, only extern linkage differs');
   });
 }
 

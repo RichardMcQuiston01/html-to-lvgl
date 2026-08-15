@@ -17,7 +17,7 @@ import { extractPage } from './extract.mjs';
 import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
-import { emitC } from './emit-c.mjs';
+import { emitC, emitCpp } from './emit-c.mjs';
 import { render } from './emit-xml.mjs';
 import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
@@ -44,12 +44,16 @@ if (opts.help || positionals.length === 0) {
   console.error(
     'usage: html2lvgl <input.html|input.jsx> [more-pages.html ...]\n' +
     '                 [--size WxH] [-o outdir] [--name component]\n' +
-    '                 [--format xml|c|both] [--screenshot] [--debug]\n' +
+    '                 [--format xml|c|cpp|both] [--screenshot] [--debug]\n' +
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
     'them (<a href="other.html">) become navigation buttons.\n' +
+    '\n' +
+    '--format accepts a comma-separated list (e.g. "xml,cpp"); "both" is a\n' +
+    'shorthand for "xml,c". "c" emits ui_<name>.c/.h; "cpp" emits the same\n' +
+    'code as ui_<name>.cpp/.hpp for a project that only compiles C++.\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -57,9 +61,17 @@ if (opts.help || positionals.length === 0) {
   );
   process.exit(opts.help ? 0 : 1);
 }
-if (!['xml', 'c', 'both'].includes(opts.format)) {
-  console.error(`invalid --format "${opts.format}" (expected xml, c, or both)`);
-  process.exit(1);
+// "both" is a back-compat alias for "xml,c"; otherwise a comma-separated
+// list of xml/c/cpp lets one run emit e.g. both C and C++ output at once.
+const VALID_FORMATS = new Set(['xml', 'c', 'cpp']);
+const formats = new Set(
+  opts.format.split(',').map((f) => f.trim()).flatMap((f) => (f === 'both' ? ['xml', 'c'] : [f])),
+);
+for (const f of formats) {
+  if (!VALID_FORMATS.has(f)) {
+    console.error(`invalid --format "${opts.format}" (expected xml, c, cpp, or both, comma-separated)`);
+    process.exit(1);
+  }
 }
 
 const m = opts.size.match(/^(\d+)x(\d+)$/);
@@ -192,7 +204,7 @@ async function buildAll() {
 async function emitPage({ input, name, reactMode, tree }, fonts) {
   const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
   const written = [];
-  if (opts.format !== 'c') {
+  if (formats.has('xml')) {
     let pageXml = xml;
     if (reactMode) {
       // Split React component boundaries into reusable LVGL XML components.
@@ -208,16 +220,19 @@ async function emitPage({ input, name, reactMode, tree }, fonts) {
     writeFileSync(xmlPath, pageXml);
     written.push(xmlPath);
   }
-  if (opts.format !== 'xml') {
-    // Each screen needs its own entry point; a single page keeps ui_create.
-    const { c, h, unit } = emitC(view, {
-      name,
-      symbol: screenMode ? `ui_${name}_create` : 'ui_create',
-      lvInclude: opts['lv-include'],
-    });
+  // Each screen needs its own entry point; a single page keeps ui_create.
+  const symbol = screenMode ? `ui_${name}_create` : 'ui_create';
+  if (formats.has('c')) {
+    const { c, h, unit } = emitC(view, { name, symbol, lvInclude: opts['lv-include'] });
     writeFileSync(join(opts.output, `${unit}.c`), c);
     writeFileSync(join(opts.output, `${unit}.h`), h);
     written.push(join(opts.output, `${unit}.c`), join(opts.output, `${unit}.h`));
+  }
+  if (formats.has('cpp')) {
+    const { c, h, unit } = emitCpp(view, { name, symbol, lvInclude: opts['lv-include'] });
+    writeFileSync(join(opts.output, `${unit}.cpp`), c);
+    writeFileSync(join(opts.output, `${unit}.hpp`), h);
+    written.push(join(opts.output, `${unit}.cpp`), join(opts.output, `${unit}.hpp`));
   }
 
   const assetDir = join(opts.output, 'assets');
