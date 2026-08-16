@@ -1,0 +1,16 @@
+# Node
+node_modules/
+
+# Build artifacts
+build/
+*.o
+
+# Default CLI output directory used throughout the README examples (-o out/)
+/out/
+
+# Local LVGL checkout used by the spike render harness
+spike/render/lvgl/
+
+# Editor/OS noise
+.DS_Store
+*.swp

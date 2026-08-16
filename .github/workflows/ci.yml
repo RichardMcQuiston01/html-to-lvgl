@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  test:
+    name: Unit and golden-file tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # The font-conversion test needs a real TTF; without one it skips
+      - name: Install a test typeface
+        run: sudo apt-get update && sudo apt-get install -y fonts-liberation
+      - run: npm ci
+      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD keeps `npm ci` from fetching this on
+      # its own; extract.test.mjs needs a real Chromium to launch.
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+  validate-xml:
+    name: Validate golden XML against LVGL v9.4
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache LVGL checkout
+        id: lvgl-cache
+        uses: actions/cache@v4
+        with:
+          path: lvgl
+          key: lvgl-v9.4.0
+
+      - name: Clone LVGL v9.4.0
+        if: steps.lvgl-cache.outputs.cache-hit != 'true'
+        run: git clone --depth 1 --branch v9.4.0 https://github.com/lvgl/lvgl.git lvgl
+
+      - name: Build render harness
+        run: |
+          cmake -S spike/render -B build -DLVGL_DIR="$GITHUB_WORKSPACE/lvgl" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+
+      - name: Render every golden XML through the lv_xml runtime
+        run: |
+          for xml in tests/golden/*.xml; do
+            echo "validating $xml"
+            ./build/render "$xml" /tmp/out.bmp
+          done
+
+      - name: Render componentized React goldens (multi-file registration)
+        run: |
+          for dir in tests/golden-react/*/; do
+            name=$(basename "$dir")
+            components=$(ls "$dir"*.xml | grep -v "/$name\.xml$")
+            echo "validating $dir ($name + components)"
+            ./build/render "$dir$name.xml" /tmp/out.bmp $components
+          done
+
+      - name: Render multi-screen goldens and exercise navigation
+        run: |
+          for xml in tests/golden-nav/*.xml; do
+            siblings=$(ls tests/golden-nav/*.xml | grep -v "^$xml$")
+            echo "validating $xml"
+            ./build/render "$xml" /tmp/out.bmp $siblings
+          done
+          # Clicking the generated link must actually load the other screen
+          ./build/render tests/golden-nav/home.xml /tmp/out.bmp \
+            tests/golden-nav/settings.xml --click=to_settings | tee /tmp/nav.log
+          grep -q 'active screen is `settings`' /tmp/nav.log
+
+      - name: Install Node (for lv_font_conv, an npm-distributed tool)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Convert fonts with lv_font_conv and render with them
+        run: |
+          sudo apt-get update && sudo apt-get install -y fonts-liberation
+          L=/usr/share/fonts/truetype/liberation
+          # Fixtures are browser-free, so the whole font path runs here
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/fonts-demo \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf"
+          test -n "$(ls /tmp/fonts-demo/fonts/*.bin)" || { echo "no fonts generated"; exit 1; }
+          # The generated XML must reference the converted fonts, not Montserrat
+          grep -q 'style_text_font="liberation_sans_700_28"' /tmp/fonts-demo/typography.xml
+          FONTS=""
+          for f in /tmp/fonts-demo/fonts/*.bin; do
+            FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
+          done
+          ./build/render /tmp/fonts-demo/typography.xml /tmp/out.bmp $FONTS
+
+      - name: Compile and render every golden C file against plain LVGL
+        run: |
+          for c in tests/golden-c/*.c; do
+            # Each unit declares its own entry point (ui_create, or
+            # ui_<screen>_create for a screen); read it from the header.
+            symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${c%.c}.h" | grep -oE 'ui_[a-z0-9_]+')
+            echo "validating $c (entry: $symbol)"
+            gcc -O1 -o /tmp/render_c \
+              -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -DUI_CREATE_SYMBOL="$symbol" \
+              -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-c \
+              spike/render/main_c.c "$c" \
+              build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+            /tmp/render_c /tmp/out.bmp
+          done
+
+      - name: Compile and render every golden C++ file against plain LVGL
+        run: |
+          # main_c.c is dual-mode: compiling it with g++ (instead of gcc) proves
+          # --format cpp output links correctly, including against the always-C
+          # lv_font_conv font files below.
+          for cpp in tests/golden-cpp/*.cpp; do
+            symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${cpp%.cpp}.hpp" | grep -oE 'ui_[a-z0-9_]+')
+            echo "validating $cpp (entry: $symbol)"
+            g++ -std=c++17 -O1 -o /tmp/render_cpp \
+              -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -DUI_CREATE_SYMBOL="$symbol" \
+              -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-cpp \
+              spike/render/main_c.c "$cpp" \
+              build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+            /tmp/render_cpp /tmp/out.bmp
+          done
+
+      - name: Convert with custom fonts as C++ and link against the C-compiled font files
+        run: |
+          # Proves the C++/C linkage trap fix: a C-compiled lv_font_conv font
+          # file must link into a C++ translation unit that references it.
+          L=/usr/share/fonts/truetype/liberation
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/cpp-fonts-demo \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf" \
+            --format cpp
+          grep -q 'extern "C" const lv_font_t liberation_sans_700_28' /tmp/cpp-fonts-demo/ui_typography.cpp
+          mkdir -p /tmp/cpp-font-objs
+          for f in /tmp/cpp-fonts-demo/fonts/*.c; do
+            gcc -O1 -c -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+              -I "$GITHUB_WORKSPACE/lvgl" -o "/tmp/cpp-font-objs/$(basename "${f%.c}.o")" "$f"
+          done
+          g++ -std=c++17 -O1 -o /tmp/render_cpp_fonts \
+            -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+            -I "$GITHUB_WORKSPACE/lvgl" -I /tmp/cpp-fonts-demo \
+            spike/render/main_c.c /tmp/cpp-fonts-demo/ui_typography.cpp /tmp/cpp-font-objs/*.o \
+            build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+          /tmp/render_cpp_fonts /tmp/out.bmp

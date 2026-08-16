@@ -1,0 +1,19 @@
+<component>
+  <view width="320" height="240" style_bg_color="0x1a1a2e" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="header" x="0" y="0" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="14" style_pad_right="14" style_pad_top="10" style_pad_bottom="10" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="title" text="Living Room" style_text_font="montserrat_14" style_text_color="0xe0e0e0" />
+      <lv_label name="status" text="HEATING" style_text_font="montserrat_12" style_text_color="0x4ecca3" />
+    </lv_obj>
+    <lv_obj name="temp_row" x="0" y="44" width="320" height="54" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="20" style_pad_column="20" scrollable="false">
+      <lv_button name="adjust_2" width="44" height="44" style_bg_color="0x16213e" style_border_width="2" style_border_color="0x4ecca3" style_radius="22" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="adjust" align="center" text="-" style_text_font="montserrat_22" style_text_color="0x4ecca3" style_text_align="center" />
+      </lv_button>
+      <lv_label name="temp" text="21.5" style_text_font="montserrat_40" style_text_color="0xffffff" />
+      <lv_button name="adjust_4" width="44" height="44" style_bg_color="0x16213e" style_border_width="2" style_border_color="0x4ecca3" style_radius="22" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="adjust_3" align="center" text="+" style_text_font="montserrat_22" style_text_color="0x4ecca3" style_text_align="center" />
+      </lv_button>
+    </lv_obj>
+    <lv_label name="target" x="0" y="104" width="320" text="Target: 22.0 C" style_text_font="montserrat_12" style_text_color="0x9a9ab0" style_text_align="center" />
+    <lv_slider name="slider" x="24" y="136" width="272" height="8" min_value="10" max_value="30" value="22" />
+  </view>
+</component>

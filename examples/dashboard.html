@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #f1f5f9; overflow: hidden;
+         display: flex; flex-direction: column; }
+  .topbar { display: flex; justify-content: space-between; align-items: center;
+            height: 32px; padding: 0 10px; background-color: #0f172a; }
+  .topbar span { color: #e2e8f0; font-size: 13px; }
+  .mode { width: 110px; height: 22px; font-size: 12px; }
+  .cards { display: flex; gap: 8px; padding: 8px 10px; }
+  .card { flex-grow: 1; height: 64px; background-color: #ffffff; border: 1px solid #e2e8f0;
+          border-radius: 8px; display: flex; flex-direction: column;
+          justify-content: center; align-items: center; gap: 4px; }
+  .card .value { font-size: 20px; color: #0f172a; }
+  .card .label { font-size: 11px; color: #64748b; }
+  .usage { padding: 2px 10px 0 10px; }
+  .usage-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  progress { width: 100%; height: 10px; }
+  .actions { display: flex; justify-content: center; gap: 10px; padding-top: 12px; }
+  .actions button { width: 90px; height: 30px; border: none; border-radius: 6px;
+                    font-size: 12px; color: #ffffff; }
+  .start { background-color: #16a34a; }
+  .stop { background-color: #dc2626; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span>Pump Station</span>
+    <select class="mode">
+      <option>Automatic</option>
+      <option>Manual</option>
+      <option>Maintenance</option>
+    </select>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <div class="value">48.2</div>
+      <div class="label">FLOW L/MIN</div>
+    </div>
+    <div class="card">
+      <div class="value">3.1</div>
+      <div class="label">BAR</div>
+    </div>
+    <div class="card">
+      <div class="value">62</div>
+      <div class="label">TEMP C</div>
+    </div>
+  </div>
+  <div class="usage">
+    <div class="usage-label">Daily capacity used</div>
+    <progress value="68" max="100"></progress>
+  </div>
+  <div class="actions">
+    <button class="start">Start</button>
+    <button class="stop">Stop</button>
+  </div>
+</body>
+</html>

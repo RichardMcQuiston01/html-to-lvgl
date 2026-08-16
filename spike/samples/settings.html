@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden; }
+  .bar { height: 34px; background-color: #0f766e; color: #ffffff; font-size: 14px;
+         display: flex; align-items: center; padding-left: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center;
+         height: 40px; padding: 0 12px; border-bottom: 1px solid #e5e7eb; }
+  .row-label { font-size: 13px; color: #1f2937; }
+  input[type=checkbox] { width: 40px; height: 22px; }
+  .brightness { padding: 10px 12px 0 12px; }
+  .brightness-label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+  input[type=range] { width: 100%; }
+  .save { position: absolute; left: 12px; top: 200px; width: 296px; height: 30px;
+          background-color: #0f766e; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="bar">Settings</div>
+  <div class="row">
+    <span class="row-label">Wi-Fi</span>
+    <input type="checkbox" checked>
+  </div>
+  <div class="row">
+    <span class="row-label">Bluetooth</span>
+    <input type="checkbox">
+  </div>
+  <div class="brightness">
+    <div class="brightness-label">Brightness</div>
+    <input type="range" min="0" max="100" value="70">
+  </div>
+  <button class="save">Save</button>
+</body>
+</html>
