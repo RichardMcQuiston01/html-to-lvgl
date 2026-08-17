@@ -46,3 +46,18 @@ test('an available named font in the stack is preferred over the generic fallbac
   const node = findByText(tree, 'hi');
   assert.equal(node.styles.fontFamily, 'Liberation Sans');
 });
+
+test('a :hover/:active rule only applies pressed styles to the branch that carries the pseudo-class', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><head><style>
+    .btn:hover, .link { background-color: #ff0000; }
+  </style></head><body style="margin:0">
+    <button class="btn">Go</button>
+    <a class="link" href="#">Learn more</a>
+  </body></html>`);
+  const btn = findByText(tree, 'Go');
+  const link = findByText(tree, 'Learn more');
+  // Only .btn carries :hover; .link must not inherit a pressed style just
+  // because it shares a selector list with a rule that does.
+  assert.ok(btn.styles.pressed);
+  assert.equal(link.styles.pressed, null);
+});
