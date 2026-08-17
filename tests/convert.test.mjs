@@ -131,6 +131,56 @@ test('componentizer parameterizes text and color, keeps structure', () => {
   assert.equal(page.children[1].attrs.x, 200); // placement stays on the instance
 });
 
+test('componentizer prop defaults reuse emit-xml\'s escAttr, preserving newlines', () => {
+  const label = (name, text) => ({ tag: 'lv_label', attrs: { name, text }, children: [] });
+  const card = (n, text) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}`, x: n * 100, y: 0 },
+    children: [label(`t_${n}`, text)],
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1, 'a\nb'), card(2, 'c')] };
+  const { components } = componentize(view);
+  const xml = components.get('stat_card');
+  // A newline in a default value must survive as a character reference, not
+  // be silently dropped (or normalized to a space by an XML parser).
+  assert.match(xml, /default="a&#10;b"/);
+});
+
+test('componentizer does not bail when only a non-root child\'s placement differs, but warns the value is flattened', () => {
+  const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
+  const card = (n, x) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}` },
+    children: [label(`t_${n}`, 'same', x)],
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1, 0), card(2, 4)] };
+  const { components, warnings } = componentize(view);
+  // signature() already ignores placement attrs at every depth; the prop
+  // scan disagreeing (only skipping them at the root) used to bail this
+  // group with a misleading "non-proppable attribute \"x\"" warning even
+  // though the only difference was the label's position. It must not bail —
+  // but since only the *first* instance's nested x survives in the shared
+  // definition (nested placement isn't re-applied per instance, unlike root
+  // placement), that flattening needs its own explicit warning instead of
+  // silently dropping card_2's x=4.
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /nested "x" differs across instances/);
+  assert.ok(components.has('stat_card'));
+});
+
+test('componentizer does not warn when nested placement is identical across instances', () => {
+  const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
+  const card = (n) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}` },
+    children: [label(`t_${n}`, `text${n}`, 4)], // same nested x=4 on every instance
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1), card(2)] };
+  const { components, warnings } = componentize(view);
+  assert.equal(warnings.length, 0);
+  assert.ok(components.has('stat_card'));
+});
+
 test('componentizer bails on structural differences', () => {
   const a = { tag: 'lv_obj', attrs: { name: 'a' }, children: [{ tag: 'lv_label', attrs: { name: 'l', text: 'x' }, children: [] }], meta: { component: 'Card' } };
   const b = { tag: 'lv_obj', attrs: { name: 'b' }, children: [], meta: { component: 'Card' } };
