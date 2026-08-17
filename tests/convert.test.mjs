@@ -63,7 +63,7 @@ for (const file of fixtures) {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
     const { view } = convert(tree, convertOpts);
     const cName = nav ? `nav_${name}` : name;
-    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const symbol = nav ? `ui_${name}_create` : 'ui_create';
     const { c, h, unit } = emitC(view, { name: cName, symbol });
     assert.equal(c, readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
@@ -73,7 +73,7 @@ for (const file of fixtures) {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
     const { view } = convert(tree, convertOpts);
     const cName = nav ? `nav_${name}` : name;
-    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const symbol = nav ? `ui_${name}_create` : 'ui_create';
     const { c, h, unit } = emitCpp(view, { name: cName, symbol });
     assert.equal(c, readFileSync(join(here, 'golden-cpp', `${unit}.cpp`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-cpp', `${unit}.hpp`), 'utf8'));
@@ -235,6 +235,46 @@ test('emitC does not mistake a custom font key for a built-in Montserrat name', 
   assert.match(c2, /&lv_font_montserrat_16/);
   assert.doesNotMatch(c2, /extern const lv_font_t montserrat_16;/);
   void h; // header content isn't under test here
+});
+
+test('emitC turns screen_create_event into a real navigation callback', () => {
+  const button = {
+    tag: 'lv_button',
+    attrs: { name: 'to_settings' },
+    children: [{ tag: 'screen_create_event', attrs: { screen: 'settings' }, children: [] }],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [button] };
+  const { c } = emitC(view, { name: 'home', symbol: 'ui_home_create' });
+
+  // The target screen's real entry point (matching cli.mjs's ui_<screen>_create
+  // convention) is declared extern and actually called, not left as a comment.
+  assert.match(c, /extern lv_obj_t \* ui_settings_create\(lv_obj_t \* parent\);/);
+  assert.match(c, /static void nav_to_settings_cb\(lv_event_t \* e\)/);
+  assert.match(c, /lv_obj_t \* scr = ui_settings_create\(NULL\);/);
+  assert.match(c, /lv_screen_load\(scr\);/);
+  assert.match(c, /lv_obj_add_event_cb\(to_settings, nav_to_settings_cb, LV_EVENT_CLICKED, NULL\);/);
+  assert.doesNotMatch(c, /\/\* navigation ->/);
+
+  // Two links to the same screen share one callback instead of redeclaring it.
+  const twoLinks = {
+    tag: 'view',
+    attrs: { width: 320, height: 240 },
+    children: [button, { ...button, attrs: { name: 'to_settings_2' } }],
+  };
+  const { c: c2 } = emitC(twoLinks, { name: 'home2' });
+  assert.equal((c2.match(/static void nav_to_settings_cb/g) || []).length, 1);
+  assert.equal((c2.match(/extern lv_obj_t \* ui_settings_create/g) || []).length, 1);
+});
+
+test('emitCpp declares the navigation target extern "C"', () => {
+  const button = {
+    tag: 'lv_button',
+    attrs: { name: 'to_settings' },
+    children: [{ tag: 'screen_create_event', attrs: { screen: 'settings' }, children: [] }],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [button] };
+  const { c } = emitCpp(view, { name: 'home', symbol: 'ui_home_create' });
+  assert.match(c, /extern "C" lv_obj_t \* ui_settings_create\(lv_obj_t \* parent\);/);
 });
 
 test('emitC honors a custom lvInclude for the generated header', () => {

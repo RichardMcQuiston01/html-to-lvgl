@@ -6,7 +6,7 @@
 
 extern "C" {
 
-lv_obj_t * ui_nav_settings_create(lv_obj_t * parent);
+lv_obj_t * ui_settings_create(lv_obj_t * parent);
 
 }
 
