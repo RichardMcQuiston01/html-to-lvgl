@@ -171,6 +171,29 @@ test('optimizer keeps wrappers that carry visuals or manage layout', () => {
   assert.equal(removed, 0);
 });
 
+test('optimizer keeps wrappers annotated with data-lv-widget or data-lv-name', () => {
+  const inertChild = { tag: 'span', x: 10, y: 10, w: 50, h: 12, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
+  const widgetWrapper = {
+    tag: 'div', widget: 'bar', x: 5, y: 5, w: 100, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [structuredClone(inertChild)],
+  };
+  const namedWrapper = {
+    tag: 'div', lvName: 'pump_enable', x: 5, y: 30, w: 100, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [structuredClone(inertChild)],
+  };
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(),
+    children: [widgetWrapper, namedWrapper],
+  };
+  // Otherwise-inert wrappers must survive when the optimizer would strip
+  // them before convert.mjs/uid() ever see the data-lv-widget/data-lv-name
+  // annotation they carry.
+  const { tree: out, removed } = optimize(structuredClone(tree));
+  assert.equal(removed, 0);
+  assert.equal(out.children[0].widget, 'bar');
+  assert.equal(out.children[1].lvName, 'pump_enable');
+});
+
 test('data-lv-name overrides id/class for the widget name', () => {
   const node = {
     tag: 'div', id: 'ignored-id', className: 'ignored-class', lvName: 'pump_enable',
