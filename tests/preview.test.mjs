@@ -55,6 +55,9 @@ test('preview server serves the page, state, and SSE endpoint', async () => {
     await reader.cancel(); // the reader holds the lock; cancel through it
 
     assert.equal((await fetch(`${base}/nope`)).status, 404);
+
+    // Unauthenticated dev server: must not be reachable from other hosts.
+    assert.equal(preview.address, '127.0.0.1');
   } finally {
     await preview.close();
   }
