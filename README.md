@@ -88,7 +88,7 @@ Pass more than one page and each becomes a `<screen>` rather than a `<component>
 
 `screen_create_event` instantiates the target on demand, so navigation works before a screen has ever been visited — no start-up ordering to manage. Links to external URLs or to pages outside the converted set stay plain text. Load a screen with `lv_xml_create(NULL, "home", NULL)` followed by `lv_screen_load()`; the render harness does exactly this and can simulate a click with `--click=<widget-name>` to verify a transition.
 
-In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; navigation itself is left as a commented stub, since flattened C has no screen registry to look names up in.
+In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; a navigation button's click handler calls the target screen's `ui_<screen>_create` (declared `extern`) and `lv_screen_load`s it — link every screen a UI can navigate to into the same binary.
 
 ### Custom fonts
 

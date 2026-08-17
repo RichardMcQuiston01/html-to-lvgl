@@ -185,7 +185,9 @@ export async function startPreview(input, options) {
 
   await new Promise((ok, fail) => {
     server.once('error', fail);
-    server.listen(port, () => ok());
+    // Loopback only: this serves generated XML, warnings, and render-harness
+    // stderr with no auth, so it must never be reachable from the network.
+    server.listen(port, '127.0.0.1', () => ok());
   });
   const boundPort = server.address().port; // port 0 lets the OS pick
 
@@ -197,6 +199,7 @@ export async function startPreview(input, options) {
 
   return {
     port: boundPort,
+    address: server.address().address,
     close: async () => {
       watcher.close();
       for (const res of clients) res.end();
