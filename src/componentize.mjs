@@ -74,10 +74,21 @@ export function componentize(view, { warnings = [] } = {}) {
     walkAligned(instances, (els, path) => {
       const isInstanceEl = components.has(els[0].tag); // nested component ref
       for (const key of Object.keys(els[0].attrs)) {
+        if (key === 'name') continue;
         // signature() ignores placement at every depth (see below), so the
         // prop scan must too — otherwise a child that only moved position
         // bails the whole group with a misleading "non-proppable" warning.
-        if (key === 'name' || PLACEMENT_ATTRS.has(key)) continue;
+        // Only the root instance's placement is carried per-instance (see
+        // the replacement loop below); a *nested* child's placement is fixed
+        // in the shared definition from the first instance, so a genuine
+        // per-instance difference there is silently flattened. Surface that
+        // instead of staying quiet about it.
+        if (PLACEMENT_ATTRS.has(key)) {
+          if (path.length > 0 && new Set(els.map((e) => String(e.attrs[key]))).size > 1) {
+            warnings.push(`component ${name}: nested "${key}" differs across instances; only the first instance's value is kept`);
+          }
+          continue;
+        }
         const values = els.map((e) => String(e.attrs[key]));
         if (new Set(values).size <= 1) continue;
         if (PROPPABLE_ATTRS.has(key) || PROPPABLE_COLOR_ATTRS.has(key) || isInstanceEl) {

@@ -210,15 +210,19 @@ async function emitPage({ input, name, reactMode, tree }, fonts) {
       // Split React component boundaries into reusable LVGL XML components.
       const { view: pageView, components } = componentize(view, { warnings });
       pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
-      for (const [cname, cxml] of components) {
-        // Both write to <name>.xml; writing the page after its components
-        // would silently overwrite a same-named component's definition.
-        // Common in practice: name derives from the filename, cname from
-        // the React function name (Panel in panel.jsx).
+      // Both write to <name>.xml; writing the page after its components
+      // would silently overwrite a same-named component's definition.
+      // Common in practice: name derives from the filename, cname from the
+      // React function name (Panel in panel.jsx). Checked as a preflight
+      // pass, before any component is written, so a collision on a later
+      // component can't leave earlier ones written to disk.
+      for (const cname of components.keys()) {
         if (cname === name) {
           console.error(`component "${cname}" collides with the page name; pass --name to rename the page`);
           process.exit(1);
         }
+      }
+      for (const [cname, cxml] of components) {
         const cPath = join(opts.output, `${cname}.xml`);
         writeFileSync(cPath, cxml);
         written.push(cPath);

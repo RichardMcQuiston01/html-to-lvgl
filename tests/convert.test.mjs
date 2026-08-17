@@ -146,7 +146,7 @@ test('componentizer prop defaults reuse emit-xml\'s escAttr, preserving newlines
   assert.match(xml, /default="a&#10;b"/);
 });
 
-test('componentizer does not bail when only a non-root child\'s placement differs', () => {
+test('componentizer does not bail when only a non-root child\'s placement differs, but warns the value is flattened', () => {
   const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
   const card = (n, x) => ({
     tag: 'lv_obj', attrs: { name: `card_${n}` },
@@ -158,7 +158,25 @@ test('componentizer does not bail when only a non-root child\'s placement differ
   // signature() already ignores placement attrs at every depth; the prop
   // scan disagreeing (only skipping them at the root) used to bail this
   // group with a misleading "non-proppable attribute \"x\"" warning even
-  // though the only difference was the label's position.
+  // though the only difference was the label's position. It must not bail —
+  // but since only the *first* instance's nested x survives in the shared
+  // definition (nested placement isn't re-applied per instance, unlike root
+  // placement), that flattening needs its own explicit warning instead of
+  // silently dropping card_2's x=4.
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /nested "x" differs across instances/);
+  assert.ok(components.has('stat_card'));
+});
+
+test('componentizer does not warn when nested placement is identical across instances', () => {
+  const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
+  const card = (n) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}` },
+    children: [label(`t_${n}`, `text${n}`, 4)], // same nested x=4 on every instance
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1), card(2)] };
+  const { components, warnings } = componentize(view);
   assert.equal(warnings.length, 0);
   assert.ok(components.has('stat_card'));
 });
