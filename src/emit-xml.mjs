@@ -16,7 +16,7 @@ const escText = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // Literal newlines in attribute values are normalized to spaces by XML
 // parsers; character references survive, so encode them (dropdown options).
-const escAttr = (s) => escText(s).replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
+export const escAttr = (s) => escText(s).replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
 
 export function render(node, indent = 0) {
   const pad = '  '.repeat(indent);

@@ -102,7 +102,12 @@ if (screenMode && opts.name) {
 }
 
 const input = positionals[0];
-const name = opts.name ?? screenName(input);
+// screenName() already sanitizes derived filenames into valid identifiers;
+// an explicit --name bypassed that entirely, so e.g. --name my-page produced
+// invalid C/C++ identifiers (ui_my-page, UI_MY-PAGE_H). Route both through
+// the same sanitizer so the XML output name and the C/C++ unit/guard/symbol
+// all agree on one valid slug.
+const name = screenName(opts.name ?? input);
 
 mkdirSync(opts.output, { recursive: true });
 
@@ -210,6 +215,18 @@ async function emitPage({ input, name, reactMode, tree }, fonts) {
       // Split React component boundaries into reusable LVGL XML components.
       const { view: pageView, components } = componentize(view, { warnings });
       pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
+      // Both write to <name>.xml; writing the page after its components
+      // would silently overwrite a same-named component's definition.
+      // Common in practice: name derives from the filename, cname from the
+      // React function name (Panel in panel.jsx). Checked as a preflight
+      // pass, before any component is written, so a collision on a later
+      // component can't leave earlier ones written to disk.
+      for (const cname of components.keys()) {
+        if (cname === name) {
+          console.error(`component "${cname}" collides with the page name; pass --name to rename the page`);
+          process.exit(1);
+        }
+      }
       for (const [cname, cxml] of components) {
         const cPath = join(opts.output, `${cname}.xml`);
         writeFileSync(cPath, cxml);

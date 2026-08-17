@@ -182,7 +182,14 @@ export function buildTree() {
       try { rules = sheet.cssRules; } catch { continue; }
       for (const rule of rules) {
         if (!rule.selectorText || !/:(hover|active)/.test(rule.selectorText)) continue;
-        const base = rule.selectorText.replace(/:(hover|active)/g, '').trim();
+        // Strip the pseudo-class only from the comma-separated branches that
+        // carry it; ".btn:hover, .link" must not give ".link" a pressed style.
+        const base = rule.selectorText
+          .split(',')
+          .filter((s) => /:(hover|active)/.test(s))
+          .map((s) => s.replace(/:(hover|active)/g, '').trim())
+          .filter(Boolean)
+          .join(', ');
         let els;
         try { els = base ? document.querySelectorAll(base) : []; } catch { continue; }
         for (const el of els) {

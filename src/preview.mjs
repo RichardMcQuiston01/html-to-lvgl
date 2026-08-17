@@ -223,8 +223,16 @@ function send(res, code, type, body) {
 }
 
 function sendFile(res, path, type) {
-  if (!existsSync(path)) return send(res, 404, 'text/plain', 'not built');
-  send(res, 200, type, readFileSync(path));
+  // existsSync + readFileSync would race a concurrent rebuild that replaces
+  // or removes the file between the two calls, throwing inside the request
+  // handler and crashing watch mode.
+  let body;
+  try {
+    body = readFileSync(path);
+  } catch {
+    return send(res, 404, 'text/plain', 'not built');
+  }
+  send(res, 200, type, body);
 }
 
 const escapeHtml = (s) =>
