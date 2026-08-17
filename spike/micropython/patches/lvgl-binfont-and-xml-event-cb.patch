@@ -1,0 +1,31 @@
+diff --git a/lvgl_private.h b/lvgl_private.h
+index 426a4ca..42c8e9e 100644
+--- a/lvgl_private.h
++++ b/lvgl_private.h
+@@ -15,6 +15,12 @@ extern "C" {
+  *********************/
+ #include "src/core/lv_global.h"
+ 
++/* html2lvgl spike patch: lv_binfont_loader.h is public (no _private.h
++ * counterpart), so it's never on the binding generator's parse input
++ * otherwise — micropython.mk preprocesses only lvgl_private.h and feeds
++ * that to gen_mpy.py via -E, ignoring lvgl.h's own include tree. */
++#include "src/font/lv_binfont_loader.h"
++
+ #include "src/display/lv_display_private.h"
+ #include "src/indev/lv_indev_private.h"
+ #include "src/misc/lv_text_private.h"
+diff --git a/src/others/xml/lv_xml_component_private.h b/src/others/xml/lv_xml_component_private.h
+index 9b84eb4..77426cb 100644
+--- a/src/others/xml/lv_xml_component_private.h
++++ b/src/others/xml/lv_xml_component_private.h
+@@ -29,6 +29,9 @@ typedef  void * (*lv_xml_component_process_cb_t)(lv_obj_t * parent, const char *
+ 
+ struct _lv_xml_component_scope_t {
+     const char * name;
++    void * user_data; /* html2lvgl spike patch: satisfies lv_binding_micropython's generic
++                          callback-registration codegen for lv_xml_register_event_cb, which
++                          assumes any *_cb_t-consuming struct has a user_data slot. */
+     lv_ll_t style_ll;
+     lv_ll_t const_ll;
+     lv_ll_t param_ll;
