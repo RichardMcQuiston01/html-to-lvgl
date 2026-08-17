@@ -102,7 +102,12 @@ if (screenMode && opts.name) {
 }
 
 const input = positionals[0];
-const name = opts.name ?? screenName(input);
+// screenName() already sanitizes derived filenames into valid identifiers;
+// an explicit --name bypassed that entirely, so e.g. --name my-page produced
+// invalid C/C++ identifiers (ui_my-page, UI_MY-PAGE_H). Route both through
+// the same sanitizer so the XML output name and the C/C++ unit/guard/symbol
+// all agree on one valid slug.
+const name = screenName(opts.name ?? input);
 
 mkdirSync(opts.output, { recursive: true });
 
