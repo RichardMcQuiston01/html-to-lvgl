@@ -211,6 +211,14 @@ async function emitPage({ input, name, reactMode, tree }, fonts) {
       const { view: pageView, components } = componentize(view, { warnings });
       pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
       for (const [cname, cxml] of components) {
+        // Both write to <name>.xml; writing the page after its components
+        // would silently overwrite a same-named component's definition.
+        // Common in practice: name derives from the filename, cname from
+        // the React function name (Panel in panel.jsx).
+        if (cname === name) {
+          console.error(`component "${cname}" collides with the page name; pass --name to rename the page`);
+          process.exit(1);
+        }
         const cPath = join(opts.output, `${cname}.xml`);
         writeFileSync(cPath, cxml);
         written.push(cPath);
