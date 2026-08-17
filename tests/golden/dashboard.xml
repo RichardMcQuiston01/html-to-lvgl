@@ -1,0 +1,34 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xf1f5f9" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="topbar" width="320" height="32" style_bg_color="0x0f172a" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="10" style_pad_right="10" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label" text="Pump Station" style_text_font="montserrat_12" style_text_color="0xe2e8f0" />
+      <lv_dropdown name="mode" width="110" height="22" options="Automatic&#10;Manual&#10;Maintenance" style_text_font="montserrat_12" style_text_color="0x000000" />
+    </lv_obj>
+    <lv_obj name="cards" width="320" height="80" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="10" style_pad_right="10" style_pad_top="8" style_pad_bottom="8" flex_flow="row" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="card" flex_grow="1" width="114" height="64" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xe2e8f0" style_radius="8" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_label name="value" text="48.2" style_text_font="montserrat_20" style_text_color="0x0f172a" />
+        <lv_label name="label_2" text="FLOW L/MIN" style_text_font="montserrat_10" style_text_color="0x64748b" />
+      </lv_obj>
+      <lv_obj name="card_2" flex_grow="1" width="78" height="64" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xe2e8f0" style_radius="8" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_label name="value_2" text="3.1" style_text_font="montserrat_20" style_text_color="0x0f172a" />
+        <lv_label name="label_3" text="BAR" style_text_font="montserrat_10" style_text_color="0x64748b" />
+      </lv_obj>
+      <lv_obj name="card_3" flex_grow="1" width="92" height="64" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xe2e8f0" style_radius="8" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_label name="value_3" text="62" style_text_font="montserrat_20" style_text_color="0x0f172a" />
+        <lv_label name="label_4" text="TEMP C" style_text_font="montserrat_10" style_text_color="0x64748b" />
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="usage" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="usage_label" x="10" y="2" text="Daily capacity used" style_text_font="montserrat_10" style_text_color="0x64748b" />
+      <lv_bar name="bar" x="10" y="25" width="300" height="10" min_value="0" max_value="100" value="68" />
+    </lv_obj>
+    <lv_obj name="actions" width="320" height="42" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="12" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_button name="start_2" width="90" height="30" style_bg_color="0x16a34a" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="start" align="center" text="Start" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+      </lv_button>
+      <lv_button name="stop_2" width="90" height="30" style_bg_color="0xdc2626" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="stop" align="center" text="Stop" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+      </lv_button>
+    </lv_obj>
+  </view>
+</component>

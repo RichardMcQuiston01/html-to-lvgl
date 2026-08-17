@@ -1,0 +1,9 @@
+<component>
+  <api>
+    <prop type="color" name="button_style_bg_color" default="0x238636"/>
+    <prop type="string" name="label" default="Hold"/>
+  </api>
+  <view extends="lv_button" style_bg_color="$button_style_bg_color" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+    <lv_label name="label_13" align="center" text="$label" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+  </view>
+</component>

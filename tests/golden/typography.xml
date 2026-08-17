@@ -1,0 +1,16 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xfdfcfb" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="bar" width="320" height="34" style_bg_color="0x7c2d12" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="bar_2" align="left_mid" x="12" text="Kiln Controller" style_text_font="montserrat_14" style_text_color="0xfff7ed" />
+    </lv_obj>
+    <lv_obj name="body" width="320" height="127" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_label name="lead" text="Firing schedule: bisque, cone 04" style_text_font="montserrat_12" style_text_color="0x1c1917" />
+      <lv_obj name="readout" style_margin_top="2" width="296" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="6" style_pad_column="6" scrollable="false">
+        <lv_label name="value" text="1063" style_text_font="montserrat_28" style_text_color="0x7c2d12" />
+        <lv_label name="unit" text="degrees C" style_text_font="montserrat_12" style_text_color="0x78716c" />
+      </lv_obj>
+      <lv_label name="meta" text="Segment 3 of 5 — holding for 20 minutes" style_text_font="montserrat_10" style_text_color="0x78716c" />
+      <lv_label name="note" style_margin_top="6" text="Glyphs are subset to the text on this page." style_text_font="montserrat_10" style_text_color="0xa8a29e" />
+    </lv_obj>
+  </view>
+</component>

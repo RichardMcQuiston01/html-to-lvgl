@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #f4f5f7; overflow: hidden;
+         display: flex; flex-direction: column; align-items: center; padding-top: 18px; }
+  h1 { font-size: 18px; color: #202124; margin-bottom: 14px; }
+  input { width: 240px; height: 34px; margin-bottom: 10px; padding: 0 10px;
+          border: 1px solid #b8bcc4; border-radius: 6px; background-color: #ffffff;
+          font-size: 13px; color: #202124; }
+  .login { width: 240px; height: 38px; margin-top: 6px; border: none; border-radius: 6px;
+           background-color: #2563eb; color: #ffffff; font-size: 14px; }
+  .hint { margin-top: 12px; font-size: 11px; color: #7a7f88; }
+</style>
+</head>
+<body>
+  <h1>Device Login</h1>
+  <input type="text" placeholder="Username">
+  <input type="password" placeholder="Password">
+  <button class="login">Sign In</button>
+  <div class="hint">Forgot password? Hold SET for 5s</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+  body { width: 320px; height: 240px; background-color: #f8fafc; overflow: hidden;
+         display: flex; flex-direction: column; }
+  .bar { height: 32px; background-color: #334155; color: #ffffff; font-size: 13px;
+         display: flex; align-items: center; padding-left: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center;
+         height: 42px; padding: 0 12px; border-bottom: 1px solid #e2e8f0; }
+  .label { font-size: 13px; color: #1e293b; }
+  /* A hand-rolled toggle: without an annotation this is just a styled div */
+  .toggle { width: 44px; height: 24px; border-radius: 12px; background-color: #22c55e; }
+  .level { padding: 12px 12px 0 12px; }
+  .level-label { font-size: 11px; color: #64748b; margin-bottom: 6px; }
+  .track { width: 100%; height: 8px; border-radius: 4px; background-color: #cbd5e1; }
+  /* Design-time only: a red alignment guide that must never reach the device */
+  .guide { position: absolute; left: 160px; top: 0; width: 1px; height: 240px;
+           background-color: #ef4444; }
+</style>
+</head>
+<body>
+  <div class="bar" data-lv-name="title_bar">Annotations</div>
+
+  <div class="row">
+    <span class="label">Pump enable</span>
+    <div class="toggle" data-lv-widget="switch" data-lv-name="pump_enable"></div>
+  </div>
+
+  <div class="level">
+    <div class="level-label">Fill level</div>
+    <div class="track" data-lv-widget="bar" data-lv-name="fill_level"></div>
+  </div>
+
+  <div class="guide" data-lv-ignore></div>
+</body>
+</html>
