@@ -198,10 +198,14 @@ Note: the project pins **LVGL v9.4.0** — the last release with the in-tree `lv
 - <https://espressif-docs.readthedocs-hosted.com/projects/espressif-esp-iot-solution/en/latest/gui/lvgl_gui.html>
 - <https://lvgl.io/>
 
+## Support
+
+If this library saved you some reverse-engineering, consider [buying me a coffee](https://www.paypal.com/ncp/payment/VDTESHTRR7684). ☕
+
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)
 
 ## Copyright
 
-(c)2026 Richard McQuiston.  All rights reserved.
+(c)2026 Richard McQuiston.
