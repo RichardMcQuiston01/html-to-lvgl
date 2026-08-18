@@ -61,7 +61,12 @@ for (const file of fixtureFiles) {
   // prefixed here only to keep golden filenames unique alongside the
   // single-page fixture of the same name.
   const cName = nav ? `nav_${name}` : name;
-  const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+  // cName only disambiguates the golden *file* from a same-named non-nav
+  // fixture (e.g. settings.json vs settings.nav.json); the exported symbol
+  // must match cli.mjs's real multi-screen convention (ui_<screen>_create)
+  // so a sibling screen's navigation callback can declare it extern and
+  // actually link against it.
+  const symbol = nav ? `ui_${name}_create` : 'ui_create';
   const { c, h, unit } = emitC(view, { name: cName, symbol });
   writeFileSync(join(goldenCDir, `${unit}.c`), c);
   writeFileSync(join(goldenCDir, `${unit}.h`), h);

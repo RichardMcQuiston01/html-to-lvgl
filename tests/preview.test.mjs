@@ -55,6 +55,16 @@ test('preview server serves the page, state, and SSE endpoint', async () => {
     await reader.cancel(); // the reader holds the lock; cancel through it
 
     assert.equal((await fetch(`${base}/nope`)).status, 404);
+
+    // No render harness, so lvgl.bmp was never built; sendFile takes its
+    // missing-file path and must 404 cleanly rather than throw and crash
+    // the server.
+    assert.equal((await fetch(`${base}/lvgl.bmp`)).status, 404);
+    // The server must still be alive after those requests.
+    assert.equal((await fetch(`${base}/state`)).status, 200);
+
+    // Unauthenticated dev server: must not be reachable from other hosts.
+    assert.equal(preview.address, '127.0.0.1');
   } finally {
     await preview.close();
   }

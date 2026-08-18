@@ -17,7 +17,7 @@
  * cannot be a prop (e.g. a style), are left inline with a warning.
  * The original (flattened) tree is not mutated — C emission keeps using it.
  */
-import { el, render } from './emit-xml.mjs';
+import { el, render, escAttr } from './emit-xml.mjs';
 
 const PLACEMENT_ATTRS = new Set([
   'x', 'y', 'width', 'height', 'ignore_layout', 'flex_grow',
@@ -74,7 +74,21 @@ export function componentize(view, { warnings = [] } = {}) {
     walkAligned(instances, (els, path) => {
       const isInstanceEl = components.has(els[0].tag); // nested component ref
       for (const key of Object.keys(els[0].attrs)) {
-        if (key === 'name' || (path.length === 0 && PLACEMENT_ATTRS.has(key))) continue;
+        if (key === 'name') continue;
+        // signature() ignores placement at every depth (see below), so the
+        // prop scan must too — otherwise a child that only moved position
+        // bails the whole group with a misleading "non-proppable" warning.
+        // Only the root instance's placement is carried per-instance (see
+        // the replacement loop below); a *nested* child's placement is fixed
+        // in the shared definition from the first instance, so a genuine
+        // per-instance difference there is silently flattened. Surface that
+        // instead of staying quiet about it.
+        if (PLACEMENT_ATTRS.has(key)) {
+          if (path.length > 0 && new Set(els.map((e) => String(e.attrs[key]))).size > 1) {
+            warnings.push(`component ${name}: nested "${key}" differs across instances; only the first instance's value is kept`);
+          }
+          continue;
+        }
         const values = els.map((e) => String(e.attrs[key]));
         if (new Set(values).size <= 1) continue;
         if (PROPPABLE_ATTRS.has(key) || PROPPABLE_COLOR_ATTRS.has(key) || isInstanceEl) {
@@ -102,7 +116,7 @@ export function componentize(view, { warnings = [] } = {}) {
     }
     const viewEl = el('view', viewAttrs, def.children);
     const api = props.length
-      ? `  <api>\n${props.map((p) => `    <prop type="${p.type}" name="${p.prop}" default="${escapeAttr(p.values[0])}"/>`).join('\n')}\n  </api>\n`
+      ? `  <api>\n${props.map((p) => `    <prop type="${p.type}" name="${p.prop}" default="${escAttr(p.values[0])}"/>`).join('\n')}\n  </api>\n`
       : '';
     components.set(name, `<component>\n${api}${render(viewEl, 1)}\n</component>\n`);
 
@@ -131,8 +145,6 @@ export function componentize(view, { warnings = [] } = {}) {
 
 const snake = (s) =>
   s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase().replace(/[^a-z0-9_]/g, '_');
-
-const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 /** Structural signature: tags + attribute keys (not values), recursively. */
 function signature(node) {

@@ -159,7 +159,7 @@
       "tag": "div",
       "id": null,
       "className": "row",
-      "component": null,
+      "component": "PumpRow",
       "widget": null,
       "lvName": null,
       "x": 0,
