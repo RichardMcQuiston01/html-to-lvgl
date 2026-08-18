@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
@@ -14,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Cache LVGL checkout
         id: lvgl-cache
@@ -104,6 +111,10 @@ jobs:
       - name: Compile and render every golden C file against plain LVGL
         run: |
           for c in tests/golden-c/*.c; do
+            # ui_nav_home.c/ui_nav_settings.c reference each other's entry
+            # point for real navigation now, so they can't link standalone —
+            # the next step compiles that pair together instead.
+            case "$(basename "$c")" in ui_nav_*.c) continue ;; esac
             # Each unit declares its own entry point (ui_create, or
             # ui_<screen>_create for a screen); read it from the header.
             symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${c%.c}.h" | grep -oE 'ui_[a-z0-9_]+')
@@ -117,12 +128,27 @@ jobs:
             /tmp/render_c /tmp/out.bmp
           done
 
+      - name: Compile and link the multi-screen C goldens together and exercise navigation
+        run: |
+          # ui_nav_home.c's button callback calls ui_settings_create and vice
+          # versa (see emit-c.mjs's screen_create_event handling), so proving
+          # the generated navigation callback actually links means building
+          # both screens into one binary rather than one file at a time.
+          gcc -O1 -o /tmp/render_c_nav \
+            -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+            -DUI_CREATE_SYMBOL=ui_home_create \
+            -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-c \
+            spike/render/main_c.c tests/golden-c/ui_nav_home.c tests/golden-c/ui_nav_settings.c \
+            build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+          /tmp/render_c_nav /tmp/out.bmp
+
       - name: Compile and render every golden C++ file against plain LVGL
         run: |
           # main_c.c is dual-mode: compiling it with g++ (instead of gcc) proves
           # --format cpp output links correctly, including against the always-C
           # lv_font_conv font files below.
           for cpp in tests/golden-cpp/*.cpp; do
+            case "$(basename "$cpp")" in ui_nav_*.cpp) continue ;; esac
             symbol=$(grep -oE 'ui_[a-z0-9_]+\(lv_obj_t' "${cpp%.cpp}.hpp" | grep -oE 'ui_[a-z0-9_]+')
             echo "validating $cpp (entry: $symbol)"
             g++ -std=c++17 -O1 -o /tmp/render_cpp \
@@ -133,6 +159,16 @@ jobs:
               build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
             /tmp/render_cpp /tmp/out.bmp
           done
+
+      - name: Compile and link the multi-screen C++ goldens together and exercise navigation
+        run: |
+          g++ -std=c++17 -O1 -o /tmp/render_cpp_nav \
+            -DLV_CONF_PATH="\"$GITHUB_WORKSPACE/spike/render/lv_conf.h\"" \
+            -DUI_CREATE_SYMBOL=ui_home_create \
+            -I "$GITHUB_WORKSPACE/lvgl" -I tests/golden-cpp \
+            spike/render/main_c.c tests/golden-cpp/ui_nav_home.cpp tests/golden-cpp/ui_nav_settings.cpp \
+            build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
+          /tmp/render_cpp_nav /tmp/out.bmp
 
       - name: Convert with custom fonts as C++ and link against the C-compiled font files
         run: |

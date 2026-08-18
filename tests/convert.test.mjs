@@ -63,7 +63,7 @@ for (const file of fixtures) {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
     const { view } = convert(tree, convertOpts);
     const cName = nav ? `nav_${name}` : name;
-    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const symbol = nav ? `ui_${name}_create` : 'ui_create';
     const { c, h, unit } = emitC(view, { name: cName, symbol });
     assert.equal(c, readFileSync(join(here, 'golden-c', `${unit}.c`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-c', `${unit}.h`), 'utf8'));
@@ -73,7 +73,7 @@ for (const file of fixtures) {
     const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
     const { view } = convert(tree, convertOpts);
     const cName = nav ? `nav_${name}` : name;
-    const symbol = nav ? `ui_${cName}_create` : 'ui_create';
+    const symbol = nav ? `ui_${name}_create` : 'ui_create';
     const { c, h, unit } = emitCpp(view, { name: cName, symbol });
     assert.equal(c, readFileSync(join(here, 'golden-cpp', `${unit}.cpp`), 'utf8'));
     assert.equal(h, readFileSync(join(here, 'golden-cpp', `${unit}.hpp`), 'utf8'));
@@ -131,6 +131,56 @@ test('componentizer parameterizes text and color, keeps structure', () => {
   assert.equal(page.children[1].attrs.x, 200); // placement stays on the instance
 });
 
+test('componentizer prop defaults reuse emit-xml\'s escAttr, preserving newlines', () => {
+  const label = (name, text) => ({ tag: 'lv_label', attrs: { name, text }, children: [] });
+  const card = (n, text) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}`, x: n * 100, y: 0 },
+    children: [label(`t_${n}`, text)],
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1, 'a\nb'), card(2, 'c')] };
+  const { components } = componentize(view);
+  const xml = components.get('stat_card');
+  // A newline in a default value must survive as a character reference, not
+  // be silently dropped (or normalized to a space by an XML parser).
+  assert.match(xml, /default="a&#10;b"/);
+});
+
+test('componentizer does not bail when only a non-root child\'s placement differs, but warns the value is flattened', () => {
+  const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
+  const card = (n, x) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}` },
+    children: [label(`t_${n}`, 'same', x)],
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1, 0), card(2, 4)] };
+  const { components, warnings } = componentize(view);
+  // signature() already ignores placement attrs at every depth; the prop
+  // scan disagreeing (only skipping them at the root) used to bail this
+  // group with a misleading "non-proppable attribute \"x\"" warning even
+  // though the only difference was the label's position. It must not bail —
+  // but since only the *first* instance's nested x survives in the shared
+  // definition (nested placement isn't re-applied per instance, unlike root
+  // placement), that flattening needs its own explicit warning instead of
+  // silently dropping card_2's x=4.
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /nested "x" differs across instances/);
+  assert.ok(components.has('stat_card'));
+});
+
+test('componentizer does not warn when nested placement is identical across instances', () => {
+  const label = (name, text, x) => ({ tag: 'lv_label', attrs: { name, text, x }, children: [] });
+  const card = (n) => ({
+    tag: 'lv_obj', attrs: { name: `card_${n}` },
+    children: [label(`t_${n}`, `text${n}`, 4)], // same nested x=4 on every instance
+    meta: { component: 'StatCard' },
+  });
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [card(1), card(2)] };
+  const { components, warnings } = componentize(view);
+  assert.equal(warnings.length, 0);
+  assert.ok(components.has('stat_card'));
+});
+
 test('componentizer bails on structural differences', () => {
   const a = { tag: 'lv_obj', attrs: { name: 'a' }, children: [{ tag: 'lv_label', attrs: { name: 'l', text: 'x' }, children: [] }], meta: { component: 'Card' } };
   const b = { tag: 'lv_obj', attrs: { name: 'b' }, children: [], meta: { component: 'Card' } };
@@ -169,6 +219,29 @@ test('optimizer keeps wrappers that carry visuals or manage layout', () => {
   const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [styled, flex] };
   const { removed } = optimize(structuredClone(tree));
   assert.equal(removed, 0);
+});
+
+test('optimizer keeps wrappers annotated with data-lv-widget or data-lv-name', () => {
+  const inertChild = { tag: 'span', x: 10, y: 10, w: 50, h: 12, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
+  const widgetWrapper = {
+    tag: 'div', widget: 'bar', x: 5, y: 5, w: 100, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [structuredClone(inertChild)],
+  };
+  const namedWrapper = {
+    tag: 'div', lvName: 'pump_enable', x: 5, y: 30, w: 100, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [structuredClone(inertChild)],
+  };
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(),
+    children: [widgetWrapper, namedWrapper],
+  };
+  // Otherwise-inert wrappers must survive when the optimizer would strip
+  // them before convert.mjs/uid() ever see the data-lv-widget/data-lv-name
+  // annotation they carry.
+  const { tree: out, removed } = optimize(structuredClone(tree));
+  assert.equal(removed, 0);
+  assert.equal(out.children[0].widget, 'bar');
+  assert.equal(out.children[1].lvName, 'pump_enable');
 });
 
 test('data-lv-name overrides id/class for the widget name', () => {
@@ -235,6 +308,46 @@ test('emitC does not mistake a custom font key for a built-in Montserrat name', 
   assert.match(c2, /&lv_font_montserrat_16/);
   assert.doesNotMatch(c2, /extern const lv_font_t montserrat_16;/);
   void h; // header content isn't under test here
+});
+
+test('emitC turns screen_create_event into a real navigation callback', () => {
+  const button = {
+    tag: 'lv_button',
+    attrs: { name: 'to_settings' },
+    children: [{ tag: 'screen_create_event', attrs: { screen: 'settings' }, children: [] }],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [button] };
+  const { c } = emitC(view, { name: 'home', symbol: 'ui_home_create' });
+
+  // The target screen's real entry point (matching cli.mjs's ui_<screen>_create
+  // convention) is declared extern and actually called, not left as a comment.
+  assert.match(c, /extern lv_obj_t \* ui_settings_create\(lv_obj_t \* parent\);/);
+  assert.match(c, /static void nav_to_settings_cb\(lv_event_t \* e\)/);
+  assert.match(c, /lv_obj_t \* scr = ui_settings_create\(NULL\);/);
+  assert.match(c, /lv_screen_load\(scr\);/);
+  assert.match(c, /lv_obj_add_event_cb\(to_settings, nav_to_settings_cb, LV_EVENT_CLICKED, NULL\);/);
+  assert.doesNotMatch(c, /\/\* navigation ->/);
+
+  // Two links to the same screen share one callback instead of redeclaring it.
+  const twoLinks = {
+    tag: 'view',
+    attrs: { width: 320, height: 240 },
+    children: [button, { ...button, attrs: { name: 'to_settings_2' } }],
+  };
+  const { c: c2 } = emitC(twoLinks, { name: 'home2' });
+  assert.equal((c2.match(/static void nav_to_settings_cb/g) || []).length, 1);
+  assert.equal((c2.match(/extern lv_obj_t \* ui_settings_create/g) || []).length, 1);
+});
+
+test('emitCpp declares the navigation target extern "C"', () => {
+  const button = {
+    tag: 'lv_button',
+    attrs: { name: 'to_settings' },
+    children: [{ tag: 'screen_create_event', attrs: { screen: 'settings' }, children: [] }],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [button] };
+  const { c } = emitCpp(view, { name: 'home', symbol: 'ui_home_create' });
+  assert.match(c, /extern "C" lv_obj_t \* ui_settings_create\(lv_obj_t \* parent\);/);
 });
 
 test('emitC honors a custom lvInclude for the generated header', () => {

@@ -37,6 +37,8 @@ export function optimize(tree) {
       GENERIC_TAGS.has(node.tag) &&
       !node.text &&
       !node.component && // component boundaries must survive for the componentizer
+      !node.widget &&    // data-lv-widget forces a mapping in convert.mjs
+      !node.lvName &&    // an explicit name must reach uid()
       node.children.length === 1 &&
       !s.bgColor && !s.gradient && !s.shadow && !s.pressed &&
       s.borderWidth === 0 && s.borderBottomWidth === 0 &&

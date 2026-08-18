@@ -29,11 +29,22 @@ export async function extractReactPage(jsxPath, { width = 320, height = 240, scr
     },
     bundle: true,
     write: false,
+    // A stdin entry has no output path of its own; esbuild needs one to
+    // place a CSS asset bundled in from a component's `import './x.css'`
+    // (nothing is actually written to disk since write is false).
+    outdir: dirname(abs),
     format: 'iife',
     jsx: 'automatic',
     loader: { '.js': 'jsx', '.jsx': 'jsx', '.ts': 'tsx', '.tsx': 'tsx' },
     logLevel: 'silent',
   });
+
+  // outputFiles' order isn't a stable contract (esbuild only documents that
+  // it contains every emitted file — JS, any bundled CSS, source maps, ...),
+  // so pick the JS entry by extension instead of assuming index 0.
+  const jsOutput = bundle.outputFiles.find((f) => f.path.endsWith('.js'));
+  if (!jsOutput) throw new Error(`esbuild produced no JavaScript output for ${jsxPath}`);
+  const cssOutput = bundle.outputFiles.find((f) => f.path.endsWith('.css'));
 
   const browser = await launch();
   try {
@@ -42,7 +53,10 @@ export async function extractReactPage(jsxPath, { width = 320, height = 240, scr
       `<!DOCTYPE html><html><head><meta charset="utf-8"></head>` +
       `<body style="margin:0"><div id="root"></div></body></html>`
     );
-    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+    // CSS before the script, so imported styles are already applied by the
+    // time React mounts and extraction reads computed styles.
+    if (cssOutput) await page.addStyleTag({ content: cssOutput.text });
+    await page.addScriptTag({ content: jsOutput.text });
     await page.waitForFunction(() => document.getElementById('root').children.length > 0);
     await page.evaluate(annotateComponents);
     const tree = await page.evaluate(buildTree);
