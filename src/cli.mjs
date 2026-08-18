@@ -206,15 +206,19 @@ async function buildAll() {
   for (const w of sharedFontWarnings) console.warn(`warning: ${w}`);
 }
 
-async function emitPage({ input, name, reactMode, tree }, fonts) {
+async function emitPage({ input, name, tree }, fonts) {
   const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
   const written = [];
   if (formats.has('xml')) {
     let pageXml = xml;
-    if (reactMode) {
-      // Split React component boundaries into reusable LVGL XML components.
-      const { view: pageView, components } = componentize(view, { warnings });
-      pageXml = `<component>\n${render(pageView, 1)}\n</component>\n`;
+    // Split component boundaries (React fiber-walk stamps, or manual
+    // data-lv-component on plain HTML) into reusable LVGL XML components.
+    // componentize() is a no-op when the view carries no boundaries, so this
+    // runs unconditionally rather than only for reactMode input.
+    const { view: pageView, components } = componentize(view, { warnings });
+    if (components.size) {
+      const wrapper = screenMode ? 'screen' : 'component';
+      pageXml = `<${wrapper}>\n${render(pageView, 1)}\n</${wrapper}>\n`;
       // Both write to <name>.xml; writing the page after its components
       // would silently overwrite a same-named component's definition.
       // Common in practice: name derives from the filename, cname from the
