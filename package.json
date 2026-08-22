@@ -34,11 +34,11 @@
     "metrics": "node scripts/gen-font-metrics.mjs"
   },
   "dependencies": {
-    "playwright": "^1.55.0"
+    "playwright": "^1.55.0",
+    "esbuild": "^0.28.2",
+    "lv_font_conv": "^1.5.3"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
-    "lv_font_conv": "^1.5.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

@@ -4,13 +4,35 @@
 
 Transform plain HTML or React based HTML pages into LVGL code for use on devices like Arduino or ESP32.
 
-The converter renders your page in headless Chromium at the target display resolution, extracts the resolved layout and styles, and emits [LVGL XML](https://lvgl.io/docs/open/xml) (v9.4 `lv_xml` runtime syntax), plain C, or C++ — see [Output formats](#output-formats). CSS flexbox maps onto LVGL's flex layout; everything else uses exact coordinates from the browser's layout engine. See [RESEARCH.md](RESEARCH.md) for the feasibility study, [spike/](spike/README.md) for the proof-of-concept with side-by-side screenshots, and [PLAN.md](PLAN.md) for the C++ output design notes and MicroPython feasibility research.
+The converter renders your page in headless Chromium at the target display resolution, extracts the resolved layout and styles, and emits [LVGL XML](https://lvgl.io/docs/open/xml) (v9.4 `lv_xml` runtime syntax), plain C, or C++ — see [Output formats](#output-formats). CSS flexbox maps onto LVGL's flex layout; everything else uses exact coordinates from the browser's layout engine.
+
+See [ROADMAP.md](ROADMAP.md) for project status and what's planned next.
+
+## Prerequisites
+
+- Node.js >= 20
+- Playwright downloads its own Chromium build on install (no separate browser install needed)
+
+## Installation
+
+Clone this repository to run the examples, use the golden-file test suite, or contribute:
+
+```sh
+git clone https://github.com/RichardMcQuiston01/html-to-lvgl.git
+cd html-to-lvgl
+npm install
+```
+
+Or install the CLI from npm to use it in your own project:
+
+```sh
+npm install -g @richardmcquiston01/html-to-lvgl
+html2lvgl your-page.html --size 320x240 -o out/
+```
 
 ## Usage
 
 ```sh
-npm install
-
 # Convert a page for a 320x240 display
 node src/cli.mjs examples/dashboard.html --size 320x240 -o out/
 
@@ -46,7 +68,7 @@ lv_xml_create(lv_screen_active(), "dashboard", NULL);
 
 `spike/render/` contains a complete headless example (virtual display, font registration, framebuffer capture) that CI uses to validate every generated XML file against real LVGL.
 
-## What maps today (Phases 1–2)
+## What maps today
 
 | HTML/CSS | LVGL |
 |---|---|
@@ -134,7 +156,7 @@ When the automatic mapping needs a nudge, annotate the source HTML (React works 
 
 `examples/annotations.html` exercises all of them.
 
-### React input (Phase 3)
+### React input
 
 Point the CLI at a `.jsx`/`.tsx` file whose default export is a component; it is bundled with esbuild, mounted in headless Chromium, and each function component's DOM subtree is identified by walking the React fiber tree. The componentizer then turns repeated components into **reusable LVGL XML components with props**:
 
@@ -168,7 +190,7 @@ All three backends emit from the same widget tree; their renders are pixel-ident
 
 ### Fidelity
 
-`node scripts/fidelity.mjs <web.png> <lvgl.png|bmp>` pixel-scores a conversion. Current examples score 79–94% (tolerance 32, mostly font antialiasing differences), in line with the 80–90% expectation set in RESEARCH.md.
+`node scripts/fidelity.mjs <web.png> <lvgl.png|bmp>` pixel-scores a conversion. Current examples score 79–94% (tolerance 32, mostly font antialiasing differences).
 
 CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance widths extracted from LVGL's font sources (`scripts/gen-font-metrics.mjs`), so labels never clip or wrap unexpectedly — or supply the real typeface and skip the approximation entirely (see [Custom fonts](#custom-fonts)).
 
@@ -177,7 +199,7 @@ CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance 
 - `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
 - `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
 - `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
-- `spike/` — the Phase 0 proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike (see [PLAN.md](PLAN.md))
+- `spike/` — the proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike
 - `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout), the fidelity scorer, and `convert-fixture.mjs` for browser-free conversion from a committed fixture
 
 ## Development
