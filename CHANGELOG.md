@@ -1,14 +1,12 @@
 # CHANGELOG
 
-## [Unreleased]
+## [0.1.0] - 2026-08-20
+
+First public npm release, and the initial feature set, built in phases (see `RESEARCH.md` and `PLAN.md` for the underlying feasibility research).
 
 ### Changed
 
 - Prepared for the first public npm release: package renamed to the scoped `@richardmcquiston01/html-to-lvgl`, license switched to Apache-2.0 (`LICENSE` added), `repository`/`homepage`/`bugs`/`author` metadata added, `publishConfig.access: public` set, and `files` scoped to `src` for the published tarball.
-
-## [0.1.0]
-
-Initial feature set, built in phases (see `RESEARCH.md` and `PLAN.md` for the underlying feasibility research).
 
 ### Added
 
