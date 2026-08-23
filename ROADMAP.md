@@ -16,7 +16,7 @@ All originally planned phases (0–4) are complete: `html2lvgl` converts plain H
 
 **Phase 4 — Developer experience.** Watch mode with a live side-by-side preview server (`--watch`), annotation attributes (`data-lv-widget`, `data-lv-name`, `data-lv-ignore`, `data-lv-component`) for overriding the automatic mapping, and a C++ output backend (`--format cpp`) with a documented asset-linkage story.
 
-Since the original four phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and a MicroPython Phase 0 feasibility spike (below).
+Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and a MicroPython Phase 0 feasibility spike (below).
 
 ## What's next
 
