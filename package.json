@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/html-to-lvgl",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Convert plain HTML or React-rendered pages into LVGL XML for embedded devices",
   "type": "module",
   "license": "Apache-2.0",
@@ -34,11 +34,11 @@
     "metrics": "node scripts/gen-font-metrics.mjs"
   },
   "dependencies": {
-    "playwright": "^1.55.0"
+    "playwright": "^1.55.0",
+    "esbuild": "^0.28.2",
+    "lv_font_conv": "^1.5.3"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
-    "lv_font_conv": "^1.5.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }
