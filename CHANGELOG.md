@@ -1,14 +1,18 @@
 # CHANGELOG
 
-## [Unreleased]
+## [0.1.1] - 2026-08-22
+
+### Fixed
+
+- `esbuild` and `lv_font_conv` were listed under `devDependencies`, so the published npm package never installed them. Since `src/cli.mjs` statically imports `extract-react.mjs`, which imports `esbuild` unconditionally, **every** conversion via a globally-installed `html2lvgl` failed at startup with `ERR_MODULE_NOT_FOUND` — not just React input or `--font-map`. Moved both to `dependencies`.
+
+## [0.1.0] - 2026-08-20
+
+First public npm release, and the initial feature set, built in phases (see `RESEARCH.md` and `PLAN.md` for the underlying feasibility research).
 
 ### Changed
 
 - Prepared for the first public npm release: package renamed to the scoped `@richardmcquiston01/html-to-lvgl`, license switched to Apache-2.0 (`LICENSE` added), `repository`/`homepage`/`bugs`/`author` metadata added, `publishConfig.access: public` set, and `files` scoped to `src` for the published tarball.
-
-## [0.1.0]
-
-Initial feature set, built in phases (see `RESEARCH.md` and `PLAN.md` for the underlying feasibility research).
 
 ### Added
 
