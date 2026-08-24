@@ -1,7 +1,7 @@
 # Plan: MicroPython and C++ Output Targets
 
 **Date:** August 2026
-**Status:** C++ output shipped. MicroPython Phase 0 spike done — findings reshape the plan; Phase 1 (ship XML as-is + CI) not started.
+**Status:** C++ output shipped. MicroPython Phase 0 spike and Phase 1 (docs + font convention) done; Phase 2 (CI job) not started.
 **Question:** What would it take for `html2lvgl` to target LVGL from MicroPython and from C++, and is either already supported?
 
 ---
@@ -11,7 +11,7 @@
 | Target | Supported today? | What it really takes |
 |---|---|---|
 | **C++** | **Yes — shipped.** `--format cpp` emits `.cpp`/`.hpp`; CI compiles and links every golden as C++17, including the font-linkage-trap case, against real LVGL v9.4.0. | Done. See §2.3. |
-| **MicroPython** | **Validated in Phase 0; not shipped.** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML (both `<component>` and `<screen>` roots) renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. No new emitter needed to ship this. | Docs + a CI job (build the unix port, render every golden XML). Small — see §3.4. |
+| **MicroPython** | **Docs shipped (Phase 1); CI not shipped (Phase 2).** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML (both `<component>` and `<screen>` roots) renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. No new emitter needed to ship this — README's "Using with MicroPython" section documents it. | A CI job (build the unix port, render every golden XML). Small — see §3.4. |
 
 Neither needs changes to extraction, conversion, layout, or the font pipeline. Both are **emitter-level** work: the existing element tree and the mapping tables in `src/emit-c.mjs` already encode the semantics; what changes is how they are spelled.
 
@@ -154,7 +154,7 @@ The Phase 0 spike changed the shape of this work: shipping the existing `--forma
 | Phase | Scope | Effort |
 |---|---|---|
 | 0 | ~~Spike~~ **Done.** See `spike/micropython/README.md`. Both open questions answered: XML loads unmodified; `.bin` fonts load via `lv_binfont_create`. Both need a small patch to the binding's vendored LVGL commit (documented, not upstream-blocking). | ~1 day (came in under the 2–3 day estimate) |
-| 1 | Ship `--format xml` as the MicroPython path: docs on `lv.xml_init()` + `lv.xml_component_register_from_data()` usage, a `.bin`-fonts-alongside-XML convention for custom fonts. No new emitter code. | ~1–2 days |
+| 1 | ~~Ship `--format xml` as the MicroPython path~~ **Done.** README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map` — no new emitter or CLI code needed). | ~1–2 days |
 | 2 | CI: cache `lv_micropython`'s unix port build (keyed on the binding commit), render every golden XML through it the same way `validate-xml` already does for the C harness. | ~1–2 days |
 | 3 (optional, future) | An idiomatic `src/emit-python.mjs` (`--format py`, one `lv.*` statement per widget) for users who don't want to ship XML at runtime. The mapping table in §3.2 is verified accurate and remains valid groundwork; not required to reach MicroPython. | ~3–4 days, only if requested |
 
@@ -179,7 +179,7 @@ Both tracks from the original recommendation are done:
 2. ~~MicroPython Phase 0 spike, then re-estimate against what it finds.~~ **Done** — see §3.3/§3.4. The spike reshaped the plan: no emitter needed for the XML path, cutting the estimate from 8–12 days to 2–4.
 3. Idiomatic C++ wrapper only if users ask for it. **Still not requested — not started, by design.**
 
-Next candidate: MicroPython Phase 1 (§3.4) — ship the XML path with docs and a CI job, no new emitter.
+Next candidate: MicroPython Phase 2 (§3.4) — a CI job that builds `lv_micropython`'s unix port and renders every golden XML through it, the same way `validate-xml` already does for the C harness.
 
 ---
 
