@@ -12,6 +12,7 @@ permissions:
 concurrency:
   group: publish-npm
   cancel-in-progress: false
+  queue: max
 
 env:
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
