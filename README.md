@@ -188,6 +188,45 @@ Differing label texts become string props, differing colors become color props, 
 
 All three backends emit from the same widget tree; their renders are pixel-identical.
 
+### Using with MicroPython
+
+The XML output loads **unmodified** on [`lv_micropython`](https://github.com/lvgl/lv_micropython) via [`lv_binding_micropython`](https://github.com/lvgl/lv_binding_micropython) — no separate emitter or flag needed, just `--format xml` (the default):
+
+```python
+import lvgl as lv
+
+lv.xml_init()
+scope = lv.xml_component_get_scope("globals")
+scope.register_font("montserrat_16", lv.font_montserrat_16)  # any built-in sizes the page uses
+
+# Register every generated XML file before the one that references it —
+# a multi-screen or React/componentized conversion emits one file per
+# screen/component (e.g. stat_card.xml referenced by panel.xml), and each
+# has to be registered first or lv_xml_create() below can't resolve it.
+with open("out/dashboard.xml") as f:
+    lv.xml_component_register_from_data("dashboard", f.read())
+
+# <component>-rooted output: instantiate into a parent
+page = lv.obj.__cast__(lv.xml_create(lv.screen_active(), "dashboard", None))
+
+# <screen>-rooted output (multi-page conversions): create with no parent, then load
+page = lv.obj.__cast__(lv.xml_create(None, "dashboard", None))
+lv.screen_load(page)
+```
+
+`lv.xml_create()` returns an untyped `Blob` (the binding can't know it's an `lv_obj_t`), so cast it with `lv.obj.__cast__(...)` as above.
+
+Custom fonts (see [Custom fonts](#custom-fonts)) need no separate MicroPython step — `--font-map` already emits a `.bin` next to every `.c` in `out/fonts/`, under the same name the XML's `style_text_font` attribute references. Ship `out/fonts/*.bin` alongside your `.xml` and register each on boot:
+
+```python
+# "A:" is the POSIX filesystem drive letter the unix port's example config
+# mounts (LV_USE_FS_POSIX); swap it for whatever drive your target mounts.
+font = lv.binfont_create("A:out/fonts/liberation_sans_700_28.bin")
+scope.register_font("liberation_sans_700_28", font)  # same name as the .bin's filename
+```
+
+This requires `LV_USE_XML` enabled in the binding's `lv_conf.h`; at spike time two small patches to the binding's vendored LVGL copy were also needed (`lv_binfont_create` and the XML component scope's `user_data` field — neither changes behavior, both just widen what the binding generator's auto-scan sees). See [`spike/micropython/README.md`](spike/micropython/README.md) for the full patches, a working reference script (`render_xml.py`), and reproduction steps — worth re-checking whether a newer `lv_binding_micropython` commit already includes them upstream.
+
 ### Fidelity
 
 `node scripts/fidelity.mjs <web.png> <lvgl.png|bmp>` pixel-scores a conversion. Current examples score 79–94% (tolerance 32, mostly font antialiasing differences).

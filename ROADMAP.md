@@ -16,11 +16,13 @@ All originally planned phases (0–4) are complete: `html2lvgl` converts plain H
 
 **Phase 4 — Developer experience.** Watch mode with a live side-by-side preview server (`--watch`), annotation attributes (`data-lv-widget`, `data-lv-name`, `data-lv-ignore`, `data-lv-component`) for overriding the automatic mapping, and a C++ output backend (`--format cpp`) with a documented asset-linkage story.
 
-Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and a MicroPython Phase 0 feasibility spike (below).
+Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`), a MicroPython Phase 0 feasibility spike, and MicroPython Phase 1 (below).
+
+**MicroPython Phase 1 — docs.** The Phase 0 spike proved LVGL's existing `--format xml` output loads **unmodified** on `lv_micropython`'s unix port — no new emitter needed. README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map`, no new CLI code). See [`spike/micropython/README.md`](spike/micropython/README.md) for the underlying research.
 
 ## What's next
 
-- **MicroPython Phase 1.** The Phase 0 spike proved LVGL's existing `--format xml` output loads **unmodified** on `lv_micropython`'s unix port — no new emitter needed (see [`spike/micropython/README.md`](spike/micropython/README.md)). This phase ships that as a documented, CI-validated target: docs on `lv.xml_init()` + `lv.xml_component_register_from_data()` usage, a `.bin`-fonts-alongside-XML convention, and a cached CI job that builds the unix port and renders every golden XML through it. Estimated ~1–2 days. See [`PLAN.md`](PLAN.md) §3.4.
+- **MicroPython Phase 2 — CI validation.** A cached CI job that builds `lv_micropython`'s unix port (with the two spike patches, or their upstream equivalents if merged since) and renders every golden XML through it, the same way `validate-xml` already does for the C harness. Estimated ~1–2 days. See [`PLAN.md`](PLAN.md) §3.4.
 - **Idiomatic Python emitter (optional, future).** A `--format py` backend (`lv.obj(parent).set_width(...)`-style, one statement per widget) for users who don't want to ship XML at runtime. The mapping table is already verified accurate (see `PLAN.md` §3.2); not required to reach MicroPython, only pursued if requested.
 - **npm trusted publishing.** Migrate `.github/workflows/publish.yml` from a long-lived `NPM_TOKEN` secret to npm's OIDC-based trusted publishing.
 
