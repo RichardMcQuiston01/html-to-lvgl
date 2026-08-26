@@ -199,7 +199,11 @@ lv.xml_init()
 scope = lv.xml_component_get_scope("globals")
 scope.register_font("montserrat_16", lv.font_montserrat_16)  # any built-in sizes the page uses
 
-with open("dashboard.xml") as f:
+# Register every generated XML file before the one that references it —
+# a multi-screen or React/componentized conversion emits one file per
+# screen/component (e.g. stat_card.xml referenced by panel.xml), and each
+# has to be registered first or lv_xml_create() below can't resolve it.
+with open("out/dashboard.xml") as f:
     lv.xml_component_register_from_data("dashboard", f.read())
 
 # <component>-rooted output: instantiate into a parent
@@ -215,6 +219,8 @@ lv.screen_load(page)
 Custom fonts (see [Custom fonts](#custom-fonts)) need no separate MicroPython step — `--font-map` already emits a `.bin` next to every `.c` in `out/fonts/`, under the same name the XML's `style_text_font` attribute references. Ship `out/fonts/*.bin` alongside your `.xml` and register each on boot:
 
 ```python
+# "A:" is the POSIX filesystem drive letter the unix port's example config
+# mounts (LV_USE_FS_POSIX); swap it for whatever drive your target mounts.
 font = lv.binfont_create("A:out/fonts/liberation_sans_700_28.bin")
 scope.register_font("liberation_sans_700_28", font)  # same name as the .bin's filename
 ```
