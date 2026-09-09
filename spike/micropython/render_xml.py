@@ -1,15 +1,21 @@
 """
-Phase 0 spike: does html2lvgl's existing --format xml output load unmodified
-on lv_micropython via the lv_binding_micropython auto-generated binding?
+Renders html2lvgl's --format xml output on lv_micropython via the
+lv_binding_micropython auto-generated binding, unmodified — no separate
+emitter needed for the MicroPython path (see PLAN.md §3.4).
 
-Mirrors spike/render/main.c: registers Montserrat fonts under the XML
-"globals" scope, registers the page as an XML component, instantiates it,
-ticks a few frames, and dumps the framebuffer as a 24-bit BMP.
+Mirrors spike/render/main.c's argument handling and behavior exactly, so
+the same golden files and the same CI assertions (e.g. the post-click
+"active screen is `...`" line) work against both harnesses:
+registers Montserrat fonts under the XML "globals" scope, registers any
+dependency XML files (multi-screen siblings, componentized React output)
+under their own basename, registers the page, instantiates it, optionally
+clicks a named widget, ticks a few frames, and dumps the framebuffer as a
+24-bit BMP.
 
-Usage: ./micropython render_xml.py <page.xml> <out.bmp> [fonts-dir]
+Usage: ./micropython render_xml.py <page.xml> <out.bmp> [--click=<widget-name>]
+                                    [--font=<name>=<path.bin>] [component.xml ...]
 """
 import sys
-import os
 import lvgl as lv
 
 HOR_RES = 320
@@ -45,6 +51,26 @@ def is_screen_root(xml):
     return False
 
 
+def component_name_from_path(path):
+    """'path/to/stat_card.xml' -> 'stat_card'"""
+    base = path.rsplit('/', 1)[-1]
+    return base.rsplit('.', 1)[0]
+
+
+def find_by_name(parent, name):
+    """Depth-first search for a widget by its `name` attribute, same as
+    main.c's find_by_name — used to resolve --click=<name>."""
+    count = parent.get_child_count()
+    for i in range(count):
+        child = parent.get_child(i)
+        if child.get_name() == name:
+            return child
+        found = find_by_name(child, name)
+        if found is not None:
+            return found
+    return None
+
+
 def write_bmp(path, buf, w, h):
     row_bytes = ((w * 3 + 3) // 4) * 4
     image_size = row_bytes * h
@@ -78,8 +104,20 @@ def write_bmp(path, buf, w, h):
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: render_xml.py <page.xml> <out.bmp> [fonts-dir]")
+        print("usage: render_xml.py <page.xml> <out.bmp> [--click=<widget-name>]")
+        print("          [--font=<name>=<path.bin>] [component.xml ...]")
         raise SystemExit(1)
+
+    click_name = None
+    font_specs = []
+    dep_paths = []
+    for arg in sys.argv[3:]:
+        if arg.startswith('--click='):
+            click_name = arg[len('--click='):]
+        elif arg.startswith('--font='):
+            font_specs.append(arg[len('--font='):])
+        elif not arg.startswith('--'):
+            dep_paths.append(arg)
 
     # lv_init() runs automatically on `import lvgl` in this binding.
     framebuffer = bytearray(HOR_RES * VER_RES * 4)
@@ -101,25 +139,36 @@ def main():
         if font is not None:
             scope.register_font("montserrat_%d" % size, font)
 
-    # Converted (lv_font_conv) fonts: same --fonts=<dir> convention as the
-    # C harness's --font= args, proving lv_binfont_create is reachable and
-    # usable from MicroPython, not just the C API.
-    if len(sys.argv) > 3:
-        font_dir = sys.argv[3]
-        for fname in sorted(os.listdir(font_dir)):
-            if not fname.endswith('.bin'):
-                continue
-            path = "A:%s/%s" % (font_dir, fname)
-            font = lv.binfont_create(path)
-            if font is None:
-                print("FAILED to load font %s" % path)
-                raise SystemExit(1)
-            scope.register_font(fname[:-4], font)
+    # Converted (lv_font_conv) fonts: same --font=<name>=<path.bin> convention
+    # as the C harness, proving lv_binfont_create is reachable and usable
+    # from MicroPython, not just the C API. The POSIX driver is mounted on
+    # 'A', so an absolute path becomes "A:/abs/path.bin".
+    for spec in font_specs:
+        name, _, path = spec.partition('=')
+        if not path:
+            print("expected --font=<name>=<path.bin>, got `%s`" % spec)
+            raise SystemExit(1)
+        font = lv.binfont_create("A:%s" % path)
+        if font is None:
+            print("cannot load font `%s` from %s" % (name, path))
+            raise SystemExit(1)
+        scope.register_font(name, font)
+
+    # Register dependency components first (e.g. the componentizer's output,
+    # or sibling screens referenced by <screen_create_event screen="..."/>)
+    for dep_path in dep_paths:
+        with open(dep_path, 'r') as f:
+            dep_xml = f.read()
+        dep_name = component_name_from_path(dep_path)
+        result = lv.xml_component_register_from_data(dep_name, dep_xml)
+        if result != lv.RESULT.OK:
+            print("failed to register XML component %s from %s" % (dep_name, dep_path))
+            raise SystemExit(1)
 
     with open(sys.argv[1], 'r') as f:
         xml = f.read()
 
-    name = sys.argv[1].rsplit('/', 1)[-1].rsplit('.', 1)[0]
+    name = component_name_from_path(sys.argv[1])
     result = lv.xml_component_register_from_data(name, xml)
     print("register_from_data(%s) -> %s" % (name, result))
     if result != lv.RESULT.OK:
@@ -147,6 +196,17 @@ def main():
     for _ in range(30):
         lv.tick_inc(16)
         lv.timer_handler()
+
+    if click_name is not None:
+        target = find_by_name(lv.screen_active(), click_name)
+        if target is None:
+            print("no widget named `%s` to click" % click_name)
+            raise SystemExit(1)
+        target.send_event(lv.EVENT.CLICKED, None)
+        for _ in range(30):
+            lv.tick_inc(16)
+            lv.timer_handler()
+        print("clicked `%s` -> active screen is `%s`" % (click_name, lv.screen_active().get_name()))
 
     write_bmp(sys.argv[2], framebuffer, HOR_RES, VER_RES)
     print("rendered %s -> %s" % (sys.argv[1], sys.argv[2]))
