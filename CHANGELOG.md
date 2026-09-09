@@ -5,6 +5,7 @@
 ### Added
 
 - **MicroPython (Phase 1):** documented using `--format xml` output directly with `lv_micropython` / `lv_binding_micropython` — `lv.xml_init()` + `lv.xml_component_register_from_data()` usage, `<component>` vs `<screen>` root instantiation, and the `.bin`-fonts-alongside-XML convention for custom fonts (already the natural output of `--font-map`, no new CLI code). See README's "Using with MicroPython" section.
+- **MicroPython (Phase 2):** a `validate-micropython-xml` CI job builds `lv_micropython`'s unix port and renders every golden XML through it, the same way `validate-xml` already does for the C harness. Found and documented two real, version-specific limitations in the pinned binding's vendored LVGL (v9.3.0-era) rather than working around them — see `spike/micropython/README.md`'s "Known limitations". `spike/micropython/render_xml.py` now mirrors `spike/render/main.c`'s CLI exactly (`--click=`, `--font=name=path`, dependency XML files as positional args) instead of a `[fonts-dir]` shortcut, and a third `lv_conf.h` flag (`LV_USE_OBJ_NAME`) was added to the binding config patch to support `--click`'s name-based widget lookup.
 
 ## [0.1.1] - 2026-08-22
 

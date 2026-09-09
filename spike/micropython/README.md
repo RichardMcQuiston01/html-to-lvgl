@@ -1,4 +1,4 @@
-# MicroPython Phase 0 spike
+# MicroPython Phase 0 spike, and Phase 2 CI validation
 
 Answers the two open questions from `PLAN.md` §4 before committing to a
 `src/emit-python.mjs` emitter: does `lv_binding_micropython` expose the
@@ -7,6 +7,11 @@ are **yes**, each behind a small, documented patch to the binding's vendored
 LVGL checkout. This changes the plan: html2lvgl's existing `--format xml`
 output loads on MicroPython **unmodified** — no Python emitter is needed for
 the XML path.
+
+Phase 1 (README docs, no code) and Phase 2 (this file's "Known limitations"
+section, plus a `validate-micropython-xml` CI job in `.github/workflows/ci.yml`
+that runs `render_xml.py` against every golden the same way `validate-xml`
+does for the C harness) are both done — see `PLAN.md` §3.4.
 
 ## Results
 
@@ -84,6 +89,7 @@ exists to surface before committing to an emitter design.
 ```sh
 git clone https://github.com/lvgl/lv_micropython.git
 cd lv_micropython
+git checkout 44aa2b153dd3aa1ba183d05bd867fe3ffe2a1d75   # pinned, see below
 git submodule update --init --depth 1 user_modules/lv_binding_micropython \
   lib/micropython-lib lib/berkeley-db-1.xx lib/libffi lib/axtls lib/mbedtls
 cd user_modules/lv_binding_micropython
@@ -106,26 +112,39 @@ make -C ports/unix VARIANT=lvgl -j"$(nproc)"
 ./ports/unix/build-lvgl/micropython /path/to/html-to-lvgl/spike/micropython/render_xml.py \
   /path/to/html-to-lvgl/tests/golden/dashboard.xml /tmp/out.bmp
 
-# With converted fonts (matches spike/render/main.c's --font= args):
+# With dependency XML files (multi-screen siblings, componentized React
+# output) and a click to exercise navigation — same argument convention as
+# spike/render/main.c:
+./ports/unix/build-lvgl/micropython /path/to/html-to-lvgl/spike/micropython/render_xml.py \
+  /path/to/html-to-lvgl/tests/golden-nav/home.xml /tmp/out.bmp \
+  /path/to/html-to-lvgl/tests/golden-nav/settings.xml --click=to_settings
+
+# With converted fonts (matches spike/render/main.c's --font=<name>=<path> args):
 node /path/to/html-to-lvgl/scripts/convert-fixture.mjs \
   /path/to/html-to-lvgl/tests/fixtures/typography.json /tmp/fonts-demo \
   --font-map "Liberation Sans=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" \
   --font-map "Liberation Sans:700=/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 ./ports/unix/build-lvgl/micropython /path/to/html-to-lvgl/spike/micropython/render_xml.py \
-  /tmp/fonts-demo/typography.xml /tmp/out.bmp /tmp/fonts-demo/fonts
+  /tmp/fonts-demo/typography.xml /tmp/out.bmp \
+  --font=liberation_sans_700_28=/tmp/fonts-demo/fonts/liberation_sans_700_28.bin
 ```
 
 Pinned LVGL commit inside `lv_binding_micropython` at spike time was
 `c033a98` (v9.3.0-era, June 2025) — one minor version behind this project's
-pinned v9.4.0 for the C/XML/C++ paths. The two patches below are specific to
-that commit; a newer binding commit may already include equivalent fixes
-upstream, worth re-checking before Phase 1 work starts.
+pinned v9.4.0 for the C/XML/C++ paths. `lv_micropython`'s own tracked pointer
+for the `user_modules/lv_binding_micropython` submodule moves on nearly every
+commit ("chore: update micropython binding"), but as of Phase 2 (September
+2026) that submodule's own vendored `lvgl` commit is still `c033a98` —
+unchanged since the Phase 0 spike. The three patches below are specific to
+that commit; re-check whether a newer binding commit has finally picked up
+`lvgl` v9.4.0 before re-pinning `LV_MICROPYTHON_COMMIT` in
+`.github/workflows/ci.yml`.
 
 ## Patches
 
 ### `patches/lv_binding_micropython-lv_conf.patch`
 
-Three `lv_conf.h` flags the binding ships disabled by default:
+Four `lv_conf.h` flags the binding ships disabled by default:
 
 - `LV_USE_XML` — off by default; turning it on is what exposes `lv_xml_*`
   to the binding generator at all.
@@ -136,6 +155,12 @@ Three `lv_conf.h` flags the binding ships disabled by default:
 - `LV_USE_FS_POSIX` (letter `A`) — needed so `lv_binfont_create()` can open
   `.bin` files from the host filesystem; same convention `spike/render/main.c`
   already uses for the C harness.
+- `LV_USE_OBJ_NAME` (found in Phase 2) — `lv_obj_get_name()`/`lv_obj_set_name()`
+  are compiled out entirely behind this flag, not just unbound: without it,
+  `render_xml.py`'s `--click=<name>` support (name-based widget lookup,
+  mirroring `spike/render/main.c`'s `find_by_name`) fails with `AttributeError:
+  'obj' object has no attribute 'get_name'` even though `name="..."` widget
+  attributes parse and apply fine either way.
 
 ### `patches/lvgl-binfont-and-xml-event-cb.patch`
 
@@ -161,3 +186,37 @@ Two structural fixes to the binding's vendored LVGL copy, applied inside
   true for most LVGL structs but not this one. This only blocks
   `lv_xml_register_event_cb` (registering a C callback referenced by name
   from XML markup) — unrelated to loading or rendering XML.
+
+## Known limitations (found during Phase 2 CI validation)
+
+Two real gaps, both traced to the pinned `lvgl` commit inside
+`lv_binding_micropython` (`c033a98`, v9.3.0-era) lagging behind this
+project's own v9.4.0 pin for the C/XML/C++ paths — not bugs in html2lvgl's
+output, and not something a patch here should paper over. `.github/workflows/ci.yml`'s
+`validate-micropython-xml` job renders every other golden and documents
+both exclusions inline; re-run this repro against a newer binding commit
+periodically to see if either is now moot.
+
+1. **`tests/golden/monitor.xml` segfaults** — an `lv_table` as a child of a
+   `style_layout="grid"` container crashes in `lv_grid.c`'s `grid_align()`
+   with garbage arguments (`track_num` in the billions, a non-pointer
+   `pos_array`), consistent with heap corruption rather than a null check
+   gap. Isolated by testing the same table markup **without** a grid parent
+   (renders fine) — so it's specifically the grid+table interaction that's
+   broken on this LVGL commit. `validate-xml`'s C harness already renders
+   this exact file successfully against the project's pinned v9.4.0, so
+   this is an upstream layout bug fixed sometime between v9.3 and v9.4, not
+   an html2lvgl output problem. Get a backtrace with
+   `gdb -batch -ex run -ex bt --args ./ports/unix/build-lvgl/micropython render_xml.py tests/golden/monitor.xml /tmp/out.bmp`
+   (needs a `DEBUG=1` rebuild for symbols) to re-verify against a newer
+   commit.
+2. **`<screen_create_event screen="...">` (multi-screen navigation) is a
+   no-op** — `render_xml.py`'s `--click=<name>` support works (the target
+   widget is found and clicked), but nothing happens: `grep -rn
+   screen_create_event` inside the vendored `lvgl` checkout returns nothing.
+   This LVGL XML construct was added after v9.3; it's real and works
+   against v9.4.0 (`validate-xml`'s C harness exercises it with the same
+   `--click=to_settings` assertion successfully). Every golden's individual
+   screens still instantiate and render correctly through
+   `lv_xml_component_register_from_data()` — only the click-driven
+   navigation itself can't be exercised on this binding commit.
