@@ -191,3 +191,118 @@ jobs:
             spike/render/main_c.c /tmp/cpp-fonts-demo/ui_typography.cpp /tmp/cpp-font-objs/*.o \
             build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
           /tmp/render_cpp_fonts /tmp/out.bmp
+
+  validate-micropython-xml:
+    name: Validate golden XML on MicroPython (lv_binding_micropython)
+    runs-on: ubuntu-latest
+    env:
+      # Pinned for reproducibility: lv_micropython's tracked submodule
+      # pointer for user_modules/lv_binding_micropython moves on nearly
+      # every commit ("chore: update micropython binding"). Re-check
+      # periodically whether a newer commit's vendored LVGL has picked up
+      # v9.4.0 features this project relies on — see "Known limitations"
+      # in spike/micropython/README.md.
+      LV_MICROPYTHON_COMMIT: 44aa2b153dd3aa1ba183d05bd867fe3ffe2a1d75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Cache lv_micropython checkout (with submodules, unpatched)
+        id: lv-micropython-cache
+        uses: actions/cache@v4
+        with:
+          path: lv_micropython
+          key: lv-micropython-${{ env.LV_MICROPYTHON_COMMIT }}
+
+      - name: Clone lv_micropython and its submodules
+        if: steps.lv-micropython-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/lvgl/lv_micropython.git lv_micropython
+          cd lv_micropython
+          git checkout "$LV_MICROPYTHON_COMMIT"
+          git submodule update --init --depth 1 user_modules/lv_binding_micropython \
+            lib/micropython-lib lib/berkeley-db-1.xx lib/libffi lib/axtls lib/mbedtls
+          cd user_modules/lv_binding_micropython
+          git submodule update --init --depth 1 lvgl pycparser
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libreadline-dev libffi-dev pkg-config libsdl2-2.0-0 libsdl2-dev
+
+      # The cached checkout is pre-patch (actions/cache never re-saves an
+      # existing key), so this always applies cleanly whether the clone
+      # above ran or was skipped.
+      - name: Apply the vendored LVGL / binding config patches
+        run: |
+          git apply "$GITHUB_WORKSPACE/spike/micropython/patches/lv_binding_micropython-lv_conf.patch" \
+            --directory=lv_micropython/user_modules/lv_binding_micropython
+          git -C lv_micropython/user_modules/lv_binding_micropython/lvgl apply \
+            "$GITHUB_WORKSPACE/spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch"
+
+      - name: Build mpy-cross and the unix port (VARIANT=lvgl)
+        run: |
+          make -C lv_micropython/mpy-cross -j"$(nproc)"
+          make -C lv_micropython/ports/unix submodules
+          make -C lv_micropython/ports/unix VARIANT=lvgl -j"$(nproc)"
+
+      - name: Render every single-file golden XML
+        run: |
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          for xml in tests/golden/*.xml; do
+            # monitor.xml: an lv_table as a grid child segfaults in lv_grid.c
+            # on the pinned binding's vendored LVGL (v9.3-era) — a real
+            # upstream layout bug fixed by v9.4.0, which validate-xml above
+            # already renders this same file against successfully. Not an
+            # html2lvgl output problem; see "Known limitations" in
+            # spike/micropython/README.md.
+            case "$(basename "$xml")" in monitor.xml) continue ;; esac
+            echo "validating $xml"
+            "$MP" spike/micropython/render_xml.py "$xml" /tmp/out.bmp
+          done
+
+      - name: Render componentized React goldens (multi-file registration)
+        run: |
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          for dir in tests/golden-react/*/; do
+            name=$(basename "$dir")
+            components=$(ls "$dir"*.xml | grep -v "/$name\.xml$")
+            echo "validating $dir ($name + components)"
+            "$MP" spike/micropython/render_xml.py "$dir$name.xml" /tmp/out.bmp $components
+          done
+
+      - name: Render multi-screen goldens
+        run: |
+          # Each screen instantiates and renders standalone here. Unlike
+          # validate-xml's C harness run, this doesn't exercise --click
+          # navigation: <screen_create_event> is an LVGL XML construct added
+          # after v9.3, so it's not present in the pinned binding's vendored
+          # LVGL — see "Known limitations" in spike/micropython/README.md.
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          for xml in tests/golden-nav/*.xml; do
+            siblings=$(ls tests/golden-nav/*.xml | grep -v "^$xml$")
+            echo "validating $xml"
+            "$MP" spike/micropython/render_xml.py "$xml" /tmp/out.bmp $siblings
+          done
+
+      - name: Install Node (for lv_font_conv, an npm-distributed tool)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Convert fonts with lv_font_conv and render with them
+        run: |
+          sudo apt-get update && sudo apt-get install -y fonts-liberation
+          L=/usr/share/fonts/truetype/liberation
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/fonts-demo \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf"
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          FONTS=""
+          for f in /tmp/fonts-demo/fonts/*.bin; do
+            FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
+          done
+          "$MP" spike/micropython/render_xml.py /tmp/fonts-demo/typography.xml /tmp/out.bmp $FONTS
