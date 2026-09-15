@@ -1,0 +1,12 @@
+diff --git a/ports/esp32/esp32_common.cmake b/ports/esp32/esp32_common.cmake
+index d4f07da76..a306be977 100644
+--- a/ports/esp32/esp32_common.cmake
++++ b/ports/esp32/esp32_common.cmake
+@@ -162,6 +162,7 @@ list(APPEND IDF_COMPONENTS
+     heap
+     log
+     lwip
++    mdns
+     mbedtls
+     newlib
+     nvs_flash
