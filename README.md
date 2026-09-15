@@ -267,10 +267,10 @@ CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance 
 
 ## Project layout
 
-- `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
+- `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `emit-py.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
 - `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
 - `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
-- `spike/` — the proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike
+- `spike/` — the proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike and the `--format py` emitter's verification harness, `spike/esp32/` the ESP32 boot-under-QEMU spike
 - `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout), the fidelity scorer, and `convert-fixture.mjs` for browser-free conversion from a committed fixture
 
 ## Development
