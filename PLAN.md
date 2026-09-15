@@ -167,7 +167,7 @@ The Phase 0 spike changed the shape of this work: shipping the existing `--forma
 
 1. ~~Does `lv_binding_micropython` expose `lv_xml_*` when `LV_USE_XML` is enabled?~~ **Yes.** Confirmed by rendering unmodified `--format xml` golden output on `lv_micropython`'s unix port.
 2. ~~Is `lv_binfont_create` reachable from MicroPython with a filesystem driver?~~ **Yes**, after one small patch — see `spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch`. `lv_micropython`'s Makefile preprocesses only `lvgl_private.h` (a `_private.h`-only umbrella) for the binding generator, and `lv_binfont_loader.h` has no `_private.h` counterpart pulling it in — a build-wiring gap, not an `lv_conf.h` setting.
-3. Which MicroPython targets matter — the unix port (spiked), ESP32 (the realistic device), or both? **Still open** — unix proves the API and asset story; ESP32 validation (real flash/PSRAM constraints, no SDL) is separate future work.
+3. Which MicroPython targets matter — the unix port (spiked, Phases 0–3), ESP32 (the realistic device), or both? **Partially resolved by an ESP32 spike** (`spike/esp32/README.md`): `lv_micropython`'s ESP32 port builds against real ESP-IDF v5.2.2 with the *same* `lv_conf.h` patches already committed for the unix port, and the resulting firmware boots and runs the LVGL binding (`import lvgl`, `lv.xml_create()`, ...) under Espressif's own QEMU-Xtensa emulator — real architecture-level validation (Xtensa, embedded heap constraints), not just x86. What's still open: QEMU-Xtensa emulates the CPU/flash/UART but no display peripheral, so this proves boot-and-execute, not renders-correctly — that still needs real hardware. The spike also needed four manual workarounds specific to this environment's network policy (see the spike's "Known blockers" section), so it isn't wired into CI yet.
 4. Is the C++ interest "I want to call this from my C++ project" (already true, needs docs) or "I want idiomatic C++ output" (a wrapper library to maintain)? This changes the C++ work by an order of magnitude. **Resolved by proceeding with the documentation-and-linkage track** — see §2.3, shipped.
 
 ---
@@ -181,7 +181,7 @@ All tracks from the original recommendation are done:
 3. ~~MicroPython Phase 3: idiomatic Python emitter, if requested.~~ **Requested and shipped** — see §3.4. Re-verifying the §3.2 mapping table against a real generated binding (rather than trusting the C-derived guess) found two real API divergences worth having caught before release, not after.
 4. Idiomatic C++ wrapper only if users ask for it. **Still not requested — not started, by design.**
 
-Next candidate: none queued. Optional future work: ESP32 MicroPython validation (§4 open question 3), or npm trusted publishing (see `ROADMAP.md`).
+Next candidate: none queued. Optional future work: turning the ESP32 boot-and-execute spike (§4 open question 3, `spike/esp32/README.md`) into a real hardware or CI-stable validation, or npm trusted publishing (see `ROADMAP.md`).
 
 ---
 
