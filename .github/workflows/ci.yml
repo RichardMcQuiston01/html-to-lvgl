@@ -231,15 +231,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libreadline-dev libffi-dev pkg-config libsdl2-2.0-0 libsdl2-dev
 
-      # The cached checkout is pre-patch (actions/cache never re-saves an
-      # existing key), so this always applies cleanly whether the clone
-      # above ran or was skipped.
+      # Idempotent: actions/cache saves whatever is on disk at job end, which
+      # is *after* this step has already patched it in place, and cache
+      # entries from the default branch are visible to every other branch's
+      # runs. So a "cache hit" here can restore an already-patched tree (the
+      # exact patch this step is about to apply) just as easily as a fresh,
+      # unpatched clone - apply each patch only if it isn't already in.
       - name: Apply the vendored LVGL / binding config patches
         run: |
-          git apply "$GITHUB_WORKSPACE/spike/micropython/patches/lv_binding_micropython-lv_conf.patch" \
-            --directory=lv_micropython/user_modules/lv_binding_micropython
-          git -C lv_micropython/user_modules/lv_binding_micropython/lvgl apply \
-            "$GITHUB_WORKSPACE/spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch"
+          apply_if_needed() {
+            local patch="$1" dir="$2"
+            if git -C "$dir" apply --check "$GITHUB_WORKSPACE/$patch" 2>/dev/null; then
+              git -C "$dir" apply "$GITHUB_WORKSPACE/$patch"
+            elif git -C "$dir" apply --reverse --check "$GITHUB_WORKSPACE/$patch" 2>/dev/null; then
+              echo "$patch already applied (cached checkout) - skipping"
+            else
+              echo "::error::$patch does not apply cleanly and isn't already applied to $dir"
+              exit 1
+            fi
+          }
+          apply_if_needed spike/micropython/patches/lv_binding_micropython-lv_conf.patch \
+            lv_micropython/user_modules/lv_binding_micropython
+          apply_if_needed spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch \
+            lv_micropython/user_modules/lv_binding_micropython/lvgl
 
       - name: Build mpy-cross and the unix port (VARIANT=lvgl)
         run: |
