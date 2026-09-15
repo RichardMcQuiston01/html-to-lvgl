@@ -1,17 +1,19 @@
-# MicroPython Phase 0 spike, and Phase 2 CI validation
+# MicroPython Phase 0 spike, Phase 2 CI validation, and the Phase 3 emitter
 
 Answers the two open questions from `PLAN.md` §4 before committing to a
 `src/emit-python.mjs` emitter: does `lv_binding_micropython` expose the
 `lv_xml_*` API, and is `lv_binfont_create` reachable from MicroPython? Both
 are **yes**, each behind a small, documented patch to the binding's vendored
 LVGL checkout. This changes the plan: html2lvgl's existing `--format xml`
-output loads on MicroPython **unmodified** — no Python emitter is needed for
-the XML path.
+output loads on MicroPython **unmodified** — no Python emitter is needed to
+*reach* MicroPython at all.
 
 Phase 1 (README docs, no code) and Phase 2 (this file's "Known limitations"
 section, plus a `validate-micropython-xml` CI job in `.github/workflows/ci.yml`
 that runs `render_xml.py` against every golden the same way `validate-xml`
-does for the C harness) are both done — see `PLAN.md` §3.4.
+does for the C harness) are both done — see `PLAN.md` §3.4. Phase 3 (the
+idiomatic `--format py` emitter, `src/emit-py.mjs`, for users who'd rather
+not carry `LV_USE_XML`) is also done — see "The Phase 3 emitter" below.
 
 ## Results
 
@@ -58,14 +60,15 @@ work becomes packaging and validation, not translation:
   the C harness.
 
 An idiomatic Pythonic emitter (`lv.obj(parent).set_width(...)`-style, one
-statement per widget) is still a reasonable *future* addition for users who
-don't want to ship XML — the mapping table below remains valid groundwork
-for it — but it's no longer required to reach MicroPython at all.
+statement per widget) was still a reasonable *future* addition for users who
+don't want to ship XML — the mapping table below was valid groundwork for it
+— but it wasn't required to reach MicroPython at all. It shipped later as
+Phase 3; see "The Phase 3 emitter" below.
 
 ## Mapping table verified
 
-Hand-written against the real binding (not assumed), confirming `PLAN.md`
-§3.2's proposed table exactly:
+Hand-written against the real binding at spike time (not assumed), confirming
+`PLAN.md` §3.2's proposed table exactly:
 
 | C emitter | MicroPython (verified) |
 |---|---|
@@ -82,7 +85,76 @@ One binding quirk not in the original table: a function returning `void *`
 (like `lv_xml_create`) comes back as an untyped `Blob` and needs an explicit
 `lv.obj.__cast__(blob)` — the generated-code equivalent would need this for
 every XML-returning call, which is exactly the kind of wrinkle this spike
-exists to surface before committing to an emitter design.
+exists to surface before committing to an emitter design. (`--format py`'s
+generated code never hits this: it calls widget constructors like `lv.obj()`
+directly rather than going through `lv_xml_create`'s untyped return.)
+
+## The Phase 3 emitter
+
+`src/emit-py.mjs` (`--format py`) turned this hand-written table into a real
+emitter, re-verified against a real generated binding rather than trusted as
+committed above — built `lv_micropython`'s unix port at the CI-pinned commit
+and introspected it directly (`dir(lv.<GROUP>)` for every enum group, plus a
+full smoke-render of every widget type and a real cross-module navigation
+test). That re-verification, not just the mapping table above, is what
+caught two real gaps before shipping:
+
+- **`lv_slider`/`lv_bar` have no separate `set_min_value`/`set_max_value`**
+  on this binding's vendored LVGL — only `set_range(min, max)`. The separate
+  setters are a v9.4.0-only addition (confirmed by grepping the vendored
+  LVGL's headers: `lv_slider_set_range`/`lv_bar_set_range` exist, the
+  per-bound setters don't); `emit-c.mjs` only gets away with calling them
+  because the C harness compiles against a real v9.4.0 checkout, not this
+  binding's v9.3.0-era one. `emit-py.mjs` always emits a single
+  `set_range(min, max)` call instead.
+- **`LV_ANIM_OFF`/`LV_ANIM_ON` aren't enum constants at all** —
+  `lv_anim_enable_t` is `typedef bool` in this LVGL version, so the binding
+  takes a plain Python bool. `emit-py.mjs` passes `False` where a naive
+  translation of the C macro name would guess at a nonexistent
+  `lv.ANIM.OFF`.
+
+Also found along the way: flag constants (`scrollable`/`hidden`/`ignore_layout`)
+live under the widget class's nested `FLAG` enum (`lv.obj.FLAG.HIDDEN`), not
+a top-level `lv.OBJ_FLAG.HIDDEN` — there is no such top-level name in the
+binding at all.
+
+Two design choices worth calling out:
+
+- **Custom fonts/images become runtime dict arguments.** C's `extern`
+  declaration borrows a compile-time link step to resolve a font/image by
+  name; Python has no equivalent, so `ui_create(parent, fonts=None)` /
+  `ui_create(parent, images=None)` take them as dicts the caller populates
+  (e.g. via `lv.binfont_create(...)`) and the generated code indexes by the
+  same key `--font-map` already produces. Verified end-to-end with a real
+  `--no-compress` `lv_font_conv` `.bin` (that flag matters: a *compressed*
+  conversion crashed the renderer on this pinned binding, a decoder gap
+  unrelated to the emitter's own output — the project's real font pipeline
+  in `fonts-build.mjs` already always converts with `--no-compress`, so this
+  only bit an ad hoc test conversion during verification, never real usage).
+- **Multi-screen navigation imports lazily.** The generated click callback
+  does `import ui_<screen>` *inside* the callback body, not at module load —
+  both because two screens that link to each other would otherwise form a
+  circular top-level import, and because the cost is only paid on an actual
+  navigation. Verified with two real on-disk modules and a real simulated
+  click (`spike/micropython/run_py_nav.py`), checking `lv.screen_active()`
+  changed by object identity rather than by name — generated code never
+  calls `lv_obj_set_name()` (same omission `emit-c.mjs` already makes; `name`
+  only picks the source-level Python variable), so `find_by_name()`-style
+  lookups don't apply to raw emitter output the way they do to XML.
+
+Interestingly, the `monitor.xml` segfault documented below (an upstream
+`lv_grid.c` bug on this binding's vendored LVGL) does **not** reproduce
+through `--format py`'s direct imperative call sequence — run repeatedly
+with no crash, not just assumed safe because it's a different code path.
+The XML runtime's `lv_xml_create()` must build/attach the tree in a
+different order than the emitter's straight-line widget-then-attributes
+calls, avoiding whatever specific order triggers the corruption. CI's
+Python-emitter validation doesn't exclude `monitor.py` because of this.
+
+`spike/micropython/run_py.py` and `run_py_nav.py` are the reference
+harnesses `.github/workflows/ci.yml` uses to call every golden's
+`ui_create()`/`ui_<screen>_create()` directly — a real execution, not a
+syntax check — mirroring `render_xml.py`'s role for the XML path.
 
 ## Reproducing
 
@@ -144,7 +216,7 @@ that commit; re-check whether a newer binding commit has finally picked up
 
 ### `patches/lv_binding_micropython-lv_conf.patch`
 
-Four `lv_conf.h` flags the binding ships disabled by default:
+`lv_conf.h` flags the binding ships disabled (or too narrow) by default:
 
 - `LV_USE_XML` — off by default; turning it on is what exposes `lv_xml_*`
   to the binding generator at all.
@@ -161,6 +233,16 @@ Four `lv_conf.h` flags the binding ships disabled by default:
   mirroring `spike/render/main.c`'s `find_by_name`) fails with `AttributeError:
   'obj' object has no attribute 'get_name'` even though `name="..."` widget
   attributes parse and apply fine either way.
+- `LV_FONT_MONTSERRAT_{10,12,18,20,22,28,32,36,40,48}` (found in Phase 3) —
+  the binding's default `lv_conf.h` only enables sizes 14/16/24, a small
+  subset of the 13 sizes (10 through 48) html2lvgl's own font table can
+  reference. The XML path silently tolerated the gap (an unregistered font
+  name just doesn't render, rather than erroring), so it went unnoticed
+  through Phase 2 — but `--format py`'s generated code does a direct
+  `lv.font_montserrat_N` attribute access, which raises a hard
+  `AttributeError` for any size the binding wasn't built with. Enabling the
+  full set here matches `spike/render/lv_conf.h`'s C harness config exactly,
+  and incidentally improves the XML path's own font fidelity too.
 
 ### `patches/lvgl-binfont-and-xml-event-cb.patch`
 
