@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **MicroPython (Phase 3):** a new `--format py` backend (`src/emit-py.mjs`) emits idiomatic `ui_<name>.py` — plain `lv.*` calls against `lv_binding_micropython`'s auto-generated API, no `lv_xml` runtime dependency. The mapping was verified against a real generated binding (built `lv_micropython`'s unix port at CI's pinned commit and introspected it directly) rather than assumed from the C emitter's macro names, which caught two real divergences: `lv_slider`/`lv_bar` have no separate min/max setters on the pinned binding's vendored LVGL, only `set_range(min, max)`, and `LV_ANIM_OFF` isn't an enum constant at all (`lv_anim_enable_t` is a plain `bool`). Custom fonts/images are passed as runtime `fonts`/`images` dict arguments to `ui_create()` since Python has no compile-time linkage to borrow from C's `extern` declarations; multi-screen navigation uses a lazy `import ui_<screen>` inside the click callback rather than a top-level import, avoiding a circular import between two screens that link to each other. The `validate-micropython-xml` CI job now also calls every golden's generated `ui_create()` directly (not just a syntax check), including a real click-driven cross-screen navigation test and a custom-font test through the real `lv_font_conv` pipeline. Also fixed: the pinned binding's `lv_conf.h` only enabled 3 of the 13 Montserrat sizes html2lvgl's font table uses, which the XML path silently tolerated (a missing font just doesn't render) but raw `lv.font_montserrat_N` attribute access can't — patched to enable all 13, incidentally also improving the existing XML CI job's font fidelity. See README's "Using with MicroPython" section and `src/emit-py.mjs`'s module doc comment for the full detail.
+
 ## [0.1.2] - 2026-09-15
 
 Docs/CI-only release — nothing under `src/` changed, so the published package contents are identical to `0.1.1`.
