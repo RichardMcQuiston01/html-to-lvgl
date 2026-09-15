@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { convert } from '../src/convert.mjs';
 import { componentize } from '../src/componentize.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
+import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -19,10 +20,12 @@ const fixtureDir = join(here, 'fixtures');
 const goldenDir = join(here, 'golden');
 const goldenCDir = join(here, 'golden-c');
 const goldenCppDir = join(here, 'golden-cpp');
+const goldenPyDir = join(here, 'golden-py');
 const goldenReactDir = join(here, 'golden-react');
 const goldenNavDir = join(here, 'golden-nav');
 mkdirSync(goldenCDir, { recursive: true });
 mkdirSync(goldenCppDir, { recursive: true });
+mkdirSync(goldenPyDir, { recursive: true });
 
 const fixtureFiles = readdirSync(fixtureDir).filter((f) => f.endsWith('.json'));
 // *.nav.json fixtures form one multi-screen set that links to each other
@@ -76,4 +79,8 @@ for (const file of fixtureFiles) {
   writeFileSync(join(goldenCppDir, `${cpp.unit}.cpp`), cpp.c);
   writeFileSync(join(goldenCppDir, `${cpp.unit}.hpp`), cpp.h);
   console.log(`updated golden-cpp/${cpp.unit}.cpp/.hpp`);
+
+  const { py, unit: pyUnit } = emitPy(view, { name: cName, symbol });
+  writeFileSync(join(goldenPyDir, `${pyUnit}.py`), py);
+  console.log(`updated golden-py/${pyUnit}.py`);
 }

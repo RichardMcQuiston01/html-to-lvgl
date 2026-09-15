@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { convert } from '../src/convert.mjs';
 import { componentize } from '../src/componentize.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
+import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
 import { optimize } from '../src/optimize.mjs';
 
@@ -83,6 +84,15 @@ for (const file of fixtures) {
     const cBody = cGolden.replace(/^#include ".*"\n/m, '').replace(/extern (?!"C")/g, 'extern "C" ');
     const cppBody = c.replace(/^#include ".*"\n/m, '');
     assert.equal(cppBody, cBody, 'emitCpp must emit the same statements as emitC, only extern linkage differs');
+  });
+
+  test(`golden py: ${name}`, () => {
+    const tree = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+    const { view } = convert(tree, convertOpts);
+    const cName = nav ? `nav_${name}` : name;
+    const symbol = nav ? `ui_${name}_create` : 'ui_create';
+    const { py, unit } = emitPy(view, { name: cName, symbol });
+    assert.equal(py, readFileSync(join(here, 'golden-py', `${unit}.py`), 'utf8'));
   });
 }
 
@@ -354,6 +364,67 @@ test('emitC honors a custom lvInclude for the generated header', () => {
   const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [] };
   const { h } = emitC(view, { name: 'page', lvInclude: 'lvgl/lvgl.h' });
   assert.match(h, /#include "lvgl\/lvgl\.h"/);
+});
+
+test('emitPy does not mistake a custom font key for a built-in Montserrat name', () => {
+  // Same distinction emit-c.mjs makes (see the test above) — a custom
+  // family literally named "Montserrat" produces a key like
+  // "montserrat_400_16", which is not a real built-in (those are named
+  // just "montserrat_<size>").
+  const label = { tag: 'lv_label', attrs: { name: 'label', text: 'hi', style_text_font: 'montserrat_400_16' }, children: [] };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [label] };
+  const { py } = emitPy(view, { name: 'page' });
+
+  assert.match(py, /label\.set_style_text_font\(fonts\["montserrat_400_16"\], 0\)/);
+  assert.doesNotMatch(py, /lv\.font_montserrat_400_16/);
+  // A custom font is only reachable at runtime, so ui_create takes it as a
+  // dict argument rather than a compile-time reference.
+  assert.match(py, /def ui_create\(parent, fonts=None\):/);
+  assert.match(py, /^ {4}fonts = fonts or \{\}$/m);
+
+  // A genuine built-in needs no such plumbing.
+  const builtinLabel = { tag: 'lv_label', attrs: { name: 'l2', text: 'x', style_text_font: 'montserrat_16' }, children: [] };
+  const { py: py2 } = emitPy({ tag: 'view', attrs: {}, children: [builtinLabel] }, { name: 'page2' });
+  assert.match(py2, /lv\.font_montserrat_16/);
+  assert.doesNotMatch(py2, /fonts\[/);
+  assert.match(py2, /def ui_create\(parent\):/);
+});
+
+test('emitPy turns screen_create_event into a lazily-imported navigation callback', () => {
+  const button = {
+    tag: 'lv_button',
+    attrs: { name: 'to_settings' },
+    children: [{ tag: 'screen_create_event', attrs: { screen: 'settings' }, children: [] }],
+  };
+  const view = { tag: 'view', attrs: { width: 320, height: 240 }, children: [button] };
+  const { py } = emitPy(view, { name: 'home', symbol: 'ui_home_create' });
+
+  // The import happens inside the callback (see emit-py.mjs's module doc
+  // comment for why: no build-time link step to prove a top-level import
+  // resolves, and a two-screen top-level import pair would be circular).
+  assert.match(py, /def _nav_to_settings\(e\):\n {4}import ui_settings\n {4}scr = ui_settings\.ui_settings_create\(None\)\n {4}lv\.screen_load\(scr\)/);
+  assert.match(py, /to_settings\.add_event_cb\(_nav_to_settings, lv\.EVENT\.CLICKED, None\)/);
+
+  // Two links to the same screen share one callback instead of redeclaring it.
+  const twoLinks = {
+    tag: 'view',
+    attrs: { width: 320, height: 240 },
+    children: [button, { ...button, attrs: { name: 'to_settings_2' } }],
+  };
+  const { py: py2 } = emitPy(twoLinks, { name: 'home2' });
+  assert.equal((py2.match(/def _nav_to_settings/g) || []).length, 1);
+});
+
+test('emitPy combines lv_slider/lv_bar min_value+max_value into one set_range call', () => {
+  // The pinned lv_binding_micropython's vendored LVGL has no separate
+  // set_min_value/set_max_value (a v9.4.0-only addition emit-c.mjs can rely
+  // on because it targets real v9.4.0) — verified against a real generated
+  // binding, see emit-py.mjs's module doc comment.
+  const slider = { tag: 'lv_slider', attrs: { name: 'sl', min_value: 0, max_value: 100, value: 42 }, children: [] };
+  const { py } = emitPy({ tag: 'view', attrs: {}, children: [slider] }, { name: 'page' });
+  assert.match(py, /sl\.set_range\(0, 100\)/);
+  assert.match(py, /sl\.set_value\(42, False\)/);
+  assert.doesNotMatch(py, /set_min_value|set_max_value/);
 });
 
 function base() {
