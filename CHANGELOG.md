@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-15
+
+Docs/CI-only release — nothing under `src/` changed, so the published package contents are identical to `0.1.1`.
+
 ### Added
 
 - **MicroPython (Phase 1):** documented using `--format xml` output directly with `lv_micropython` / `lv_binding_micropython` — `lv.xml_init()` + `lv.xml_component_register_from_data()` usage, `<component>` vs `<screen>` root instantiation, and the `.bin`-fonts-alongside-XML convention for custom fonts (already the natural output of `--font-map`, no new CLI code). See README's "Using with MicroPython" section.
