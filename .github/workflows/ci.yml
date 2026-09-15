@@ -208,12 +208,22 @@ jobs:
         with:
           persist-credentials: false
 
+      # Keying on LV_MICROPYTHON_COMMIT alone isn't enough: actions/cache
+      # saves whatever's on disk at job END, which is *after* the patch step
+      # below has already patched it in place (see that step's own comment),
+      # and cache entries from the default branch are visible to every other
+      # branch's runs. So a content change to the patch files themselves
+      # (not just a commit bump) can otherwise restore a tree patched with
+      # the *previous* version of the patch — neither cleanly re-appliable
+      # nor cleanly detectable as "already applied" by the idempotent check
+      # below, since it's neither. Hashing the patch files into the key
+      # makes that content change bust the cache instead.
       - name: Cache lv_micropython checkout (with submodules, unpatched)
         id: lv-micropython-cache
         uses: actions/cache@v4
         with:
           path: lv_micropython
-          key: lv-micropython-${{ env.LV_MICROPYTHON_COMMIT }}
+          key: lv-micropython-${{ env.LV_MICROPYTHON_COMMIT }}-${{ hashFiles('spike/micropython/patches/*.patch') }}
 
       - name: Clone lv_micropython and its submodules
         if: steps.lv-micropython-cache.outputs.cache-hit != 'true'
@@ -320,3 +330,52 @@ jobs:
             FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
           done
           "$MP" spike/micropython/render_xml.py /tmp/fonts-demo/typography.xml /tmp/out.bmp $FONTS
+
+      - name: Render every golden --format py output by calling ui_create() directly
+        run: |
+          # Unlike the XML goldens above, monitor.py is *not* excluded here:
+          # the known lv_table-as-grid-child memory corruption in this
+          # binding's vendored LVGL (see spike/micropython/README.md) doesn't
+          # reproduce through the emitter's direct imperative call sequence,
+          # only through lv_xml_create()'s own tree-building order — verified
+          # by running it repeatedly with no crash, not assumed safe.
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          for py in tests/golden-py/*.py; do
+            case "$(basename "$py")" in ui_nav_*.py) continue ;; esac
+            echo "validating $py"
+            MICROPYPATH=tests/golden-py "$MP" spike/micropython/run_py.py "$py" ui_create
+          done
+
+      - name: Render multi-screen --format py goldens and exercise real cross-module navigation
+        run: |
+          # The generated nav callback does `import ui_<screen>` (see
+          # emit-py.mjs's module doc comment), matching cli.mjs's real
+          # multi-screen file naming (ui_<screen>.py) — but the golden
+          # directory prefixes these two with nav_ solely to avoid colliding
+          # with the standalone settings.json fixture's own golden (same
+          # convention tests/golden-c already uses). Stage copies under the
+          # real names so the import in the generated code actually resolves.
+          mkdir -p /tmp/nav-py
+          cp tests/golden-py/ui_nav_home.py /tmp/nav-py/ui_home.py
+          cp tests/golden-py/ui_nav_settings.py /tmp/nav-py/ui_settings.py
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          MICROPYPATH=/tmp/nav-py "$MP" spike/micropython/run_py.py /tmp/nav-py/ui_home.py ui_home_create
+          MICROPYPATH=/tmp/nav-py "$MP" spike/micropython/run_py.py /tmp/nav-py/ui_settings.py ui_settings_create
+          # child path 2,0: root -> nav (3rd child) -> to_settings (1st child),
+          # matching tests/fixtures/home.nav.json's structure.
+          MICROPYPATH=/tmp/nav-py "$MP" spike/micropython/run_py_nav.py /tmp/nav-py/ui_home.py ui_home_create 2,0
+
+      - name: Convert fonts with lv_font_conv and render with them (--format py)
+        run: |
+          L=/usr/share/fonts/truetype/liberation
+          node scripts/convert-fixture.mjs tests/fixtures/typography.json /tmp/fonts-demo-py \
+            --font-map "Liberation Sans=$L/LiberationSans-Regular.ttf" \
+            --font-map "Liberation Sans:700=$L/LiberationSans-Bold.ttf" \
+            --format py
+          grep -q 'fonts\["liberation_sans_700_28"\]' /tmp/fonts-demo-py/ui_typography.py
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          FONTS=""
+          for f in /tmp/fonts-demo-py/fonts/*.bin; do
+            FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
+          done
+          MICROPYPATH=/tmp/fonts-demo-py "$MP" spike/micropython/run_py.py /tmp/fonts-demo-py/ui_typography.py ui_create $FONTS
