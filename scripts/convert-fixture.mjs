@@ -18,6 +18,7 @@ import { convert } from '../src/convert.mjs';
 import { planFonts, buildFonts, fontWarnings } from '../src/fonts-build.mjs';
 import { builtinFonts, customFonts } from '../src/fonts.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
+import { emitPy } from '../src/emit-py.mjs';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -27,8 +28,8 @@ const { values, positionals } = parseArgs({
   },
 });
 
-if (positionals.length !== 2 || !['xml', 'c', 'cpp'].includes(values.format)) {
-  console.error('usage: convert-fixture.mjs <fixture.json> <outdir> [--font-map "Family=path.ttf"] [--format xml|c|cpp]');
+if (positionals.length !== 2 || !['xml', 'c', 'cpp', 'py'].includes(values.format)) {
+  console.error('usage: convert-fixture.mjs <fixture.json> <outdir> [--font-map "Family=path.ttf"] [--format xml|c|cpp|py]');
   process.exit(1);
 }
 
@@ -53,6 +54,10 @@ const { xml, view } = convert(tree, { name, fonts: built.length ? customFonts(bu
 if (values.format === 'xml') {
   writeFileSync(join(outDir, `${name}.xml`), xml);
   console.log(`wrote ${join(outDir, `${name}.xml`)} with ${built.length} converted font(s)`);
+} else if (values.format === 'py') {
+  const { py, unit } = emitPy(view, { name });
+  writeFileSync(join(outDir, `${unit}.py`), py);
+  console.log(`wrote ${join(outDir, `${unit}.py`)} with ${built.length} converted font(s)`);
 } else {
   const emit = values.format === 'cpp' ? emitCpp : emitC;
   const { c, h, unit } = emit(view, { name });

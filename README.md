@@ -180,13 +180,14 @@ Differing label texts become string props, differing colors become color props, 
 
 ### Output formats
 
-`--format` accepts a comma-separated list (`xml`, `c`, `cpp`); `both` is a back-compat alias for `xml,c`.
+`--format` accepts a comma-separated list (`xml`, `c`, `cpp`, `py`); `both` is a back-compat alias for `xml,c`.
 
 - **XML** (default): for LVGL v9.4's `lv_xml` runtime and the LVGL Editor toolchain.
 - **C** (`--format c` or `both`): self-contained `ui_<name>.c/.h` exporting `lv_obj_t * ui_create(lv_obj_t * parent)` — no XML runtime dependency, works on any LVGL 9.x. A single-page conversion exports `ui_create`; converting several pages together (multi-screen) exports one `ui_<screen>_create` per screen instead.
 - **C++** (`--format cpp`): the same generated UI code as `ui_<name>.cpp/.hpp`, for a project that only compiles C++. LVGL's public headers already carry `extern "C"` guards, so the plain LVGL calls inside the generated function compile unchanged under C++17 — what differs from the C output is linkage: the header wraps `ui_create` in `extern "C" { ... }` and font/image `extern` declarations say `extern "C"`, so the generated `.cpp` links correctly against `lv_font_conv`'s font `.c` files. Those asset files must still be compiled as C (or otherwise given C linkage) regardless of `--format` — only the generated UI sources are C++; a C++ translation unit that omits `extern "C"` when referencing a C-compiled asset symbol asks the linker for a mangled name the C compiler never produced.
+- **MicroPython** (`--format py`): idiomatic `ui_<name>.py` exporting `def ui_create(parent):` — plain `lv.*` calls against [`lv_binding_micropython`](https://github.com/lvgl/lv_binding_micropython)'s auto-generated API, no `lv_xml` runtime dependency. See [Using with MicroPython](#using-with-micropython) below for the full picture, including how this compares to shipping XML directly.
 
-All three backends emit from the same widget tree; their renders are pixel-identical.
+All four backends emit from the same widget tree; the XML/C/C++ renders are pixel-identical (the Python backend targets a different, older vendored LVGL inside the pinned binding — see below).
 
 ### Using with MicroPython
 
@@ -226,6 +227,37 @@ scope.register_font("liberation_sans_700_28", font)  # same name as the .bin's f
 ```
 
 This requires `LV_USE_XML` enabled in the binding's `lv_conf.h`; at spike time two small patches to the binding's vendored LVGL copy were also needed (`lv_binfont_create` and the XML component scope's `user_data` field — neither changes behavior, both just widen what the binding generator's auto-scan sees). See [`spike/micropython/README.md`](spike/micropython/README.md) for the full patches, a working reference script (`render_xml.py`), and reproduction steps — worth re-checking whether a newer `lv_binding_micropython` commit already includes them upstream.
+
+#### `--format py`: idiomatic Python instead of XML
+
+If you'd rather not carry `LV_USE_XML` or ship `.xml` files at all, `--format py` emits the same UI as plain `lv.*` calls instead:
+
+```python
+import ui_dashboard
+
+page = ui_dashboard.ui_create(None)
+lv.screen_load(page)
+```
+
+A multi-screen conversion works the same way as the C backend: each screen exports its own `ui_<screen>_create(parent)` from `ui_<screen>.py`, and a generated navigation button's click handler does `import ui_<target-screen>` — lazily, inside the callback, so two screens that link to each other don't form a circular import at load time, and the cost is only paid on an actual navigation.
+
+Custom fonts and images have no compile-time linkage for this backend to borrow from (unlike C's `extern` declarations), so a page that uses either takes them as runtime dict arguments instead:
+
+```python
+fonts = {"liberation_sans_700_28": lv.binfont_create("A:out/fonts/liberation_sans_700_28.bin")}
+page = ui_typography.ui_create(None, fonts=fonts)  # only present if the page actually uses a custom font
+```
+
+Which format to reach for:
+
+| | `--format xml` | `--format py` |
+|---|---|---|
+| Runtime dependency | `LV_USE_XML` (+ `lv_xml` support code) | none |
+| Multi-file UI | one `lv_xml_component_register_from_data()` call per file | one `import` per screen |
+| Custom fonts/images | registered into the XML scope by name | passed as a `fonts`/`images` dict argument |
+| Editing after generation | plain-text markup | plain-text Python |
+
+The mapping (`lv_obj_set_width(o, v)` → `o.set_width(v)`, `LV_FLEX_FLOW_ROW_WRAP` → `lv.FLEX_FLOW.ROW_WRAP`, …) was verified against a real generated binding rather than assumed from the C names — see `src/emit-py.mjs`'s module doc comment for two real spots it diverges from a naive 1:1 C-call translation (`lv_slider`/`lv_bar`'s `set_range` vs. separate min/max setters, and `LV_ANIM_OFF` being a plain Python `False`). CI (`validate-micropython-xml` in `.github/workflows/ci.yml`) calls every golden's generated `ui_create()` directly on a real `lv_micropython` build, including a real click-driven cross-screen navigation test — not just a syntax check.
 
 ### Fidelity
 

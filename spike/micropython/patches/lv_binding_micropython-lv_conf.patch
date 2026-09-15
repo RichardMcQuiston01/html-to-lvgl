@@ -1,5 +1,5 @@
 diff --git a/lv_conf.h b/lv_conf.h
-index e7bc305..ca3f0e9 100644
+index e7bc305..900ab02 100644
 --- a/lv_conf.h
 +++ b/lv_conf.h
 @@ -203,7 +203,7 @@
@@ -20,6 +20,43 @@ index e7bc305..ca3f0e9 100644
  
  /** Automatically assign an ID when obj is created */
  #define LV_OBJ_ID_AUTO_ASSIGN   LV_USE_OBJ_ID
+@@ -594,26 +594,26 @@ extern void mp_lv_deinit_gc();
+ /* Montserrat fonts with ASCII range and some symbols using bpp = 4
+  * https://fonts.google.com/specimen/Montserrat */
+ #define LV_FONT_MONTSERRAT_8  0
+-#define LV_FONT_MONTSERRAT_10 0
+-#define LV_FONT_MONTSERRAT_12 0
++#define LV_FONT_MONTSERRAT_10 1
++#define LV_FONT_MONTSERRAT_12 1
+ #define LV_FONT_MONTSERRAT_14 1
+ #define LV_FONT_MONTSERRAT_16 1
+-#define LV_FONT_MONTSERRAT_18 0
+-#define LV_FONT_MONTSERRAT_20 0
+-#define LV_FONT_MONTSERRAT_22 0
++#define LV_FONT_MONTSERRAT_18 1
++#define LV_FONT_MONTSERRAT_20 1
++#define LV_FONT_MONTSERRAT_22 1
+ #define LV_FONT_MONTSERRAT_24 1
+ #define LV_FONT_MONTSERRAT_26 0
+-#define LV_FONT_MONTSERRAT_28 0
++#define LV_FONT_MONTSERRAT_28 1
+ #define LV_FONT_MONTSERRAT_30 0
+-#define LV_FONT_MONTSERRAT_32 0
++#define LV_FONT_MONTSERRAT_32 1
+ #define LV_FONT_MONTSERRAT_34 0
+-#define LV_FONT_MONTSERRAT_36 0
++#define LV_FONT_MONTSERRAT_36 1
+ #define LV_FONT_MONTSERRAT_38 0
+-#define LV_FONT_MONTSERRAT_40 0
++#define LV_FONT_MONTSERRAT_40 1
+ #define LV_FONT_MONTSERRAT_42 0
+ #define LV_FONT_MONTSERRAT_44 0
+ #define LV_FONT_MONTSERRAT_46 0
+-#define LV_FONT_MONTSERRAT_48 0
++#define LV_FONT_MONTSERRAT_48 1
+ 
+ /* Demonstrate special features */
+ #define LV_FONT_MONTSERRAT_28_COMPRESSED    0  /**< bpp = 3 */
 @@ -987,9 +987,9 @@ extern void mp_lv_deinit_gc();
  #endif
  

@@ -1,7 +1,7 @@
 # Plan: MicroPython and C++ Output Targets
 
 **Date:** August 2026
-**Status:** C++ output shipped. MicroPython Phases 0–2 done (spike, docs, CI validation). Two upstream-LVGL-version limitations found and documented, not patched — see `spike/micropython/README.md` "Known limitations".
+**Status:** C++ output shipped. MicroPython Phases 0–3 done (spike, docs, CI validation, idiomatic Python emitter). Two upstream-LVGL-version limitations found and documented, not patched — see `spike/micropython/README.md` "Known limitations".
 **Question:** What would it take for `html2lvgl` to target LVGL from MicroPython and from C++, and is either already supported?
 
 ---
@@ -11,7 +11,7 @@
 | Target | Supported today? | What it really takes |
 |---|---|---|
 | **C++** | **Yes — shipped.** `--format cpp` emits `.cpp`/`.hpp`; CI compiles and links every golden as C++17, including the font-linkage-trap case, against real LVGL v9.4.0. | Done. See §2.3. |
-| **MicroPython** | **Shipped (Phases 0–2).** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML (both `<component>` and `<screen>` roots) renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. No new emitter needed to ship this — README's "Using with MicroPython" section documents it, and a CI job renders every golden XML through it (with two documented, upstream-LVGL-version exclusions — see §3.4). | Nothing required; optional idiomatic Python emitter only if requested — see §3.4 Phase 3. |
+| **MicroPython** | **Shipped (Phases 0–3).** `lv_binding_micropython` auto-binds `lv_xml_*`; unmodified golden XML (both `<component>` and `<screen>` roots) renders correctly on `lv_micropython`'s unix port, and converted `.bin` fonts load via `lv_binfont_create`. README's "Using with MicroPython" section documents the XML route, and a CI job renders every golden XML through it (with two documented, upstream-LVGL-version exclusions — see §3.4). Phase 3 added `--format py`, an idiomatic emitter for users who'd rather not carry `LV_USE_XML` at all — see §3.4. | Nothing required — both routes (`--format xml` + the binding's `lv_xml` support, or `--format py` standalone) are shipped. |
 
 Neither needs changes to extraction, conversion, layout, or the font pipeline. Both are **emitter-level** work: the existing element tree and the mapping tables in `src/emit-c.mjs` already encode the semantics; what changes is how they are spelled.
 
@@ -135,14 +135,15 @@ Mechanical rules, mirroring `emit-c.mjs`:
 | `LV_FLEX_FLOW_ROW_WRAP` | `lv.FLEX_FLOW.ROW_WRAP` |
 | `LV_STATE_PRESSED` | `lv.STATE.PRESSED` |
 | `&lv_font_montserrat_14` | `lv.font_montserrat_14` |
+| `lv_slider_set_min_value(o, v)` + `..._set_max_value(o, v)` | `o.set_range(min, max)` — **not** separate setters; see below |
 
-The enum rule (strip `LV_`, split prefix from value) is derived from the C enum names and should be **verified against a real generated binding** rather than assumed — see open questions.
+The enum rule (strip `LV_`, split prefix from value) is derived from the C enum names — **now verified against a real generated binding** (Phase 3, done): built `lv_micropython`'s unix port at the CI-pinned commit and introspected `dir(lv.<GROUP>)` directly rather than trusting the guess above. It held for every group tried (`FLEX_FLOW`, `ALIGN`, `FLEX_ALIGN`, `GRAD_DIR`, `BORDER_SIDE`, `TEXT_ALIGN`, `LAYOUT`, `STATE`), but two real gaps turned up along the way: `lv_slider`/`lv_bar` have no separate min/max setters on this binding's vendored LVGL (only `set_range`, since the separate setters are a v9.4.0-only addition — the C emitter only gets away with them because it targets real v9.4.0), and `LV_ANIM_OFF` isn't an enum constant at all (`lv_anim_enable_t` is `typedef bool`, so the binding takes a plain Python `False`). Flag constants (`scrollable`/`hidden`/`ignore_layout`) also turned out to live under the widget class's nested `FLAG` enum (`lv.obj.FLAG.HIDDEN`), not a top-level `lv.OBJ_FLAG` as the naive rule would suggest.
 
 ### 3.3 The hard parts — mostly resolved by the Phase 0 spike
 
 1. **Assets — resolved: `.bin` + `lv_binfont_create` works.** Verified end-to-end: loaded a real `lv_font_conv`-converted `.bin` file via `lv.binfont_create()` on `lv_micropython`'s unix port, registered it into the XML scope, and rendered — the converted glyphs show up, not a Montserrat fallback. No firmware rebuild needed. `lv_binfont_create` isn't bound by default though — see the spike's second patch below.
 2. **Validation — resolved, and cheaper than expected.** The `lv_micropython` **unix port** with a direct-mode framebuffer (no SDL window needed, same trick as `spike/render/main.c`) renders headless and dumps a BMP. `spike/micropython/render_xml.py` does exactly this. A full build (mpy-cross + unix port) takes well under a minute once the binding submodules are cached.
-3. **Memory conventions.** Unexplored by this spike (a static/emitted-code concern for Phase 1, not something Phase 0's manual scripts exercise) — still open for the eventual Pythonic emitter.
+3. **Memory conventions — resolved by Phase 3.** MicroPython's garbage collector handles ordinary widgets fine (they're kept alive by their parent's child list, same tree-ownership model as C); the one thing to know is that a *screen* (an `lv.obj` with no parent) isn't owned by anything until `lv.screen_load()` makes the display hold it — exactly the same rule C follows, so the generated code needed no special handling beyond what emit-c.mjs already does.
 4. **XML on MicroPython — resolved: yes, and it's a bigger deal than anticipated.** `lv_xml_create()`, `lv_xml_component_register_from_data()`, `lv_xml_register_font()`, etc. are all auto-bound once `LV_USE_XML` is on. html2lvgl's existing `--format xml` output loads **completely unmodified** — verified by rendering `tests/golden/dashboard.xml` as-is and getting a pixel-identical result to the C harness. This removes the need for a dedicated emitter to reach MicroPython at all; see §3.4.
 
 Full writeup, reproduction steps, and the two patches needed: `spike/micropython/README.md`.
@@ -156,9 +157,9 @@ The Phase 0 spike changed the shape of this work: shipping the existing `--forma
 | 0 | ~~Spike~~ **Done.** See `spike/micropython/README.md`. Both open questions answered: XML loads unmodified; `.bin` fonts load via `lv_binfont_create`. Both need a small patch to the binding's vendored LVGL commit (documented, not upstream-blocking). | ~1 day (came in under the 2–3 day estimate) |
 | 1 | ~~Ship `--format xml` as the MicroPython path~~ **Done.** README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map` — no new emitter or CLI code needed). | ~1–2 days |
 | 2 | ~~CI: cache `lv_micropython`'s unix port build, render every golden XML through it~~ **Done.** `validate-micropython-xml` job in `.github/workflows/ci.yml`, pinned to a specific `lv_micropython` commit for reproducibility (its binding submodule pointer moves almost every commit). Two goldens are excluded with inline comments, both traced to the pinned binding's vendored `lvgl` still being v9.3.0-era: `monitor.xml` (`lv_table` as a grid child segfaults — an upstream `lv_grid.c` bug, fixed by v9.4.0) and the `--click` navigation exercise (`<screen_create_event>` doesn't exist pre-v9.4). Found and fixed a third `lv_conf.h` gap along the way (`LV_USE_OBJ_NAME`, needed for `--click`'s name-based widget lookup). Full detail in `spike/micropython/README.md`'s "Known limitations". | ~1–2 days |
-| 3 (optional, future) | An idiomatic `src/emit-python.mjs` (`--format py`, one `lv.*` statement per widget) for users who don't want to ship XML at runtime. The mapping table in §3.2 is verified accurate and remains valid groundwork; not required to reach MicroPython. | ~3–4 days, only if requested |
+| 3 | ~~An idiomatic `src/emit-python.mjs` (`--format py`, one `lv.*` statement per widget) for users who don't want to ship XML at runtime~~ **Done.** The §3.2 mapping table was re-verified against a real generated binding (built `lv_micropython`'s unix port at the CI-pinned commit and introspected `dir(lv.<GROUP>)` directly, plus a full smoke-render of every widget type) rather than trusted as-is, which caught two real gaps in the table: `lv_slider`/`lv_bar` have no separate `set_min_value`/`set_max_value` on this vendored LVGL (only `set_range(min, max)` — the separate setters are a v9.4.0-only addition), and `LV_ANIM_OFF` isn't an enum at all (`lv_anim_enable_t` is `typedef bool`). Custom fonts/images become `ui_create(parent, fonts=None, images=None)` dict arguments (no compile-time linkage to borrow from C's `extern`); multi-screen navigation does a lazy `import ui_<screen>` inside the click callback. CI now calls every golden's `ui_create()` directly (not just a syntax check), including a real click-driven cross-screen navigation test verified by object identity (generated code never calls `set_name()`, matching emit-c.mjs) and a custom-font test through the real `lv_font_conv` pipeline. Interestingly, the known `monitor.xml`/`lv_table`-as-grid-child segfault (see Phase 2) does **not** reproduce through this emitter's direct imperative call sequence — verified by repeated runs, not assumed — so `--format py`'s CI validation doesn't need to exclude it. | ~1 day (came in well under the 3–4 day estimate) |
 
-**Actual total to ship MicroPython support: roughly 2–4 days**, as revised after Phase 0 (down from the original 8–12 estimate), because the emitter phase — originally the biggest line item — wasn't required for the XML path.
+**Actual total to ship MicroPython support: roughly 3–5 days**, as revised after Phase 0 (down from the original 8–12 estimate) — the emitter phase, originally the biggest line item, turned out cheap once real API introspection replaced guessing from the C macro names.
 
 ---
 
@@ -173,13 +174,14 @@ The Phase 0 spike changed the shape of this work: shipping the existing `--forma
 
 ## 5. Recommendation — status
 
-Both tracks from the original recommendation are done:
+All tracks from the original recommendation are done:
 
 1. ~~C++ variant + asset-linkage docs + CI job.~~ **Shipped** — see §2.3.
 2. ~~MicroPython Phases 0–2: spike, docs, CI validation.~~ **Done** — see §3.3/§3.4. The spike reshaped the plan (no emitter needed for the XML path, cutting the estimate from 8–12 days to 2–4); Phase 2 CI validation found and documented two real upstream-LVGL-version limitations rather than papering over them with a patch.
-3. Idiomatic C++ wrapper only if users ask for it. **Still not requested — not started, by design.**
+3. ~~MicroPython Phase 3: idiomatic Python emitter, if requested.~~ **Requested and shipped** — see §3.4. Re-verifying the §3.2 mapping table against a real generated binding (rather than trusting the C-derived guess) found two real API divergences worth having caught before release, not after.
+4. Idiomatic C++ wrapper only if users ask for it. **Still not requested — not started, by design.**
 
-Next candidate: none queued. Optional future work: the idiomatic Python emitter (§3.4 Phase 3, only if requested), ESP32 MicroPython validation (§4 open question 3), or npm trusted publishing (see `ROADMAP.md`).
+Next candidate: none queued. Optional future work: ESP32 MicroPython validation (§4 open question 3), or npm trusted publishing (see `ROADMAP.md`).
 
 ---
 
@@ -191,3 +193,4 @@ Next candidate: none queued. Optional future work: the idiomatic Python emitter 
 - LVGL v9.4.0 source: `extern "C"` guards in public headers; `lv_binfont_create` in `src/font/lv_binfont_loader.h`
 - Compilation and linkage findings in §2 verified locally against this repo's golden C output and generated fonts
 - §3 findings verified locally by building `lv_micropython`'s unix port (binding commit `ac5d06c` against LVGL commit `c033a98`, June 2025) and rendering this repo's own golden XML and converted fonts through it — see `spike/micropython/README.md` for the full reproduction steps and patches
+- §3.4 Phase 3 (the `--format py` emitter) verified the same way, against the CI-pinned `lv_micropython` commit (`44aa2b1`): built the unix port, introspected the real binding's enum group names directly (`dir(lv.<GROUP>)`), and ran a full smoke-render of every widget type plus a real cross-module navigation test before trusting the emitter's output

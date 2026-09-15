@@ -18,6 +18,7 @@ import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
+import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
 import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
@@ -44,7 +45,7 @@ if (opts.help || positionals.length === 0) {
   console.error(
     'usage: html2lvgl <input.html|input.jsx> [more-pages.html ...]\n' +
     '                 [--size WxH] [-o outdir] [--name component]\n' +
-    '                 [--format xml|c|cpp|both] [--screenshot] [--debug]\n' +
+    '                 [--format xml|c|cpp|py|both] [--screenshot] [--debug]\n' +
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
@@ -53,7 +54,10 @@ if (opts.help || positionals.length === 0) {
     '\n' +
     '--format accepts a comma-separated list (e.g. "xml,cpp"); "both" is a\n' +
     'shorthand for "xml,c". "c" emits ui_<name>.c/.h; "cpp" emits the same\n' +
-    'code as ui_<name>.cpp/.hpp for a project that only compiles C++.\n' +
+    'code as ui_<name>.cpp/.hpp for a project that only compiles C++. "py"\n' +
+    'emits ui_<name>.py — idiomatic MicroPython (lv.* calls), taking\n' +
+    'converted fonts/images at runtime as ui_create()\'s "fonts"/"images"\n' +
+    'dict arguments since Python has no compile-time linkage (see README).\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -63,13 +67,13 @@ if (opts.help || positionals.length === 0) {
 }
 // "both" is a back-compat alias for "xml,c"; otherwise a comma-separated
 // list of xml/c/cpp lets one run emit e.g. both C and C++ output at once.
-const VALID_FORMATS = new Set(['xml', 'c', 'cpp']);
+const VALID_FORMATS = new Set(['xml', 'c', 'cpp', 'py']);
 const formats = new Set(
   opts.format.split(',').map((f) => f.trim()).flatMap((f) => (f === 'both' ? ['xml', 'c'] : [f])),
 );
 for (const f of formats) {
   if (!VALID_FORMATS.has(f)) {
-    console.error(`invalid --format "${opts.format}" (expected xml, c, cpp, or both, comma-separated)`);
+    console.error(`invalid --format "${opts.format}" (expected xml, c, cpp, py, or both, comma-separated)`);
     process.exit(1);
   }
 }
@@ -254,6 +258,11 @@ async function emitPage({ input, name, tree }, fonts) {
     writeFileSync(join(opts.output, `${unit}.cpp`), c);
     writeFileSync(join(opts.output, `${unit}.hpp`), h);
     written.push(join(opts.output, `${unit}.cpp`), join(opts.output, `${unit}.hpp`));
+  }
+  if (formats.has('py')) {
+    const { py, unit } = emitPy(view, { name, symbol });
+    writeFileSync(join(opts.output, `${unit}.py`), py);
+    written.push(join(opts.output, `${unit}.py`));
   }
 
   const assetDir = join(opts.output, 'assets');
