@@ -208,12 +208,22 @@ jobs:
         with:
           persist-credentials: false
 
+      # Keying on LV_MICROPYTHON_COMMIT alone isn't enough: actions/cache
+      # saves whatever's on disk at job END, which is *after* the patch step
+      # below has already patched it in place (see that step's own comment),
+      # and cache entries from the default branch are visible to every other
+      # branch's runs. So a content change to the patch files themselves
+      # (not just a commit bump) can otherwise restore a tree patched with
+      # the *previous* version of the patch — neither cleanly re-appliable
+      # nor cleanly detectable as "already applied" by the idempotent check
+      # below, since it's neither. Hashing the patch files into the key
+      # makes that content change bust the cache instead.
       - name: Cache lv_micropython checkout (with submodules, unpatched)
         id: lv-micropython-cache
         uses: actions/cache@v4
         with:
           path: lv_micropython
-          key: lv-micropython-${{ env.LV_MICROPYTHON_COMMIT }}
+          key: lv-micropython-${{ env.LV_MICROPYTHON_COMMIT }}-${{ hashFiles('spike/micropython/patches/*.patch') }}
 
       - name: Clone lv_micropython and its submodules
         if: steps.lv-micropython-cache.outputs.cache-hit != 'true'
