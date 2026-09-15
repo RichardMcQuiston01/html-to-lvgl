@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/html-to-lvgl",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Convert plain HTML or React-rendered pages into LVGL XML for embedded devices",
   "type": "module",
   "license": "Apache-2.0",
