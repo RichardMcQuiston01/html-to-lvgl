@@ -416,15 +416,34 @@ jobs:
         uses: actions/cache@v4
         with:
           path: lv_micropython
-          key: lv-micropython-esp32-${{ env.LV_MICROPYTHON_COMMIT }}-${{ hashFiles('spike/micropython/patches/*.patch', 'spike/esp32/patches/*.patch') }}
+          # v2: the v1 key's cache was seeded by this job's own early, broken
+          # runs (actions/cache's post-step saves on job failure too, not
+          # just success) before the full required submodule set below was
+          # known — bumping the key avoids ever restoring that incomplete
+          # tree. Bump again if this job's checkout requirements change
+          # rather than trusting a same-key restore to already be complete.
+          key: lv-micropython-esp32-v2-${{ env.LV_MICROPYTHON_COMMIT }}-${{ hashFiles('spike/micropython/patches/*.patch', 'spike/esp32/patches/*.patch') }}
 
       - name: Clone lv_micropython and its submodules
         if: steps.lv-micropython-cache.outputs.cache-hit != 'true'
+        run: git clone https://github.com/lvgl/lv_micropython.git lv_micropython
+
+      # Not guarded by cache-hit, unlike the clone above: `git submodule
+      # update --init` on an already-initialized submodule is a fast no-op,
+      # and running it unconditionally means a cache saved from a future
+      # incomplete state (job failure mid-checkout, a submodule list change
+      # not yet reflected in a bumped key, ...) can't silently skip this and
+      # ship a broken tree the way v1's key did.
+      - name: Ensure required submodules are initialized
         run: |
-          git clone https://github.com/lvgl/lv_micropython.git lv_micropython
           cd lv_micropython
           git checkout "$LV_MICROPYTHON_COMMIT"
-          git submodule update --init --depth 1 user_modules/lv_binding_micropython
+          # Same submodule set validate-micropython-xml's unix build needs:
+          # the ESP32 board manifest also requires micropython-lib packages
+          # (bundle-networking, dht, ...) and enables MICROPY_PY_BTREE
+          # (berkeley-db) same as the unix port does.
+          git submodule update --init --depth 1 user_modules/lv_binding_micropython \
+            lib/micropython-lib lib/berkeley-db-1.xx lib/libffi lib/axtls lib/mbedtls
           cd user_modules/lv_binding_micropython
           git submodule update --init --depth 1 lvgl pycparser
 
