@@ -284,17 +284,6 @@ CI runs the test suite and additionally builds the spike render harness against 
 
 Note: the project pins **LVGL v9.4.0** — the last release with the in-tree `lv_xml` runtime (XML tooling is consolidating into LVGL Pro upstream).
 
-## Resources
-
-- <https://lvgl.io/docs/open/introduction/requirements>
-- <https://www.elecrow.com/blog/everything-you-should-know-about-lvgl.html>
-- <https://espressif-docs.readthedocs-hosted.com/projects/espressif-esp-iot-solution/en/latest/gui/lvgl_gui.html>
-- <https://lvgl.io/>
-
-## Support
-
-If this library saved you some reverse-engineering, consider [buying me a coffee](https://www.paypal.com/ncp/payment/VDTESHTRR7684). ☕
-
 ## License
 
 [Apache License 2.0](LICENSE)
@@ -302,3 +291,11 @@ If this library saved you some reverse-engineering, consider [buying me a coffee
 ## Copyright
 
 (c)2026 Richard McQuiston.
+
+## Buy Me a Coffee
+
+If this app, code, or repository has helped you or someone you know, please consider donating. I appreciate any help to offset the costs of development and/or AI Credits.
+
+[**Donate via Stripe**](https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800), or scan:
+
+[![Donate via Stripe](./donate.svg)](https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800)
