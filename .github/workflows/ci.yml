@@ -533,6 +533,18 @@ jobs:
           source esp-idf/export.sh
           make -C lv_micropython/mpy-cross -j"$(nproc)"
           cd lv_micropython/ports/esp32
+          # build-ESP32_GENERIC is nested inside the cached lv_micropython
+          # checkout, so a cache hit can restore a previous run's CMake/Ninja
+          # build directory alongside the source tree. Ninja's incremental
+          # dependency graph trusts file mtimes, which a tar-based cache
+          # restore does not reliably preserve in original build order —
+          # observed in practice as a partial, inconsistent relink (ninja
+          # decides to relink against stale object files instead of either
+          # a true no-op or a full rebuild), not a clean incremental build.
+          # Removing any restored build directory first forces a real
+          # from-scratch configure+build every run, trading the (unsafe)
+          # incremental-build speedup for a build that's actually correct.
+          rm -rf build-ESP32_GENERIC
           IDF_COMPONENT_MANAGER=0 idf.py -D MICROPY_BOARD=ESP32_GENERIC \
             -D MICROPY_BOARD_DIR="$(pwd)/boards/ESP32_GENERIC" \
             -D EXTRA_COMPONENT_DIRS=/tmp/extra_components \
