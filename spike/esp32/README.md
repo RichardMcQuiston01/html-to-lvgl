@@ -197,23 +197,53 @@ network access, the component manager resolves and links `mdns`
 automatically from its `idf_component.yml` declaration and this patch is a
 no-op (`mdns` would already be present).
 
+## Now wired into CI
+
+A `validate-esp32-micropython` job in `.github/workflows/ci.yml` runs this
+spike's build-boot-and-check flow on every PR. What actually happened
+answering the three open questions this section used to pose:
+
+- **GitHub Actions runners do have unrestricted network access** — the
+  job's first real run reached `dl.espressif.com/pypi` without issue. That
+  didn't make workarounds #1–#2 go away, though: they're kept anyway,
+  deliberately, because explicit version pins and a vendored `mdns`
+  component are more hermetic and reproducible than trusting an external
+  registry's uptime on every CI run — the same reasoning this repo already
+  applies to its other jobs' pinned commits/SHAs.
+- **Boot-and-execute validation was judged worth the setup cost.** With the
+  ESP-IDF toolchain, `lv_micropython` checkout, and QEMU download all
+  cached (`actions/cache`, keyed like `validate-micropython-xml`'s own
+  caches), only the first run per cache generation pays the full ESP-IDF
+  install cost.
+- **Step 7's paced REPL feed is now `spike/esp32/qemu_boot_test.py`**, a
+  `pexpect` driver that paces on the REPL's own per-line echo prompt
+  instead of a fixed sleep — exactly as fast as the emulated UART can
+  actually go, and it fails loudly on a timeout instead of silently
+  corrupting input.
+
+Getting an actual GitHub Actions run green (as opposed to trusting this
+sandbox's earlier manual run) surfaced three more real gaps this document's
+"Reproducing" steps didn't hit, now reflected in the CI job and worth
+knowing if you're reproducing this manually elsewhere too:
+
+- The ESP32 board build needs the *same full submodule set*
+  `validate-micropython-xml`'s unix job initializes (`lib/berkeley-db-1.xx`,
+  `lib/micropython-lib`, `lib/libffi`, `lib/axtls`, `lib/mbedtls`) — not
+  just `user_modules/lv_binding_micropython`. The board's own
+  `MICROPY_PY_BTREE` config and its `boards/ESP32_GENERIC/manifest.py`
+  (`require("bundle-networking")`, `require("dht")`, ...) both need them.
+- `actions/cache`'s save step runs on job failure too, not just success —
+  a job that fails partway through populating a cached checkout can leave
+  a stale, incomplete tree behind under that cache key. Don't rely solely
+  on a `cache-hit` flag to skip re-initializing state a later step depends
+  on; verify (or unconditionally re-run) the idempotent parts regardless.
+- Espressif's prebuilt QEMU-Xtensa release links `libSDL2` in even with
+  `-display none` — the binary won't even start without it installed,
+  confirmed via `ldd`.
+
 ## Next steps
 
-Not wired into CI — the four workarounds above are manual, environment-
-specific, and (for #1–#2) exist only because of this sandbox's network
-policy, not because ESP32 support itself is unstable. Before considering a
-`validate-micropython-esp32` CI job:
-
-- Confirm whether GitHub Actions runners hit the same `dl.espressif.com` /
-  `components.espressif.com` restrictions this sandbox does (likely not —
-  those are org-specific policy here) — if not, steps 1–2 of "Known
-  blockers" simply don't apply and `install.sh`/the component manager work
-  unmodified.
-- Decide whether boot-and-execute validation (this spike) is worth the ~2
-  minute ESP-IDF+QEMU setup cost in CI, given it can't catch rendering
-  regressions the way `validate-xml`/`validate-micropython-xml` do for the
-  unix port — it would catch a different class of bug (embedded-memory/
-  architecture-specific crashes), which is real but narrower value.
-- If pursued, automate step 7's paced REPL feed properly (a `pexpect`-style
-  driver, not a hand-tuned sleep loop) — brittleness there is a real risk
-  for an unattended job.
+Real hardware (or a display-peripheral-capable emulator) is the only
+remaining gap: this spike and its CI job both prove boot-and-execute, never
+renders-correctly, and neither is available in this project's current
+development environment.
