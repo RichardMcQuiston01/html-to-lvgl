@@ -379,3 +379,170 @@ jobs:
             FONTS="$FONTS --font=$(basename "$f" .bin)=$f"
           done
           MICROPYPATH=/tmp/fonts-demo-py "$MP" spike/micropython/run_py.py /tmp/fonts-demo-py/ui_typography.py ui_create $FONTS
+
+  validate-esp32-micropython:
+    name: Validate ESP32 boot under QEMU-Xtensa (lv_binding_micropython)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Same submodule pin validate-micropython-xml uses (see its own comment):
+      # this is the lv_micropython commit CI treats as current.
+      LV_MICROPYTHON_COMMIT: 44aa2b153dd3aa1ba183d05bd867fe3ffe2a1d75
+      IDF_VERSION: v5.2.2
+      # lv_micropython's tools/ci.sh pins this ESP-IDF release; espressif/qemu
+      # publishes one release per ESP-IDF toolchain generation, and this is
+      # the one v5.2.2's tools.json declares.
+      QEMU_RELEASE: esp-develop-8.2.0-20240122
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Own cache namespace, deliberately not shared with validate-micropython-xml's
+      # lv-micropython-* key: this job applies a third patch
+      # (lv_micropython-esp32-require-mdns.patch) that job doesn't, and giving
+      # each job's post-build tree its own key keeps their cached states from
+      # ever depending on which job happened to save last (see that job's own
+      # comment on why cache content — not just the key's commit pin — matters).
+      - name: Cache lv_micropython checkout (with submodules, unpatched)
+        id: lv-micropython-cache
+        uses: actions/cache@v4
+        with:
+          path: lv_micropython
+          key: lv-micropython-esp32-${{ env.LV_MICROPYTHON_COMMIT }}-${{ hashFiles('spike/micropython/patches/*.patch', 'spike/esp32/patches/*.patch') }}
+
+      - name: Clone lv_micropython and its submodules
+        if: steps.lv-micropython-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/lvgl/lv_micropython.git lv_micropython
+          cd lv_micropython
+          git checkout "$LV_MICROPYTHON_COMMIT"
+          git submodule update --init --depth 1 user_modules/lv_binding_micropython
+          cd user_modules/lv_binding_micropython
+          git submodule update --init --depth 1 lvgl pycparser
+
+      # Idempotent for the same reason validate-micropython-xml's equivalent
+      # step is: a cache hit can restore an already-patched tree just as
+      # easily as a fresh clone.
+      - name: Apply the vendored LVGL / binding config and ESP32 mdns patches
+        run: |
+          apply_if_needed() {
+            local patch="$1" dir="$2"
+            if git -C "$dir" apply --check "$GITHUB_WORKSPACE/$patch" 2>/dev/null; then
+              git -C "$dir" apply "$GITHUB_WORKSPACE/$patch"
+            elif git -C "$dir" apply --reverse --check "$GITHUB_WORKSPACE/$patch" 2>/dev/null; then
+              echo "$patch already applied (cached checkout) - skipping"
+            else
+              echo "::error::$patch does not apply cleanly and isn't already applied to $dir"
+              exit 1
+            fi
+          }
+          apply_if_needed spike/micropython/patches/lv_binding_micropython-lv_conf.patch \
+            lv_micropython/user_modules/lv_binding_micropython
+          apply_if_needed spike/micropython/patches/lvgl-binfont-and-xml-event-cb.patch \
+            lv_micropython/user_modules/lv_binding_micropython/lvgl
+          apply_if_needed spike/esp32/patches/lv_micropython-esp32-require-mdns.patch \
+            lv_micropython
+
+      - name: Cache ESP-IDF checkout
+        id: esp-idf-cache
+        uses: actions/cache@v4
+        with:
+          path: esp-idf
+          key: esp-idf-${{ env.IDF_VERSION }}
+
+      - name: Clone ESP-IDF
+        if: steps.esp-idf-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$IDF_VERSION" https://github.com/espressif/esp-idf.git esp-idf
+          cd esp-idf
+          git submodule update --init --recursive --filter=tree:0
+
+      # The toolchain/venv install is the expensive part (~10 min uncached);
+      # cache it separately from the repo checkout above so an ESP-IDF point
+      # release bump doesn't force a full tool re-download too.
+      - name: Cache installed ESP-IDF tools
+        id: esp-idf-tools-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.espressif
+          key: esp-idf-tools-${{ env.IDF_VERSION }}-${{ runner.os }}
+
+      - name: Install ESP-IDF tools
+        if: steps.esp-idf-tools-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget flex bison gperf python3 python3-pip python3-venv \
+            cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+          # espidf.constraints.v5.2.txt (pinning idf-component-manager/schema
+          # for this release) lives only on dl.espressif.com. Skipping the
+          # check and pinning the same versions manually below is a
+          # deliberate, hermetic choice, not a fallback for a network block:
+          # it makes this job's dependency set as explicit and reproducible
+          # as the git-commit pins already used everywhere else in this repo's
+          # CI, rather than trusting whatever "latest compatible" pip
+          # resolves on a given day. See spike/esp32/README.md's "Known
+          # blockers and workarounds" #1 for the full story (including why
+          # the newest idf-component-manager/schema releases are NOT actually
+          # compatible with this ESP-IDF branch's build system).
+          IDF_PYTHON_CHECK_CONSTRAINTS=no esp-idf/install.sh esp32
+          source esp-idf/export.sh
+          pip install "idf-component-manager==1.5.2" "schema==0.7.5"
+
+      - name: Vendor the mdns component
+        run: |
+          # components-file.espressif.com (the managed-component registry
+          # idf_component.yml manifests resolve from) is the other half of
+          # "Known blockers" #1's dl.espressif.com story — same rationale:
+          # vendoring the exact pinned version directly from its real
+          # upstream via git is hermetic, not a network-block workaround.
+          # Tag must match ports/esp32/main/idf_component.yml's mdns version
+          # constraint.
+          git clone --depth 1 --branch mdns-v1.1.0 https://github.com/espressif/esp-protocols.git /tmp/esp-protocols
+          mkdir -p /tmp/extra_components
+          ln -s /tmp/esp-protocols/components/mdns /tmp/extra_components/mdns
+
+      - name: Build mpy-cross and the ESP32 port (board ESP32_GENERIC)
+        run: |
+          source esp-idf/export.sh
+          make -C lv_micropython/mpy-cross -j"$(nproc)"
+          cd lv_micropython/ports/esp32
+          IDF_COMPONENT_MANAGER=0 idf.py -D MICROPY_BOARD=ESP32_GENERIC \
+            -D MICROPY_BOARD_DIR="$(pwd)/boards/ESP32_GENERIC" \
+            -D EXTRA_COMPONENT_DIRS=/tmp/extra_components \
+            -B build-ESP32_GENERIC build
+
+      - name: Merge to a flash image
+        run: |
+          source esp-idf/export.sh
+          B=lv_micropython/ports/esp32/build-ESP32_GENERIC
+          # --pad-to-size (not a manual truncate) pads with the flash-erased
+          # 0xFF, not 0x00 — see spike/esp32/README.md's "Known blockers" #3;
+          # a 0x00-padded image reads back as corrupted, not blank, to
+          # MicroPython's VFS mount code.
+          python -m esptool --chip esp32 merge_bin -o /tmp/flash_image.bin \
+            --flash_mode dio --flash_size 4MB --flash_freq 40m --pad-to-size 4MB \
+            0x1000 "$B/bootloader/bootloader.bin" \
+            0x8000 "$B/partition_table/partition-table.bin" \
+            0x10000 "$B/micropython.bin"
+
+      - name: Cache QEMU-Xtensa
+        id: qemu-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/qemu
+          key: esp-qemu-xtensa-${{ env.QEMU_RELEASE }}
+
+      - name: Download Espressif's prebuilt QEMU-Xtensa
+        if: steps.qemu-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL "https://github.com/espressif/qemu/releases/download/${QEMU_RELEASE}/qemu-xtensa-softmmu-esp_develop_8.2.0_20240122-x86_64-linux-gnu.tar.xz" \
+            -o /tmp/qemu.tar.xz
+          mkdir -p /tmp/qemu
+          tar xf /tmp/qemu.tar.xz -C /tmp/qemu
+
+      - name: Boot the flash image under QEMU and run the LVGL binding test
+        run: |
+          pip install pexpect
+          python3 spike/esp32/qemu_boot_test.py /tmp/qemu/qemu/bin/qemu-system-xtensa \
+            /tmp/flash_image.bin spike/esp32/qemu_repl_test.py
