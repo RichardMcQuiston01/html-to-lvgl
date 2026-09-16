@@ -393,6 +393,13 @@ jobs:
       # publishes one release per ESP-IDF toolchain generation, and this is
       # the one v5.2.2's tools.json declares.
       QEMU_RELEASE: esp-develop-8.2.0-20240122
+      # Needed by BOTH install.sh and every export.sh sourcing (not just the
+      # install step) — export.sh independently re-checks the same
+      # constraints file on every source, so scoping this to one command
+      # isn't enough. See the "Install ESP-IDF tools" step for why skipping
+      # the check (and pinning the same versions manually) is deliberate,
+      # not a network-block workaround.
+      IDF_PYTHON_CHECK_CONSTRAINTS: 'no'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -485,7 +492,7 @@ jobs:
           # blockers and workarounds" #1 for the full story (including why
           # the newest idf-component-manager/schema releases are NOT actually
           # compatible with this ESP-IDF branch's build system).
-          IDF_PYTHON_CHECK_CONSTRAINTS=no esp-idf/install.sh esp32
+          esp-idf/install.sh esp32
           source esp-idf/export.sh
           pip install "idf-component-manager==1.5.2" "schema==0.7.5"
 
