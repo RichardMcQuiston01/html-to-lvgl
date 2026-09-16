@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **npm trusted publishing:** `.github/workflows/publish.yml` now authenticates to npm via GitHub Actions OIDC (`id-token: write` permission + `actions/setup-node@v6`, npm ≥11.5.1) instead of the long-lived `NPM_TOKEN` secret, so there's no more token to expire or get downgraded to the wrong type. Also gets automatic provenance attestation for free. Requires a one-time, out-of-band step on npmjs.com — configuring this package's Trusted Publisher (exact fields documented in the workflow file) — before the next release can actually publish; the old `NPM_TOKEN` secret can be deleted once that's done and a release has published successfully.
+
 ### Added
 
 - **MicroPython (ESP32 spike):** `lv_micropython`'s ESP32 port builds against real ESP-IDF v5.2.2 with the same `lv_conf.h` patches already committed for the unix port, and the resulting firmware boots and runs the LVGL binding (`import lvgl`, `lv.xml_create()`, ...) under Espressif's own QEMU-Xtensa emulator — real Xtensa-architecture validation, not just the unix port's x86 build. Espressif's QEMU fork emulates the CPU/flash/UART but no display peripheral, so this proves boot-and-execute, not renders-correctly; real hardware is still needed for that. Not wired into CI — needed four workarounds specific to this environment's network policy (a blocked pip constraints file, a blocked component registry, plus two real environment-independent gotchas: flash images must be padded with `0xFF`, not `0x00`, and QEMU's emulated UART needs paced input). See `spike/esp32/README.md` for the full writeup and reproduction steps.
