@@ -22,10 +22,11 @@ Since the original five phases, the project also shipped its **first public npm 
 
 **MicroPython (ESP32 spike).** `lv_micropython`'s ESP32 port builds against real ESP-IDF with the same `lv_conf.h` patches as the unix port, and the resulting firmware boots and runs the LVGL binding (`import lvgl`, `lv.xml_create()`, ...) under Espressif's own QEMU-Xtensa emulator — real Xtensa-architecture validation, not just x86. QEMU-Xtensa has no display peripheral, so this proves boot-and-execute, not renders-correctly; four environment-specific workarounds were needed and it isn't wired into CI yet — see [`spike/esp32/README.md`](spike/esp32/README.md).
 
+**npm trusted publishing.** `.github/workflows/publish.yml` now authenticates to npm via GitHub Actions OIDC (`id-token: write` + `actions/setup-node@v6`) instead of the long-lived `NPM_TOKEN` secret — no more manually rotating a token that can expire or get downgraded to the wrong type (see the `0.1.2` release notes above for what that failure mode looked like). One manual, one-time step remains outside this repo: a maintainer must configure this package's Trusted Publisher on npmjs.com (exact fields in the workflow file's trailing comment) before the *next* real release can actually publish — until then, `npm publish` fails with an authentication error instead of the old token-based flow's harmless "already published" error.
+
 ## What's next
 
 - **ESP32: real hardware or CI-stable validation (optional, future).** The QEMU spike proves boot-and-execute; a rendered/visual proof needs real hardware (or a display-peripheral-capable emulator), and the spike's four workarounds would need to be either automated or shown unnecessary on unrestricted network access before this could become a CI job.
-- **npm trusted publishing.** Migrate `.github/workflows/publish.yml` from a long-lived `NPM_TOKEN` secret to npm's OIDC-based trusted publishing.
 
 ## Further reading
 
