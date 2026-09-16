@@ -569,6 +569,11 @@ jobs:
 
       - name: Boot the flash image under QEMU and run the LVGL binding test
         run: |
+          # This QEMU-Xtensa build links libSDL2 in even though -display none
+          # never uses it at runtime — same reason validate-micropython-xml's
+          # unix build (linked against real SDL2 for its own LV_USE_SDL
+          # simulator display) installs it.
+          sudo apt-get update && sudo apt-get install -y libsdl2-2.0-0
           pip install pexpect
           python3 spike/esp32/qemu_boot_test.py /tmp/qemu/qemu/bin/qemu-system-xtensa \
             /tmp/flash_image.bin spike/esp32/qemu_repl_test.py
