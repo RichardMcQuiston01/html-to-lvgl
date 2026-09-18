@@ -231,6 +231,9 @@ export function buildTree() {
       // Author overrides: force a widget mapping / an explicit widget name
       widget: el.getAttribute('data-lv-widget') || null,
       lvName: el.getAttribute('data-lv-name') || null,
+      // Force cross-page navigation on an element <a href> wouldn't cover
+      // (a <button>, a clickable <div> card, ...) — same target syntax as href
+      link: el.getAttribute('data-lv-link') || null,
       x: Math.round(r.x),
       y: Math.round(r.y),
       w: Math.round(r.width),

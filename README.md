@@ -94,7 +94,7 @@ An optimizer pass collapses visually inert single-child wrapper divs (framework 
 
 ### Multi-screen navigation
 
-Pass more than one page and each becomes a `<screen>` rather than a `<component>`, with `<a href>` links between them turned into navigation buttons:
+Pass more than one page and each becomes a `<screen>` rather than a `<component>`, with `<a href>` links between them turned into navigation buttons. Anything else that needs to navigate — a `<button>`, a clickable card `<div>`, whatever isn't semantically an anchor — gets the same treatment via `data-lv-link="settings.html"` (see [Annotation attributes](#annotation-attributes)):
 
 ```xml
 <!-- home.xml -->
@@ -108,7 +108,7 @@ Pass more than one page and each becomes a `<screen>` rather than a `<component>
 </screen>
 ```
 
-`screen_create_event` instantiates the target on demand, so navigation works before a screen has ever been visited — no start-up ordering to manage. Links to external URLs or to pages outside the converted set stay plain text. Load a screen with `lv_xml_create(NULL, "home", NULL)` followed by `lv_screen_load()`; the render harness does exactly this and can simulate a click with `--click=<widget-name>` to verify a transition.
+`screen_create_event` instantiates the target on demand, so navigation works before a screen has ever been visited — no start-up ordering to manage. Links to external URLs, to pages outside the converted set, or a `data-lv-link` value that doesn't match any of them stay plain text (a `data-lv-link` mismatch also emits a warning, since it's more likely a typo than an intentional external link). An explicit `data-lv-link` wins over a conflicting `href` on the same element. Load a screen with `lv_xml_create(NULL, "home", NULL)` followed by `lv_screen_load()`; the render harness does exactly this and can simulate a click with `--click=<widget-name>` to verify a transition.
 
 In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; a navigation button's click handler calls the target screen's `ui_<screen>_create` (declared `extern`) and `lv_screen_load`s it — link every screen a UI can navigate to into the same binary.
 
@@ -153,8 +153,9 @@ When the automatic mapping needs a nudge, annotate the source HTML (React works 
 | `data-lv-name="pump_enable"` | Set the widget's `name`, instead of deriving it from `id`/`class` — useful for looking the widget up with `lv_obj_get_child_by_name()` |
 | `data-lv-ignore` | Drop the element and its subtree — design-time guides, print-only content, debug overlays |
 | `data-lv-component="Name"` | Mark a component boundary by hand, giving plain HTML the same componentization React gets automatically |
+| `data-lv-link="settings.html"` | Turn the element into a navigation button to another converted page, the same way `<a href>` does — for a `<button>` or any other non-anchor element. Only means something when converting multiple pages together (see [Multi-screen navigation](#multi-screen-navigation)); overrides a conflicting `href` on the same element |
 
-`examples/annotations.html` exercises all of them.
+`examples/annotations.html` exercises `data-lv-widget`, `data-lv-name`, `data-lv-ignore`, and `data-lv-component`; `data-lv-link` is demonstrated in `examples/nav/settings.html`'s "Back to Home" button alongside `examples/nav/home.html`'s plain `<a href>` link.
 
 ### React input
 
