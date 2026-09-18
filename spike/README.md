@@ -1,6 +1,6 @@
 # Phase 0 Spike: HTML → LVGL, End to End
 
-This spike validates the core loop proposed in [`../RESEARCH.md`](../RESEARCH.md):
+This spike validates the project's core proposed loop:
 
 ```text
 HTML page ──► headless Chromium ──► UI-tree JSON ──► LVGL XML ──► headless LVGL v9.4 ──► framebuffer PNG
@@ -45,7 +45,7 @@ Outputs land in `out/`: for each page a `<page>.json` (extracted UI tree), `<pag
 ## Findings (feed into Phase 1)
 
 1. **The LVGL XML target works as predicted.** The generated XML is human-readable, hand-editable, and instantiates through stock LVGL with no custom runtime code beyond font registration. Style attributes (`style_bg_color`, `style_radius`, `style_border_*`, `style_text_font`, …) covered everything the spike needed.
-2. **Pin LVGL v9.4.0.** During the spike we found the `lv_xml` runtime module was removed from LVGL's `master` branch — XML tooling is consolidating into LVGL Pro (Editor/CLI compile XML to C; the open-source examples now ship XML alongside generated C). v9.4.0 is the last release with the in-tree runtime parser. This confirms RESEARCH.md's "pin a version" mitigation and strengthens the case for *also* supporting direct C emission in Phase 2.
+2. **Pin LVGL v9.4.0.** During the spike we found the `lv_xml` runtime module was removed from LVGL's `master` branch — XML tooling is consolidating into LVGL Pro (Editor/CLI compile XML to C; the open-source examples now ship XML alongside generated C). v9.4.0 is the last release with the in-tree runtime parser. This confirms pinning a version was the right call and strengthens the case for *also* supporting direct C emission in Phase 2.
 3. **Text metrics are the main fidelity gap, as predicted.** Chromium's tight text rects clip when rendered in the wider Montserrat fonts. Two cheap fixes got fidelity from ~75% to ~90%: auto-size plain labels instead of fixing their box, and round CSS `font-size` *down* to the nearest available font. A real converter should measure text with the actual LVGL font metrics at build time.
 4. **Duplicate XML attributes are a real emitter bug class.** expat rejects duplicated attributes (`style_pad_all` emitted twice); the Phase 1 emitter should build attribute maps, not strings.
 5. **Decorated text blocks need decomposition.** A `<div>` with background + text (the Settings title bar) must become `lv_obj` + child `lv_label` with `align="left_mid"`, not a bare label — browsers vertically center line boxes, LVGL labels don't.

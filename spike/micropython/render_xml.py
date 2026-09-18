@@ -1,7 +1,7 @@
 """
 Renders html2lvgl's --format xml output on lv_micropython via the
 lv_binding_micropython auto-generated binding, unmodified — no separate
-emitter needed for the MicroPython path (see PLAN.md §3.4).
+emitter needed for the MicroPython path.
 
 Mirrors spike/render/main.c's argument handling and behavior exactly, so
 the same golden files and the same CI assertions (e.g. the post-click
