@@ -2,9 +2,9 @@
 
 ## [Unreleased]
 
-### Changed
+## [0.2.0] - 2026-09-18
 
-- **npm trusted publishing:** `.github/workflows/publish.yml` now authenticates to npm via GitHub Actions OIDC (`id-token: write` permission + `actions/setup-node@v6`, npm ≥11.5.1) instead of the long-lived `NPM_TOKEN` secret, so there's no more token to expire or get downgraded to the wrong type. Also gets automatic provenance attestation for free. Requires a one-time, out-of-band step on npmjs.com — configuring this package's Trusted Publisher (exact fields documented in the workflow file) — before the next release can actually publish; the old `NPM_TOKEN` secret can be deleted once that's done and a release has published successfully.
+`src/` gained a genuinely new capability since `0.1.2` (`--format py`), so this is a real minor bump, not a republish.
 
 ### Added
 
