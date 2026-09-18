@@ -1,10 +1,10 @@
 # ESP32 MicroPython spike — build + boot under QEMU-Xtensa
 
-Answers `PLAN.md` §4 open question 3 (unix port, spiked; ESP32, the
-realistic device target, "separate future work"): does `lv_micropython`'s
-ESP32 port actually build against real ESP-IDF, and does the resulting
-firmware actually boot and run the LVGL binding on real ESP32/Xtensa
-constraints — not just the unix port's x86 environment?
+Answers the open question the MicroPython unix-port spike deliberately left
+for later, separate work: does `lv_micropython`'s ESP32 port actually build
+against real ESP-IDF, and does the resulting firmware actually boot and run
+the LVGL binding on real ESP32/Xtensa constraints — the realistic device
+target, not just the unix port's x86 environment?
 
 **Both yes**, with four real, documented workarounds — none of them clean
 enough to call this CI-ready yet. See "Known blockers and workarounds"
