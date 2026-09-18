@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **`data-lv-link` annotation attribute:** extends multi-screen navigation (previously `<a href>`-only) to any element — a `<button>`, a clickable card `<div>`, anything that isn't semantically an anchor. `data-lv-link="settings.html"` resolves against the set of pages being converted together exactly like `<a href>` already does (same file-matching, same hash/query stripping), reusing the same `emitLink()` path so the generated `lv_button` + `screen_create_event` is identical regardless of which attribute triggered it. An explicit `data-lv-link` overrides a conflicting `href` on the same element; a target that doesn't match any converted page warns and falls back to the element's normal (non-navigating) widget mapping, rather than silently doing nothing. The optimizer's wrapper-collapse pass now also preserves `data-lv-link` the same way it already preserves `data-lv-widget`/`data-lv-name`, so the annotation can't be stripped off an otherwise-inert wrapper before `convert.mjs` sees it. `examples/nav/settings.html`'s "Back to Home" link is now a `<button data-lv-link="home.html">` instead of an `<a href>`, demonstrating the new attribute alongside `examples/nav/home.html`'s existing plain link — verified end-to-end with a real conversion and a real `--click=to_home` navigation test against LVGL v9.4.0.
+
 ## [0.2.0] - 2026-09-18
 
 `src/` gained a genuinely new capability since `0.1.2` (`--format py`), so this is a real minor bump, not a republish.

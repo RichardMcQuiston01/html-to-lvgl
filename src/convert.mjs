@@ -35,7 +35,8 @@ const JUSTIFY = {
 
 /**
  * @param screens  Set of sibling screen names. When provided, <a href> links
- *                 pointing at one become navigation buttons.
+ *                 pointing at one — or any element carrying
+ *                 data-lv-link="<page>" — become navigation buttons.
  * @param screenMode  Wrap the output in <screen> instead of <component>, so
  *                 LVGL registers it as a loadable screen.
  */
@@ -292,10 +293,17 @@ function emitByTag(node, parent, ctx, index) {
     ctx.warnings.push(`data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`);
   }
 
-  // <a> pointing at a sibling screen becomes a navigation button
-  if (node.tag === 'a' && ctx.screens) {
-    const target = resolveScreen(node.attrs.href, ctx.screens);
+  // <a href> pointing at a sibling screen, or an explicit data-lv-link
+  // override on any element (a <button> that isn't semantically an anchor,
+  // a clickable card <div>, ...), becomes a navigation button. An explicit
+  // data-lv-link wins over the element's own href, same as other overrides.
+  if (ctx.screens) {
+    const href = node.link || (node.tag === 'a' ? node.attrs.href : null);
+    const target = resolveScreen(href, ctx.screens);
     if (target) return emitLink(node, parent, ctx, index, target);
+    if (node.link) {
+      ctx.warnings.push(`data-lv-link="${node.link}" does not match any of the pages being converted together; ignoring`);
+    }
   }
 
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
@@ -404,8 +412,9 @@ function emitButton(node, parent, ctx, index) {
 }
 
 /**
- * Resolve an href against the set of screens being converted.
- * "./settings.html#top" -> "settings" when that screen exists.
+ * Resolve an href (or a data-lv-link value, same shape) against the set of
+ * screens being converted. "./settings.html#top" -> "settings" when that
+ * screen exists.
  */
 function resolveScreen(href, screens) {
   if (!href) return null;
