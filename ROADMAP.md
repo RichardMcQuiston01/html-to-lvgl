@@ -24,7 +24,7 @@ Since the original five phases, the project also shipped its **first public npm 
 
 ## What's next
 
-- **ESP32: real hardware validation (optional, future).** The QEMU-based CI job proves boot-and-execute on every PR; a rendered/visual proof still needs real hardware (or a display-peripheral-capable emulator), neither of which is available in this project's current development environment.
+Nothing currently active. The one previously listed item — **ESP32 real hardware validation** — is blocked: the QEMU-based CI job proves boot-and-execute on every PR, but a rendered/visual proof needs real hardware (or a display-peripheral-capable emulator), neither of which is available in this project's development environment. Revisit if that access becomes available.
 
 ## Further reading
 
