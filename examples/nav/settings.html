@@ -13,8 +13,10 @@
   .label { font-size: 13px; color: #cbd5e1; }
   input[type=checkbox] { width: 40px; height: 22px; }
   .nav { display: flex; justify-content: center; padding-top: 16px; }
-  a { width: 160px; height: 34px; border-radius: 6px; background-color: #334155;
-      color: #ffffff; font-size: 13px; text-decoration: none;
+  /* A <button>, not an <a> -- data-lv-link tells the converter where it
+     navigates to, since there's no href for it to read */
+  button { width: 160px; height: 34px; border-radius: 6px; background-color: #334155;
+      color: #ffffff; font-size: 13px; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
@@ -29,7 +31,7 @@
     <input type="checkbox">
   </div>
   <div class="nav">
-    <a href="home.html">Back to Home</a>
+    <button data-lv-link="home.html">Back to Home</button>
   </div>
 </body>
 </html>
