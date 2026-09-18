@@ -28,7 +28,7 @@ Since the original five phases, the project also shipped its **first public npm 
 
 ## Further reading
 
-- [RESEARCH.md](RESEARCH.md) — the original feasibility study: problem statement, prior art, architecture options, and the HTML/CSS → LVGL mapping tables that shaped this project
-- [PLAN.md](PLAN.md) — the C++ output design notes and the MicroPython feasibility research
 - [spike/README.md](spike/README.md) — the Phase 0 proof-of-concept, with side-by-side screenshots
+- [spike/micropython/README.md](spike/micropython/README.md) — the MicroPython feasibility spike and the `--format py` emitter's verification
+- [spike/esp32/README.md](spike/esp32/README.md) — the ESP32 QEMU-Xtensa boot spike, now CI-wired
 - [CHANGELOG.md](CHANGELOG.md) — released versions
