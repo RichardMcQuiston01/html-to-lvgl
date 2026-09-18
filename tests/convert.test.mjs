@@ -116,6 +116,51 @@ test('links to sibling screens become navigation buttons', () => {
   assert.match(xml, /<lv_label[^>]*text="Missing"/);
 });
 
+test('data-lv-link makes a non-anchor element navigate too', () => {
+  const btn = {
+    tag: 'button', link: 'settings.html', x: 10, y: 10, w: 120, h: 30, text: 'Settings',
+    attrs: {}, styles: base(), layout: block(), children: [],
+  };
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {},
+    styles: base(), layout: block(), children: [btn],
+  };
+  const { xml, warnings } = convert(tree, { screens: new Set(['settings']), screenMode: true });
+
+  assert.match(xml, /<lv_button name="to_settings"[^>]*>/);
+  assert.match(xml, /<screen_create_event screen="settings" \/>/);
+  assert.equal(warnings.length, 0);
+});
+
+test('data-lv-link overrides a conflicting href on the same element', () => {
+  const a = {
+    tag: 'a', link: 'settings.html', x: 10, y: 10, w: 120, h: 30, text: 'Go',
+    attrs: { href: 'missing.html' }, styles: base(), layout: block(), children: [],
+  };
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {},
+    styles: base(), layout: block(), children: [a],
+  };
+  const { xml } = convert(tree, { screens: new Set(['settings']), screenMode: true });
+  assert.match(xml, /<screen_create_event screen="settings" \/>/);
+});
+
+test('data-lv-link with no matching sibling page warns and falls back to a plain widget', () => {
+  const btn = {
+    tag: 'button', link: 'nowhere.html', x: 10, y: 10, w: 120, h: 30, text: 'Nowhere',
+    attrs: {}, styles: base(), layout: block(), children: [],
+  };
+  const tree = {
+    tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {},
+    styles: base(), layout: block(), children: [btn],
+  };
+  const { xml, warnings } = convert(tree, { screens: new Set(['settings']), screenMode: true });
+
+  assert.ok(warnings.some((w) => w.includes('data-lv-link="nowhere.html"')));
+  assert.doesNotMatch(xml, /screen_create_event/);
+  assert.match(xml, /<lv_button name="button"[^>]*>/); // still a button, just not a nav link
+});
+
 test('screen mode wraps the view in <screen>, component mode in <component>', () => {
   const tree = { tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
   assert.match(convert(tree, { screenMode: true }).xml, /^<screen>[\s\S]*<\/screen>\n$/);
@@ -231,7 +276,7 @@ test('optimizer keeps wrappers that carry visuals or manage layout', () => {
   assert.equal(removed, 0);
 });
 
-test('optimizer keeps wrappers annotated with data-lv-widget or data-lv-name', () => {
+test('optimizer keeps wrappers annotated with data-lv-widget, data-lv-name, or data-lv-link', () => {
   const inertChild = { tag: 'span', x: 10, y: 10, w: 50, h: 12, text: null, attrs: {}, styles: base(), layout: block(), children: [] };
   const widgetWrapper = {
     tag: 'div', widget: 'bar', x: 5, y: 5, w: 100, h: 20, text: null, attrs: {},
@@ -241,17 +286,22 @@ test('optimizer keeps wrappers annotated with data-lv-widget or data-lv-name', (
     tag: 'div', lvName: 'pump_enable', x: 5, y: 30, w: 100, h: 20, text: null, attrs: {},
     styles: base(), layout: block(), children: [structuredClone(inertChild)],
   };
+  const linkedWrapper = {
+    tag: 'div', link: 'settings.html', x: 5, y: 55, w: 100, h: 20, text: null, attrs: {},
+    styles: base(), layout: block(), children: [structuredClone(inertChild)],
+  };
   const tree = {
     tag: 'body', x: 0, y: 0, w: 320, h: 240, text: null, attrs: {}, styles: base(), layout: block(),
-    children: [widgetWrapper, namedWrapper],
+    children: [widgetWrapper, namedWrapper, linkedWrapper],
   };
   // Otherwise-inert wrappers must survive when the optimizer would strip
-  // them before convert.mjs/uid() ever see the data-lv-widget/data-lv-name
-  // annotation they carry.
+  // them before convert.mjs/uid() ever see the data-lv-widget/data-lv-name/
+  // data-lv-link annotation they carry.
   const { tree: out, removed } = optimize(structuredClone(tree));
   assert.equal(removed, 0);
   assert.equal(out.children[0].widget, 'bar');
   assert.equal(out.children[1].lvName, 'pump_enable');
+  assert.equal(out.children[2].link, 'settings.html');
 });
 
 test('data-lv-name overrides id/class for the widget name', () => {
