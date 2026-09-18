@@ -6,10 +6,6 @@ on:
 
 permissions:
   contents: read
-  # Lets npm exchange a GitHub Actions OIDC token for a short-lived publish
-  # token instead of a long-lived NPM_TOKEN secret — see "Trusted
-  # publishing prerequisite" at the end of this file.
-  id-token: write
 
 # Overlapping runs (e.g. two quick pushes to release) must not publish out of
 # order or race on the same version; queue them instead of running in parallel.
@@ -29,9 +25,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # v6+ is required: it upgrades npm to a version that understands OIDC
-      # trusted publishing (npm >=11.5.1) and performs the token exchange
-      # transparently during `npm publish`, given `id-token: write` above.
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
@@ -48,24 +41,6 @@ jobs:
 
       - run: npm test
 
-      # No NODE_AUTH_TOKEN: with a trusted publisher configured on npmjs.com
-      # (see "Trusted publishing prerequisite" below) and id-token: write
-      # above, npm authenticates via a short-lived OIDC-exchanged token
-      # instead of a long-lived secret. This is also what enables npm's
-      # automatic provenance attestation (verifiable "built by this exact
-      # workflow run" proof), with no separate --provenance flag needed.
       - run: npm publish
-
-# Trusted publishing prerequisite (one-time, manual — not something this
-# workflow file can do on its own): on npmjs.com, open this package's
-# Settings → Trusted Publisher → GitHub Actions, and configure:
-#   - Organization or user: RichardMcQuiston01
-#   - Repository: html-to-lvgl
-#   - Workflow filename: publish.yml   (bare filename, not the .github/… path)
-#   - Environment: leave blank         (this job declares no `environment:`;
-#     a non-blank value here causes an OIDC claim mismatch and publish
-#     failures)
-# Until that's configured, this workflow's `npm publish` step fails with an
-# authentication error — there is no NPM_TOKEN fallback anymore by design.
-# The old NPM_TOKEN repository secret can be deleted once a real release
-# has published successfully this way.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
