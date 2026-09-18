@@ -39,6 +39,7 @@ export function optimize(tree) {
       !node.component && // component boundaries must survive for the componentizer
       !node.widget &&    // data-lv-widget forces a mapping in convert.mjs
       !node.lvName &&    // an explicit name must reach uid()
+      !node.link &&      // data-lv-link must reach convert.mjs's nav-link check
       node.children.length === 1 &&
       !s.bgColor && !s.gradient && !s.shadow && !s.pressed &&
       s.borderWidth === 0 && s.borderBottomWidth === 0 &&
