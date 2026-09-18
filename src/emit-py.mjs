@@ -1,7 +1,7 @@
 /**
  * Idiomatic MicroPython emitter: turns the converter's element tree (the
  * same one the XML and C emitters render) into a plain `lv.*` Python module
- * for users who don't want to ship XML at runtime — see PLAN.md §3.4 Phase 3.
+ * for users who don't want to ship XML at runtime.
  *
  * The generated module exports a fixed function:
  *   def ui_create(parent): -> lv_obj   (or ui_<screen>_create for a screen)
@@ -13,7 +13,7 @@
  * lv_micropython's unix port at the same pinned commit CI uses (see
  * .github/workflows/ci.yml's validate-micropython-xml job) and introspected
  * it directly (`dir(lv.<GROUP>)`, a full smoke-render of every widget type)
- * rather than trusting the C-derived guess in PLAN.md §3.2. Two real
+ * rather than trusting a C-derived guess. Two real
  * divergences from a naive 1:1 C-call translation came out of that:
  *
  *   - `lv_slider_set_min_value`/`lv_slider_set_max_value` (and the lv_bar

@@ -1,6 +1,6 @@
 # MicroPython Phase 0 spike, Phase 2 CI validation, and the Phase 3 emitter
 
-Answers the two open questions from `PLAN.md` §4 before committing to a
+Answers the two open questions that had to be settled before committing to a
 `src/emit-python.mjs` emitter: does `lv_binding_micropython` expose the
 `lv_xml_*` API, and is `lv_binfont_create` reachable from MicroPython? Both
 are **yes**, each behind a small, documented patch to the binding's vendored
@@ -11,9 +11,9 @@ output loads on MicroPython **unmodified** — no Python emitter is needed to
 Phase 1 (README docs, no code) and Phase 2 (this file's "Known limitations"
 section, plus a `validate-micropython-xml` CI job in `.github/workflows/ci.yml`
 that runs `render_xml.py` against every golden the same way `validate-xml`
-does for the C harness) are both done — see `PLAN.md` §3.4. Phase 3 (the
-idiomatic `--format py` emitter, `src/emit-py.mjs`, for users who'd rather
-not carry `LV_USE_XML`) is also done — see "The Phase 3 emitter" below.
+does for the C harness) are both done. Phase 3 (the idiomatic `--format py`
+emitter, `src/emit-py.mjs`, for users who'd rather not carry `LV_USE_XML`)
+is also done — see "The Phase 3 emitter" below.
 
 ## Results
 
@@ -40,7 +40,7 @@ not carry `LV_USE_XML`) is also done — see "The Phase 3 emitter" below.
 
 ## Why this changes the plan
 
-`PLAN.md`'s Phase 1 assumed a dedicated `src/emit-python.mjs` translating the
+The original plan's Phase 1 assumed a dedicated `src/emit-python.mjs` translating the
 element tree into `lv.*` Pythonic calls (`lv_obj_create(parent)` →
 `lv.obj(parent)`, etc.) — mirroring `emit-c.mjs`'s tables. That mapping is
 confirmed accurate (see `render_xml.py`'s hand-written comparison and the
@@ -54,7 +54,7 @@ work becomes packaging and validation, not translation:
   docs), pointing users at `lv.xml_init()` + `lv.xml_component_register_from_data()`.
 - Fonts: ship `.bin` files alongside the XML and load them with
   `lv.binfont_create()` at boot — no firmware rebuild needed, matching the
-  "promising path" `PLAN.md` §3.3 flagged as unverified.
+  a promising path identified up front but left unverified until now.
 - CI: build `lv_micropython`'s unix port (cached, ~30s incremental) and run
   every golden XML through it the same way `validate-xml` already does for
   the C harness.
@@ -68,7 +68,7 @@ Phase 3; see "The Phase 3 emitter" below.
 ## Mapping table verified
 
 Hand-written against the real binding at spike time (not assumed), confirming
-`PLAN.md` §3.2's proposed table exactly:
+the table proposed up front exactly:
 
 | C emitter | MicroPython (verified) |
 |---|---|
