@@ -1,21 +1,32 @@
 # HTML to LVGL
 
+- Author: [Richard McQuiston](mailto:richard.mcquiston@gmail.com)
+- Website: https://richardmcquiston.com/
+
+## Table of Contents
+
+| [Overview](#overview) | [Getting Started](#getting-started) | [More Information](#more-information) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
+
 ## Overview
 
-Transform plain HTML or React based HTML pages into LVGL code for use on devices like Arduino or ESP32.
+HTML to LVGL turns a plain HTML page, or a React page, into code for the [LVGL](https://lvgl.io) graphics library. You can use the result on small devices such as an Arduino or an ESP32.
 
-The converter renders your page in headless Chromium at the target display resolution, extracts the resolved layout and styles, and emits [LVGL XML](https://lvgl.io/docs/open/xml) (v9.4 `lv_xml` runtime syntax), plain C, or C++ — see [Output formats](#output-formats). CSS flexbox maps onto LVGL's flex layout; everything else uses exact coordinates from the browser's layout engine.
+The tool opens your page in a headless Chromium browser at the size of your display. It reads the layout and styles from the browser. Then it writes LVGL XML (version 9.4), plain C, C++, or MicroPython.
 
-See [ROADMAP.md](ROADMAP.md) for project status and what's planned next.
+See [ROADMAP.md](ROADMAP.md) for project status and [CHANGELOG.md](CHANGELOG.md) for released versions.
 
-## Prerequisites
+[Back to Top](#table-of-contents)
 
-- Node.js >= 20
-- Playwright downloads its own Chromium build on install (no separate browser install needed)
+## Getting Started
 
-## Installation
+### Prerequisites
 
-Clone this repository to run the examples, use the golden-file test suite, or contribute:
+- Node.js 20 or newer.
+- Nothing else. Playwright downloads its own copy of Chromium when you install.
+
+### Installation
+
+To run the examples or work on the code, clone the repository:
 
 ```sh
 git clone https://github.com/RichardMcQuiston01/html-to-lvgl.git
@@ -23,41 +34,23 @@ cd html-to-lvgl
 npm install
 ```
 
-Or install the CLI from npm to use it in your own project:
+To use the tool in your own project, install it from npm:
 
 ```sh
 npm install -g @richardmcquiston01/html-to-lvgl
-html2lvgl your-page.html --size 320x240 -o out/
 ```
 
-## Usage
+### Usage
+
+Convert a page for a 320x240 display:
 
 ```sh
-# Convert a page for a 320x240 display
 node src/cli.mjs examples/dashboard.html --size 320x240 -o out/
-
-# Emit plain C instead of (or alongside) XML — works on any LVGL 9.x,
-# no lv_xml runtime needed
-node src/cli.mjs examples/monitor.html -o out/ --format both
-
-# Emit C++ (.cpp/.hpp) for a project that only compiles C++
-node src/cli.mjs examples/monitor.html -o out/ --format cpp
-
-# Convert a React app: each function component becomes a reusable,
-# parameterized LVGL XML component
-node src/cli.mjs examples/react/panel.jsx -o out/
-
-# Also save the Chromium reference screenshot and the extracted UI tree
-node src/cli.mjs examples/dashboard.html -o out/ --screenshot --debug
-
-# Watch mode: rebuild on save and serve a live side-by-side preview
-node src/cli.mjs examples/dashboard.html -o out/ --watch
-
-# Several pages become several screens, with links between them wired up
-node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 ```
 
-This produces `out/dashboard.xml`, ready to load with LVGL v9.4's XML runtime:
+If you installed from npm, run `html2lvgl` in place of `node src/cli.mjs`.
+
+This writes `out/dashboard.xml`. Load it with the LVGL 9.4 XML runtime:
 
 ```c
 lv_xml_init();
@@ -66,232 +59,41 @@ lv_xml_register_component_from_data("dashboard", xml_string);
 lv_xml_create(lv_screen_active(), "dashboard", NULL);
 ```
 
-`spike/render/` contains a complete headless example (virtual display, font registration, framebuffer capture) that CI uses to validate every generated XML file against real LVGL.
+Use `--help` to list every option.
 
-## What maps today
-
-| HTML/CSS | LVGL |
-|---|---|
-| `display: flex` (direction, wrap, justify-content, align-items, gap, flex-grow) | LVGL flex (`flex_flow`, `style_flex_*`, `pad_row`/`pad_column`) |
-| `display: grid` (tracks, gaps, `grid-column/row` spans) | LVGL grid (`style_layout="grid"`, track descriptor arrays, cell pos/span) |
-| Block/absolute layout | Exact coordinates from Chromium |
-| Two-stop `linear-gradient` | `bg_color` + `bg_grad_color` + `bg_grad_dir` |
-| `box-shadow` | `style_shadow_*` (color, blur, offsets, spread) |
-| `:hover` / `:active` declarations | pressed-state styles (`style_bg_color:pressed`) |
-| `overflow: auto/scroll` | scrollable containers |
-| `button` | `lv_button` + centered `lv_label` |
-| Text elements | `lv_label`, sized with real LVGL font metrics |
-| `input type=range` | `lv_slider` (min/max/value) |
-| `input type=checkbox` | `lv_switch` (wide) or `lv_checkbox` |
-| `input type=text/password` | `lv_textarea` (placeholder, password mode) |
-| `select` | `lv_dropdown` |
-| `progress` | `lv_bar` |
-| `table` | `lv_table` (column widths, cell values) |
-| `img` | `lv_image` + asset manifest |
-| Colors, borders (incl. side-specific), radius, padding, opacity, text styles | LVGL style properties |
-
-An optimizer pass collapses visually inert single-child wrapper divs (framework "wrapper soup") so they never become on-device widgets.
-
-### Multi-screen navigation
-
-Pass more than one page and each becomes a `<screen>` rather than a `<component>`, with `<a href>` links between them turned into navigation buttons. Anything else that needs to navigate — a `<button>`, a clickable card `<div>`, whatever isn't semantically an anchor — gets the same treatment via `data-lv-link="settings.html"` (see [Annotation attributes](#annotation-attributes)):
-
-```xml
-<!-- home.xml -->
-<screen>
-  <view ...>
-    <lv_button name="to_settings" width="160" height="34" ...>
-      <lv_label align="center" text="Settings" .../>
-      <screen_create_event screen="settings" />
-    </lv_button>
-  </view>
-</screen>
-```
-
-`screen_create_event` instantiates the target on demand, so navigation works before a screen has ever been visited — no start-up ordering to manage. Links to external URLs, to pages outside the converted set, or a `data-lv-link` value that doesn't match any of them stay plain text (a `data-lv-link` mismatch also emits a warning, since it's more likely a typo than an intentional external link). An explicit `data-lv-link` wins over a conflicting `href` on the same element. Load a screen with `lv_xml_create(NULL, "home", NULL)` followed by `lv_screen_load()`; the render harness does exactly this and can simulate a click with `--click=<widget-name>` to verify a transition.
-
-In C output each screen exports `ui_<screen>_create` instead of `ui_create` so the units can be linked together; a navigation button's click handler calls the target screen's `ui_<screen>_create` (declared `extern`) and `lv_screen_load`s it — link every screen a UI can navigate to into the same binary.
-
-### Custom fonts
-
-By default text renders in LVGL's built-in Montserrat at the nearest available size. Point a CSS family at a font file and the page renders in its real typeface instead:
+### Examples
 
 ```sh
-node src/cli.mjs examples/typography.html -o out/ \
-  --font-map "Liberation Sans=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" \
-  --font-map "Liberation Sans:700=/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+# Write plain C as well as XML. This works on any LVGL 9.x.
+node src/cli.mjs examples/monitor.html -o out/ --format both
+
+# Write C++ for a project that only builds C++
+node src/cli.mjs examples/monitor.html -o out/ --format cpp
+
+# Convert a React component into reusable LVGL XML components
+node src/cli.mjs examples/react/panel.jsx -o out/
+
+# Save the browser screenshot and the extracted UI tree
+node src/cli.mjs examples/dashboard.html -o out/ --screenshot --debug
+
+# Rebuild on every save and show a live preview
+node src/cli.mjs examples/dashboard.html -o out/ --watch
+
+# Convert two pages into two linked screens
+node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 ```
 
-Every distinct family/weight/size the page uses is converted with [`lv_font_conv`](https://github.com/lvgl/lv_font_conv) at that **exact** pixel size — no rounding to a built-in size — and **subset to the characters the page actually renders**, so the fonts stay small. `@font-face` rules with local `url(...)` sources are picked up automatically; `Family:700` maps a single weight. Anything left unmapped falls back to Montserrat with one warning per family.
+[Back to Top](#table-of-contents)
 
-Each font is emitted twice, into `out/fonts/`:
+## More Information
 
-- `<name>.c` — compile alongside the generated C; it is declared `extern` for you
-- `<name>.bin` — load at runtime with `lv_binfont_create()`, which is how the XML path and the render harness use it:
+- [FEATURES.md](FEATURES.md) lists what HTML and CSS the tool converts. It also covers navigation, fonts, watch mode, annotation attributes, React input, and output formats.
+- [MICROPYTHON.md](MICROPYTHON.md) shows how to run the output on MicroPython.
+- [DEVELOPMENT.md](DEVELOPMENT.md) describes the project layout, tests, and how to release.
+- [ROADMAP.md](ROADMAP.md) shows what is done and what is blocked.
+- [spike/README.md](spike/README.md) is the first proof of concept, with screenshots.
 
-```sh
-./spike/build/render out/typography.xml out.bmp --font=liberation_sans_700_28=out/fonts/liberation_sans_700_28.bin
-```
-
-Text measurement uses the generated font's real advance widths, so labels are sized from the typeface that will actually draw them. Generated C includes `"lvgl.h"`; pass `--lv-include lvgl/lvgl.h` if your project puts LVGL's parent directory on the include path.
-
-### Watch mode and live preview
-
-`--watch` rebuilds whenever you save and serves a preview at `http://localhost:8377` (override with `--port`): the Chromium reference next to the LVGL render, a live fidelity score, converter warnings, and the generated XML. The page refreshes itself over SSE after each build, so the edit → see-it-on-LVGL loop is a browser tab away.
-
-The LVGL pane needs the render harness — `spike/build/render` by default, or point at another build with `--render-bin`. Without it the preview still serves the reference and the XML and tells you how to build one. Broken saves surface the error in the page instead of killing the server, and a failed render is reported rather than leaving the previous frame on screen.
-
-Watch scope: the input file's own directory tree is watched (recursively), so page, CSS and co-located JSX imports all trigger rebuilds. Edits to files imported from *outside* that directory won't — keep a React app's sources under one root, or re-run the CLI.
-
-### Annotation attributes
-
-When the automatic mapping needs a nudge, annotate the source HTML (React works too — put them on the JSX element):
-
-| Attribute | Effect |
-|---|---|
-| `data-lv-widget="switch\|checkbox\|slider\|bar\|button\|label\|textarea\|dropdown\|table\|image"` | Force the widget, overriding tag and heuristic classification — e.g. a hand-rolled `<div>` toggle becomes an `lv_switch`. `textarea` produces a multi-line box; single-line inputs come from `<input type=text>` |
-| `data-lv-name="pump_enable"` | Set the widget's `name`, instead of deriving it from `id`/`class` — useful for looking the widget up with `lv_obj_get_child_by_name()` |
-| `data-lv-ignore` | Drop the element and its subtree — design-time guides, print-only content, debug overlays |
-| `data-lv-component="Name"` | Mark a component boundary by hand, giving plain HTML the same componentization React gets automatically |
-| `data-lv-link="settings.html"` | Turn the element into a navigation button to another converted page, the same way `<a href>` does — for a `<button>` or any other non-anchor element. Only means something when converting multiple pages together (see [Multi-screen navigation](#multi-screen-navigation)); overrides a conflicting `href` on the same element |
-
-`examples/annotations.html` exercises `data-lv-widget`, `data-lv-name`, `data-lv-ignore`, and `data-lv-component`; `data-lv-link` is demonstrated in `examples/nav/settings.html`'s "Back to Home" button alongside `examples/nav/home.html`'s plain `<a href>` link.
-
-### React input
-
-Point the CLI at a `.jsx`/`.tsx` file whose default export is a component; it is bundled with esbuild, mounted in headless Chromium, and each function component's DOM subtree is identified by walking the React fiber tree. The componentizer then turns repeated components into **reusable LVGL XML components with props**:
-
-```xml
-<!-- stat_card.xml — generated from function StatCard({label, value, unit}) -->
-<component>
-  <api>
-    <prop type="string" name="label" default="311"/>
-    ...
-  </api>
-  <view style_bg_color="0x1c2430" ...>
-    <lv_label text="$label" .../>
-  </view>
-</component>
-
-<!-- panel.xml references it -->
-<stat_card flex_grow="1" width="92" height="78" label="311" label_2="CORE K"/>
-```
-
-Differing label texts become string props, differing colors become color props, and placement stays on the instances. Structurally inconsistent instances fall back to inline output with a warning. Plain HTML can opt into the same mechanism with `data-lv-component="Name"` attributes. C/C++ output (`--format c/cpp/both`) stays flattened and works for React input too.
-
-### Output formats
-
-`--format` accepts a comma-separated list (`xml`, `c`, `cpp`, `py`); `both` is a back-compat alias for `xml,c`.
-
-- **XML** (default): for LVGL v9.4's `lv_xml` runtime and the LVGL Editor toolchain.
-- **C** (`--format c` or `both`): self-contained `ui_<name>.c/.h` exporting `lv_obj_t * ui_create(lv_obj_t * parent)` — no XML runtime dependency, works on any LVGL 9.x. A single-page conversion exports `ui_create`; converting several pages together (multi-screen) exports one `ui_<screen>_create` per screen instead.
-- **C++** (`--format cpp`): the same generated UI code as `ui_<name>.cpp/.hpp`, for a project that only compiles C++. LVGL's public headers already carry `extern "C"` guards, so the plain LVGL calls inside the generated function compile unchanged under C++17 — what differs from the C output is linkage: the header wraps `ui_create` in `extern "C" { ... }` and font/image `extern` declarations say `extern "C"`, so the generated `.cpp` links correctly against `lv_font_conv`'s font `.c` files. Those asset files must still be compiled as C (or otherwise given C linkage) regardless of `--format` — only the generated UI sources are C++; a C++ translation unit that omits `extern "C"` when referencing a C-compiled asset symbol asks the linker for a mangled name the C compiler never produced.
-- **MicroPython** (`--format py`): idiomatic `ui_<name>.py` exporting `def ui_create(parent):` — plain `lv.*` calls against [`lv_binding_micropython`](https://github.com/lvgl/lv_binding_micropython)'s auto-generated API, no `lv_xml` runtime dependency. See [Using with MicroPython](#using-with-micropython) below for the full picture, including how this compares to shipping XML directly.
-
-All four backends emit from the same widget tree; the XML/C/C++ renders are pixel-identical (the Python backend targets a different, older vendored LVGL inside the pinned binding — see below).
-
-### Using with MicroPython
-
-The XML output loads **unmodified** on [`lv_micropython`](https://github.com/lvgl/lv_micropython) via [`lv_binding_micropython`](https://github.com/lvgl/lv_binding_micropython) — no separate emitter or flag needed, just `--format xml` (the default):
-
-```python
-import lvgl as lv
-
-lv.xml_init()
-scope = lv.xml_component_get_scope("globals")
-scope.register_font("montserrat_16", lv.font_montserrat_16)  # any built-in sizes the page uses
-
-# Register every generated XML file before the one that references it —
-# a multi-screen or React/componentized conversion emits one file per
-# screen/component (e.g. stat_card.xml referenced by panel.xml), and each
-# has to be registered first or lv_xml_create() below can't resolve it.
-with open("out/dashboard.xml") as f:
-    lv.xml_component_register_from_data("dashboard", f.read())
-
-# <component>-rooted output: instantiate into a parent
-page = lv.obj.__cast__(lv.xml_create(lv.screen_active(), "dashboard", None))
-
-# <screen>-rooted output (multi-page conversions): create with no parent, then load
-page = lv.obj.__cast__(lv.xml_create(None, "dashboard", None))
-lv.screen_load(page)
-```
-
-`lv.xml_create()` returns an untyped `Blob` (the binding can't know it's an `lv_obj_t`), so cast it with `lv.obj.__cast__(...)` as above.
-
-Custom fonts (see [Custom fonts](#custom-fonts)) need no separate MicroPython step — `--font-map` already emits a `.bin` next to every `.c` in `out/fonts/`, under the same name the XML's `style_text_font` attribute references. Ship `out/fonts/*.bin` alongside your `.xml` and register each on boot:
-
-```python
-# "A:" is the POSIX filesystem drive letter the unix port's example config
-# mounts (LV_USE_FS_POSIX); swap it for whatever drive your target mounts.
-font = lv.binfont_create("A:out/fonts/liberation_sans_700_28.bin")
-scope.register_font("liberation_sans_700_28", font)  # same name as the .bin's filename
-```
-
-This requires `LV_USE_XML` enabled in the binding's `lv_conf.h`; at spike time two small patches to the binding's vendored LVGL copy were also needed (`lv_binfont_create` and the XML component scope's `user_data` field — neither changes behavior, both just widen what the binding generator's auto-scan sees). See [`spike/micropython/README.md`](spike/micropython/README.md) for the full patches, a working reference script (`render_xml.py`), and reproduction steps — worth re-checking whether a newer `lv_binding_micropython` commit already includes them upstream.
-
-#### `--format py`: idiomatic Python instead of XML
-
-If you'd rather not carry `LV_USE_XML` or ship `.xml` files at all, `--format py` emits the same UI as plain `lv.*` calls instead:
-
-```python
-import ui_dashboard
-
-page = ui_dashboard.ui_create(None)
-lv.screen_load(page)
-```
-
-A multi-screen conversion works the same way as the C backend: each screen exports its own `ui_<screen>_create(parent)` from `ui_<screen>.py`, and a generated navigation button's click handler does `import ui_<target-screen>` — lazily, inside the callback, so two screens that link to each other don't form a circular import at load time, and the cost is only paid on an actual navigation.
-
-Custom fonts and images have no compile-time linkage for this backend to borrow from (unlike C's `extern` declarations), so a page that uses either takes them as runtime dict arguments instead:
-
-```python
-fonts = {"liberation_sans_700_28": lv.binfont_create("A:out/fonts/liberation_sans_700_28.bin")}
-page = ui_typography.ui_create(None, fonts=fonts)  # only present if the page actually uses a custom font
-```
-
-Which format to reach for:
-
-| | `--format xml` | `--format py` |
-|---|---|---|
-| Runtime dependency | `LV_USE_XML` (+ `lv_xml` support code) | none |
-| Multi-file UI | one `lv_xml_component_register_from_data()` call per file | one `import` per screen |
-| Custom fonts/images | registered into the XML scope by name | passed as a `fonts`/`images` dict argument |
-| Editing after generation | plain-text markup | plain-text Python |
-
-The mapping (`lv_obj_set_width(o, v)` → `o.set_width(v)`, `LV_FLEX_FLOW_ROW_WRAP` → `lv.FLEX_FLOW.ROW_WRAP`, …) was verified against a real generated binding rather than assumed from the C names — see `src/emit-py.mjs`'s module doc comment for two real spots it diverges from a naive 1:1 C-call translation (`lv_slider`/`lv_bar`'s `set_range` vs. separate min/max setters, and `LV_ANIM_OFF` being a plain Python `False`). CI (`validate-micropython-xml` in `.github/workflows/ci.yml`) calls every golden's generated `ui_create()` directly on a real `lv_micropython` build, including a real click-driven cross-screen navigation test — not just a syntax check.
-
-### Fidelity
-
-`node scripts/fidelity.mjs <web.png> <lvgl.png|bmp>` pixel-scores a conversion. Current examples score 79–94% (tolerance 32, mostly font antialiasing differences).
-
-CSS `font-size` maps onto the built-in Montserrat sizes using per-glyph advance widths extracted from LVGL's font sources (`scripts/gen-font-metrics.mjs`), so labels never clip or wrap unexpectedly — or supply the real typeface and skip the approximation entirely (see [Custom fonts](#custom-fonts)).
-
-## Project layout
-
-- `src/` — the `html2lvgl` CLI: `extract.mjs` / `extract-react.mjs` (Playwright), `convert.mjs` (mapping), `componentize.mjs`, `optimize.mjs`, `emit-xml.mjs`, `emit-c.mjs`, `emit-py.mjs`, `fonts.mjs`, `preview.mjs` (watch mode)
-- `examples/` — sample pages to convert, including `react/panel.jsx` and `annotations.html`
-- `tests/` — golden-file tests (`npm test`); fixtures are committed extraction snapshots, so tests need no browser
-- `spike/` — the proof-of-concept and the C/C++ render harness used for CI validation; `spike/micropython/` holds the MicroPython feasibility spike and the `--format py` emitter's verification harness, `spike/esp32/` the ESP32 boot-under-QEMU spike
-- `scripts/` — font-metrics generator (run against an LVGL v9.4.0 checkout), the fidelity scorer, and `convert-fixture.mjs` for browser-free conversion from a committed fixture
-
-## Development
-
-```sh
-npm test                 # unit + golden-file tests
-npm run golden:update    # refresh goldens after an intentional converter change
-```
-
-CI runs the test suite and additionally builds the spike render harness against LVGL v9.4.0: every golden XML loads through the stock `lv_xml` runtime, and every golden C and C++ file is compiled (`gcc` / `g++ -std=c++17`) and linked against real LVGL and, for the font-linkage case, real `lv_font_conv` output.
-
-Note: the project pins **LVGL v9.4.0** — the last release with the in-tree `lv_xml` runtime (XML tooling is consolidating into LVGL Pro upstream).
-
-## License
-
-[Apache License 2.0](LICENSE)
-
-## Copyright
-
-(c)2026 Richard McQuiston.
+[Back to Top](#table-of-contents)
 
 ## Buy Me a Coffee
 
@@ -300,3 +102,17 @@ If this app, code, or repository has helped you or someone you know, please cons
 [**Donate via Stripe**](https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800), or scan:
 
 [![Donate via Stripe](./donate.svg)](https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800)
+
+[Back to Top](#table-of-contents)
+
+## License
+
+Apache 2. See the [LICENSE](LICENSE) file.
+
+[Back to Top](#table-of-contents)
+
+## Copyright
+
+(c)2026 Richard McQuiston. All rights reserved.
+
+[Back to Top](#table-of-contents)
