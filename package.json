@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/html-to-lvgl",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Convert plain HTML or React-rendered pages into LVGL XML for embedded devices",
   "type": "module",
   "license": "Apache-2.0",
@@ -13,6 +13,10 @@
     "url": "git+https://github.com/RichardMcQuiston01/html-to-lvgl.git"
   },
   "homepage": "https://github.com/RichardMcQuiston01/html-to-lvgl#readme",
+  "funding": {
+    "type": "individual",
+    "url": "https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800"
+  },
   "bugs": {
     "url": "https://github.com/RichardMcQuiston01/html-to-lvgl/issues"
   },

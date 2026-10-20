@@ -2,9 +2,19 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-20
+
+`src/` gained a new annotation attribute (`data-lv-link`), so this is a minor bump.
+
 ### Added
 
 - **`data-lv-link` annotation attribute:** extends multi-screen navigation (previously `<a href>`-only) to any element — a `<button>`, a clickable card `<div>`, anything that isn't semantically an anchor. `data-lv-link="settings.html"` resolves against the set of pages being converted together exactly like `<a href>` already does (same file-matching, same hash/query stripping), reusing the same `emitLink()` path so the generated `lv_button` + `screen_create_event` is identical regardless of which attribute triggered it. An explicit `data-lv-link` overrides a conflicting `href` on the same element; a target that doesn't match any converted page warns and falls back to the element's normal (non-navigating) widget mapping, rather than silently doing nothing. The optimizer's wrapper-collapse pass now also preserves `data-lv-link` the same way it already preserves `data-lv-widget`/`data-lv-name`, so the annotation can't be stripped off an otherwise-inert wrapper before `convert.mjs` sees it. `examples/nav/settings.html`'s "Back to Home" link is now a `<button data-lv-link="home.html">` instead of an `<a href>`, demonstrating the new attribute alongside `examples/nav/home.html`'s existing plain link — verified end-to-end with a real conversion and a real `--click=to_home` navigation test against LVGL v9.4.0.
+
+### Changed
+
+- Added a `funding` entry to `package.json`, so `npm fund` and the npm page show the donate link.
+- Rewrote `README.md` and split its long sections into `FEATURES.md`, `MICROPYTHON.md`, and `DEVELOPMENT.md`.
+- Synced the stale version in `package-lock.json` (it still said `0.1.1`).
 
 ## [0.2.0] - 2026-09-18
 
