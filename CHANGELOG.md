@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Publishing now runs on a version tag, not on a push to `release`:** `publish.yml` triggers when a tag like `0.3.0` or `v0.3.0` is pushed. It refuses to publish unless the tagged commit is on `main` and the tag matches the `package.json` version.
+
 ## [0.3.0] - 2026-10-20
 
 `src/` gained a new annotation attribute (`data-lv-link`), so this is a minor bump.
