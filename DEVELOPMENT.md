@@ -40,9 +40,10 @@ This project pins LVGL v9.4.0. It is the last release with the `lv_xml` runtime 
 1. Move the `CHANGELOG.md` entries from `[Unreleased]` to a new version heading with today's date.
 2. Set the same version in `package.json` and `package-lock.json`.
 3. Open a pull request and wait for CI to pass.
-4. Merge, then push the result to the `release` branch.
+4. Merge the pull request into `main`.
+5. Create a tag on the merge commit, such as `0.3.0` (or `v0.3.0`), and push it.
 
-A push to `release` runs `.github/workflows/publish.yml`. It runs the tests and then `npm publish`. The workflow needs an `NPM_TOKEN` secret.
+Pushing a version tag runs `.github/workflows/publish.yml`. The workflow stops if the tag's commit is not on `main`, or if the tag does not match the version in `package.json`. Then it runs the tests and `npm publish`. The workflow needs an `NPM_TOKEN` secret.
 
 [Back to Top](#development)
 
