@@ -33,7 +33,8 @@ jobs:
 
       - name: Require the tag to point at a commit on main
         run: |
-          git fetch origin main
+          # fetch-depth: 0 above already fetched origin/main; the checkout step
+          # does not persist credentials, so a second `git fetch` would fail.
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "::error::Tag $GITHUB_REF_NAME ($GITHUB_SHA) is not on main; refusing to publish."
             exit 1
