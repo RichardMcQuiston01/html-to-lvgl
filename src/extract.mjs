@@ -213,13 +213,34 @@ export function buildTree() {
     return t.replace(/\s+/g, ' ').trim();
   }
 
-  function walk(el) {
+  // Hidden subtrees (display:none, visibility:hidden, zero size) are kept and
+  // flagged `hidden: true`, so recognizers can read an Accordion body or a
+  // closed Modal. Their cost is bounded so a huge hidden DOM (a template
+  // library, a virtual list) cannot blow up the tree: descent stops more than
+  // MAX_HIDDEN_DEPTH levels below the hidden root, and once MAX_HIDDEN_NODES
+  // hidden nodes have been kept in total. The cut-off nodes are simply left
+  // out. data-lv-ignore and the SKIP set still drop an element entirely.
+  const MAX_HIDDEN_DEPTH = 12;
+  const MAX_HIDDEN_NODES = 2000;
+  let hiddenCount = 0;
+
+  /**
+   * @param {Element} el
+   * @param {number} hiddenDepth  0 when visible; else 1 for a hidden root,
+   *                              2 for its children, and so on.
+   */
+  function walk(el, hiddenDepth = 0) {
     if (SKIP.has(el.tagName)) return null;
     if (el.hasAttribute('data-lv-ignore')) return null; // author opt-out
     const cs = getComputedStyle(el);
-    if (cs.display === 'none' || cs.visibility === 'hidden') return null;
     const r = el.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return null;
+    const hidden =
+      hiddenDepth > 0 || cs.display === 'none' || cs.visibility === 'hidden' || r.width <= 0 || r.height <= 0;
+    if (hidden) {
+      if (hiddenDepth === 0) hiddenDepth = 1;
+      if (hiddenDepth - 1 > MAX_HIDDEN_DEPTH || hiddenCount >= MAX_HIDDEN_NODES) return null;
+      hiddenCount += 1;
+    }
 
     const node = {
       tag: el.tagName.toLowerCase(),
@@ -234,6 +255,12 @@ export function buildTree() {
       // Force cross-page navigation on an element <a href> wouldn't cover
       // (a <button>, a clickable <div> card, ...) — same target syntax as href
       link: el.getAttribute('data-lv-link') || null,
+      // Recognition inputs (see UiNode in src/recognize.mjs)
+      role: el.getAttribute('role') || null,
+      aria: ariaOf(el),
+      classes: typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [],
+      testId: el.getAttribute('data-testid') || null,
+      hidden,
       x: Math.round(r.x),
       y: Math.round(r.y),
       w: Math.round(r.width),
@@ -323,13 +350,24 @@ export function buildTree() {
     }
 
     for (const child of el.children) {
-      const c = walk(child);
+      const c = walk(child, hidden ? hiddenDepth + 1 : 0);
       if (c) node.children.push(c);
     }
     return node;
   }
 
-  const tree = walk(document.body);
+  /** Every aria-* attribute, keyed without the prefix. */
+  function ariaOf(el) {
+    const aria = {};
+    for (const attr of el.attributes) {
+      if (attr.name.startsWith('aria-')) aria[attr.name.slice(5)] = attr.value;
+    }
+    return aria;
+  }
+
+  let tree = walk(document.body);
+  // A hidden page root means there is nothing to show, as before.
+  if (tree && tree.hidden) tree = null;
   // Page-level font sources ride along on the root node so the tree stays a
   // single serializable value (fixtures, --debug output, preview state).
   if (tree) tree.fontFaces = collectFontFaces();
