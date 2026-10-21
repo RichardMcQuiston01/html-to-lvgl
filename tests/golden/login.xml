@@ -3,8 +3,8 @@
     <lv_label name="label" style_margin_bottom="14" text="Device Login" style_text_font="montserrat_18" style_text_color="0x202124" />
     <lv_textarea name="textarea" style_margin_bottom="10" width="240" height="34" one_line="true" placeholder_text="Username" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_shadow_width="0" style_pad_all="8" style_pad_hor="10" style_text_font="montserrat_12" style_text_color="0x202124" />
     <lv_textarea name="textarea_2" style_margin_bottom="10" width="240" height="34" one_line="true" placeholder_text="Password" password_mode="true" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xb8bcc4" style_radius="6" style_shadow_width="0" style_pad_all="8" style_pad_hor="10" style_text_font="montserrat_12" style_text_color="0x202124" />
-    <lv_button name="login_2" style_margin_top="6" width="240" height="38" style_bg_color="0x2563eb" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
-      <lv_label name="login" align="center" text="Sign In" style_text_font="montserrat_14" style_text_color="0xffffff" style_text_align="center" />
+    <lv_button name="login" style_margin_top="6" width="240" height="38" style_bg_color="0x2563eb" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+      <lv_label name="login_2" align="center" text="Sign In" style_text_font="montserrat_14" style_text_color="0xffffff" style_text_align="center" />
     </lv_button>
     <lv_label name="hint" style_margin_top="12" text="Forgot password? Hold SET for 5s" style_text_font="montserrat_10" style_text_color="0x7a7f88" />
   </view>

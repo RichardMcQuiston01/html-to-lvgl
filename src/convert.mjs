@@ -382,12 +382,15 @@ function emitForced(node, parent, ctx, index) {
 
 function emitContainer(node, parent, ctx, index) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  // The widget is named before its own text label, so a name the author chose
+  // (data-lv-name, id, class) lands on the widget, not on its label.
+  const name = uid(ctx, node, 'box');
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', { name: uid(ctx, node, 'label'), text: node.text, ...textStyles(node, font) }));
   }
   return el('lv_obj', {
-    name: uid(ctx, node, 'box'),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx),
     ...containerLayout(node, ctx),
@@ -432,6 +435,8 @@ function emitText(node, parent, ctx, index) {
 
 function emitButton(node, parent, ctx, index) {
   const children = node.children.map((c) => emit(c, node, ctx)).filter(Boolean);
+  // Name the button before its label: see emitContainer.
+  const name = uid(ctx, node, 'button');
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
@@ -442,7 +447,7 @@ function emitButton(node, parent, ctx, index) {
     }));
   }
   return el('lv_button', {
-    name: uid(ctx, node, 'button'),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
   }, children);
@@ -469,6 +474,8 @@ function resolveScreen(href, screens) {
  */
 function emitLink(node, parent, ctx, index, screen) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  // Name the button before its label: see emitContainer.
+  const name = uid(ctx, node, `to_${screen}`);
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
@@ -480,7 +487,7 @@ function emitLink(node, parent, ctx, index, screen) {
   }
   children.push(el('screen_create_event', { screen }));
   return el('lv_button', {
-    name: uid(ctx, node, `to_${screen}`),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
   }, children);
