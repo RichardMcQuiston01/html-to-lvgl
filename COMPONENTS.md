@@ -120,8 +120,12 @@ These tags were checked against the LVGL v9.4.0 source and docs (`src/others/xml
 
 Consequences for the design:
 
-- **Subjects are global.** Every subject lives in `globals.xml`, in one shared scope. Generated names must be unique per page and per component instance (for example `<screen>_<name>_open`), and conversion must write a `globals.xml`. This is new output.
-- **Open question:** whether a component can declare subjects in its own scope. The source passes a `scope` to `lv_xml_get_subject`, but the docs only show `globals.xml`. Phase 5's spike answers this.
+- **Subjects are shared by scope.** Generated subject names must be unique per page and per component instance (for example `<screen>_<name>_open`). For XML output, the simplest approach is a generated `globals.xml`, which is new output.
+- **Where subjects can live.** Three places work in 9.4.0, checked in `lv_xml_component.c` and `lv_xml.c`:
+  1. `<subjects>` in `globals.xml`. Shared by everything.
+  2. `<subjects>` inside a component's own XML. The section parser is generic, and the subject is registered in that component's scope. It is **per component, not per instance**, so two instances of one `ui_accordion` would share state. Per-instance state needs a different approach (see below).
+  3. In application code: create it with `lv_subject_init_int()` and register it with `lv_xml_register_subject(scope, "name", &subject)`. A `NULL` scope means globals. This is what the **C, C++, and Python output** already does naturally, with no `globals.xml` needed.
+- **Per-instance state.** Options: one generated subject per instance with a unique name (simple, works everywhere), or application code. Start with unique generated names, since the converter creates each instance anyway.
 - **No dedicated Modal or Drawer tags.** Use the same pattern: a subject, a toggle or set event on the opener, and `bind_flag_if_*` on the target.
 - **Top layer.** Nothing in the XML docs mentions `lv_layer_top()`. A Modal or Drawer may need a small C helper, or a child created on the top layer by the application. The spike must check whether XML alone can do this.
 - The C, C++, and MicroPython emitters need equivalent output (`lv_subject_init_int`, `lv_obj_add_subject_toggle_event`, `lv_obj_bind_flag_if_eq`, and so on). A subject-aware helper replaces most of the hand-written glue.
