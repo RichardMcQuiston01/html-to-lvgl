@@ -2,7 +2,7 @@
 
 [Back to README](./README.md)
 
-| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
+| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
 
 ## What Converts
 
@@ -79,6 +79,19 @@ Each font is written twice, into `out/fonts/`:
 - `<name>.bin` loads at run time with `lv_binfont_create()`. The XML path uses this file.
 
 Labels are sized from the real widths of the font that draws them. Generated C includes `"lvgl.h"`. If your project needs another path, pass `--lv-include lvgl/lvgl.h`.
+
+[Back to Top](#features)
+
+## TODO.txt and Diagnostics
+
+Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, or a component left inline. After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
+
+Two files are written to the output directory:
+
+- `TODO.txt` is for people. It is grouped by output file, and each entry gives the code, the widget name, the source location, what happened, and a `Fix:` line.
+- `diagnostics.json` is for tools. It holds the same entries as `{ "version": 1, "diagnostics": [...] }`.
+
+Both files are replaced on every run. When a run finds nothing to report, neither file is written and any copy left by an earlier run is deleted.
 
 [Back to Top](#features)
 

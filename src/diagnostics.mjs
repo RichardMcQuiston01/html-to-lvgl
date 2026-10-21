@@ -59,6 +59,7 @@ export const CODES = Object.freeze({
   // Components
   COMPONENT_INLINE: { severity: 'warning' },
   COMPONENT_NESTED_DIFFERS: { severity: 'warning' },
+  COMPONENT_ATTR_NOT_PROPPABLE: { severity: 'warning' },
 });
 
 const SEVERITY_ORDER = Object.freeze({ error: 0, warning: 1, info: 2 });
