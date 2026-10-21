@@ -17,6 +17,7 @@ import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
+import { loadOverrides, applyOverrides } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
@@ -39,6 +40,7 @@ const { values: opts, positionals } = parseArgs({
     port: { type: 'string', default: '8377' },
     'render-bin': { type: 'string' },
     plugin: { type: 'string', multiple: true, default: [] },
+    overrides: { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -50,6 +52,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--format xml|c|cpp|py|both] [--screenshot] [--debug]\n' +
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
+    '                 [--overrides <file.lvgl.json>]\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
@@ -66,6 +69,11 @@ if (opts.help || positionals.length === 0) {
     'html2lvgl.config.mjs next to the input or in the working directory\n' +
     'can list plugins too: export default { plugins: [...] }. React (.jsx,\n' +
     '.tsx) is built in.\n' +
+    '\n' +
+    '--overrides applies a sidecar of per-widget changes (attribute values,\n' +
+    'removed nodes) without editing the HTML. <input>.lvgl.json next to a\n' +
+    'page is picked up automatically; --overrides names one explicitly (single\n' +
+    'page only). Target widgets by name, ideally via data-lv-name.\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -134,6 +142,11 @@ for (const spec of opts['font-map']) {
     process.exit(1);
   }
   fontMap[spec.slice(0, at).trim()] = spec.slice(at + 1).trim();
+}
+
+if (opts.overrides && screenMode) {
+  console.error('--overrides applies to a single page; several screens each use their own <page>.lvgl.json');
+  process.exit(1);
 }
 
 if (opts.watch && screenMode) {
@@ -253,8 +266,36 @@ function writeDiagnostics(entries) {
 }
 
 async function emitPage({ input, name, tree }, fonts) {
-  const { xml, view, diagnostics, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+  const converted = convert(tree, { name, screens, screenMode, fonts });
+  const { diagnostics, assets, collapsed } = converted;
+  let { xml, view } = converted;
   const written = [];
+
+  // Sidecar overrides edit the shared view tree before any emitter runs (and
+  // before componentize, so component definitions see them too). Without a
+  // sidecar the view and the pre-rendered xml are used untouched.
+  const sidecar = opts.overrides ?? input.replace(/\.[^./\\]+$/, '') + '.lvgl.json';
+  const loaded = loadOverrides(sidecar);
+  if (!loaded.ok) {
+    diagnostics.add({
+      code: 'OVERRIDE_FILE_INVALID',
+      message: `Sidecar ${sidecar} was ignored: ${loaded.errors.join('; ')}`,
+      fix: `Fix ${sidecar} (expected {"version": 1, "nodes": {"<name>": {"attrs": {...}, "remove": false}}}) and convert again.`,
+      source: { file: sidecar },
+    });
+  } else if (opts.overrides && loaded.overrides === null) {
+    diagnostics.add({
+      code: 'OVERRIDE_FILE_INVALID',
+      message: `Sidecar ${sidecar} does not exist.`,
+      fix: 'Check the --overrides path, or create the file.',
+      source: { file: sidecar },
+    });
+  } else if (loaded.overrides) {
+    view = applyOverrides(view, loaded.overrides, { diagnostics, file: sidecar });
+    const wrapper = screenMode ? 'screen' : 'component';
+    xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
+  }
+
   if (formats.has('xml')) {
     let pageXml = xml;
     // Split component boundaries (React fiber-walk stamps, or manual
