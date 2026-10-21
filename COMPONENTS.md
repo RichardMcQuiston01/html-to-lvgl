@@ -76,7 +76,7 @@ Most interactive components share one ARIA pattern: a **trigger** with `aria-con
 | Target | Pattern | LVGL |
 |---|---|---|
 | Inline panel | `aria-expanded` button and a region | Accordion: header and a body that reflows its siblings |
-| Edge-anchored, full height | `role="dialog"` against a screen edge | Drawer: container on `lv_layer_top()` with a slide animation |
+| Edge-anchored, full height | `role="dialog"` against a screen edge | Drawer: floating panel inside the screen, slid by a `translate_x` timeline |
 | Centered overlay | `role="dialog"` and `aria-modal="true"` | [Modal](#modal) |
 | Small overlay | `role="menu"` or `aria-haspopup` | Menu: dropdown or list |
 
@@ -125,9 +125,12 @@ Consequences for the design:
   1. `<subjects>` in `globals.xml`. Shared by everything.
   2. `<subjects>` inside a component's own XML. The section parser is generic, and the subject is registered in that component's scope. It is **per component, not per instance**, so two instances of one `ui_accordion` would share state. Per-instance state needs a different approach (see below).
   3. In application code: create it with `lv_subject_init_int()` and register it with `lv_xml_register_subject(scope, "name", &subject)`. A `NULL` scope means globals. This is what the **C, C++, and Python output** already does naturally, with no `globals.xml` needed.
-- **Per-instance state.** Options: one generated subject per instance with a unique name (simple, works everywhere), or application code. Start with unique generated names, since the converter creates each instance anyway.
+- **Per-instance state works.** Verified on a real LVGL v9.4.0 build (`spike/subjects/`). A component with `<prop name="subj" type="string"/>` can use `subject="$subj"` in both the toggle and the bind tags, so one `ui_accordion` serves every instance. The converter passes a generated unique name for each instance (declared in `globals.xml`). A component that declares its own `<subjects>` and is used twice shares one subject: clicking one header opens both bodies.
+- **Scope lookup.** A component-owned subject is not found by `lv_xml_get_subject(NULL, ...)`. It is found only with `lv_xml_get_subject(lv_xml_component_get_scope("component"), ...)`. The C emitters must account for this, or just use globals.
+- **Reflow.** A library component's root needs `height="content"` for its siblings to reflow when a body hides. A fixed height pins the layout.
 - **No dedicated Modal or Drawer tags.** Use the same pattern: a subject, a toggle or set event on the opener, and `bind_flag_if_*` on the target.
 - **Top layer.** Confirmed: XML cannot place content on `lv_layer_top()`. There is no tag for it. The only way is application code, `lv_xml_create(lv_layer_top(), "component", NULL)`. So the default for Modal and Drawer is **an overlay inside the screen**: a full-screen child, last in the screen's child list so it draws on top, with `floating="true"` (so it ignores flex layout) and a `bind_flag_if_*` to show and hide it. It is pure XML and needs no C. Its limit is that it only covers its own screen. Use the top-layer variant (an opt-in generated C helper, flagged in `TODO.txt`) only when an overlay must survive a screen change.
+- **Drawer slide.** Verified: `<animations>` with a `<timeline>` of `<animation prop="translate_x" target="panel" start="-200" end="0" duration="250"/>`, played by `<play_timeline_event target="self" timeline="drawer_in"/>`, slides a left-edge panel in pure XML. A second timeline reverses it. Park the closed panel with `style_translate_x="-200"`. Do **not** put a hide-binding on the panel itself, or the slide-out is invisible. Only the scrim uses the hide-binding. Only the left edge was tried. Other edges, an opacity fade, and starting open are untested.
 - The C, C++, and MicroPython emitters need equivalent output (`lv_subject_init_int`, `lv_obj_add_subject_toggle_event`, `lv_obj_bind_flag_if_eq`, and so on). A subject-aware helper replaces most of the hand-written glue.
 
 Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, and so on). The existing componentize step already makes parameterized components, so the recognizer only fills in the props.
@@ -137,7 +140,7 @@ Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, a
 ## Modal
 
 - **Detect** `role="dialog"` or `role="alertdialog"`. `aria-modal="true"` means a blocking backdrop. `aria-labelledby` and `aria-describedby` give the title and body.
-- **Emit** a container on `lv_layer_top()`. The backdrop is a full-screen object with about 50 percent black opacity. It is clickable, so it blocks input beneath. The dialog sits centered on top. A simple confirm dialog (a title, a message, one or two buttons) could map to `lv_msgbox` instead.
+- **Emit** an overlay inside the screen: the last child, `floating="true"`, at `x=0 y=0` and the full display size, with `style_bg_opa="50%"` for the dim backdrop, and a `bind_flag_if_eq` on its subject. The dialog sits centered inside it. Verified: it draws above earlier siblings and blocks clicks to the widgets beneath while open. A plain `lv_obj` is clickable by default, so no extra attribute is needed. The close button uses `<subject_set_int_event ... value="0"/>`. Backdrop-click-to-close was not tried. The `lv_layer_top()` variant is opt-in (see "Top layer" above). A simple confirm dialog (a title, a message, one or two buttons) could map to `lv_msgbox` instead.
 - **State:** hidden by default and shown by a subject flag. The opener is any element with `aria-controls` or `aria-haspopup="dialog"` that points at the dialog. A dialog that is already open when the page loads starts open.
 - **Dismissal:** a close or cancel button sets the flag back. Click on the backdrop to close is optional.
 - **Portals:** a modal usually sits outside the root DOM. The recognizer matches by `role`, not by DOM position, so this works.
@@ -159,7 +162,7 @@ Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, a
 | Bottom navigation | `lv_tabview` at the bottom, or a button row | |
 | Date picker | `lv_calendar` | |
 | Accordion | Header button and body container | Composite. See [The Disclosure Primitive](#the-disclosure-primitive). |
-| Drawer | Container on `lv_layer_top()` and a backdrop | Slide animation. Opened by the app bar's menu button. |
+| Drawer | Floating edge-anchored panel and a scrim | Slides in with an `<animations>` timeline. Opened by the app bar's menu button. |
 | Stepper, Pagination, Speed dial | Composites | Later. |
 | Data grid, Autocomplete, Tree view | Out of scope | Needs its own design. |
 
