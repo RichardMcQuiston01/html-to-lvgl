@@ -62,6 +62,16 @@ test('convert() returns diagnostics and matching warning strings', () => {
   assertComplete(diagnostics.list());
 });
 
+test('diagnostic source selectors prefer the stable node key', () => {
+  const sel = (n) => convert(page(n)).diagnostics.list()[0].source.selector;
+  assert.equal(sel(node('canvas', { key: 'body/canvas[0]' })), 'body/canvas[0]');
+  assert.equal(sel(node('canvas', { id: 'chart', key: '#chart' })), '#chart');
+  assert.equal(sel(node('canvas', { lvName: 'c', key: 'name:c' })), 'name:c');
+  // No key: the old fallbacks still apply
+  assert.equal(sel(node('canvas')), '<canvas>');
+  assert.equal(sel(node('canvas', { lvName: 'c' })), '[data-lv-name="c"]');
+});
+
 test('unknown data-lv-widget reports WIDGET_UNSUPPORTED', () => {
   const { diagnostics } = convert(page(node('div', { widget: 'hologram' })));
   assert.deepEqual(diagnostics.list().map((d) => d.code), ['WIDGET_UNSUPPORTED']);

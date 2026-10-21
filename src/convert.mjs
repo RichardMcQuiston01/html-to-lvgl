@@ -71,6 +71,9 @@ function uid(ctx, node, fallback) {
 
 /** Where a node came from in the source page, as precisely as the tree allows. */
 function sourceOf(node) {
+  // node.key is the stable key from recognize(): `name:x`, `#x`, or a path
+  // like body/div[0]/button[1]. It is unique within the page, so prefer it.
+  if (node.key) return { selector: node.key };
   const selector = node.lvName ? `[data-lv-name="${node.lvName}"]` : node.id ? `#${node.id}` : `<${node.tag}>`;
   return { selector };
 }
