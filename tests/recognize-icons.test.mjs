@@ -153,3 +153,31 @@ test('convert() emits a named lv_obj, ICON_PLACEHOLDER, and a TODO fix line', ()
   assert.match(todo, /\[ICON_PLACEHOLDER\] icon_menu/);
   assert.match(todo, /Fix: Replace the lv_obj named "icon_menu" with an lv_image/);
 });
+
+test('rule 3 matches whole Font Awesome and icon class names only', () => {
+  for (const cls of ['fa', 'fas', 'far', 'fab', 'fa-home', 'fa-solid', 'bi', 'bi-gear', 'bx-user', 'icon', 'icon-menu']) {
+    assert.ok(score(node('i', { classes: [cls], className: cls })) > 0, `${cls} should match`);
+  }
+  for (const cls of ['fancy', 'fantasy', 'fade', 'iconic', 'icons-grid', 'bio', 'bxx']) {
+    assert.equal(score(node('span', { classes: [cls], className: cls })), 0, `${cls} should not match`);
+  }
+});
+
+test('duplicate icons are numbered in the diagnostic and in the generated file', () => {
+  const menu = (id) => node('svg', { testId: 'MenuIcon', w: 24, h: 24, x: id * 30 });
+  const page = { ...node('body'), w: 320, h: 240, children: [menu(0), menu(1), menu(2)] };
+  const { xml, diagnostics } = convert(page);
+  const widgets = diagnostics.list().filter((d) => d.code === 'ICON_PLACEHOLDER').map((d) => d.output.widget);
+  assert.deepEqual(widgets, ['icon_menu', 'icon_menu_2', 'icon_menu_3']);
+  for (const name of widgets) assert.match(xml, new RegExp(`name="${name}"`), `${name} should be in the XML`);
+  const todo = formatTodo(diagnostics.list());
+  assert.match(todo, /named "icon_menu_3" with an lv_image/);
+});
+
+test('numbering starts again for each conversion', () => {
+  const page = () => ({ ...node('body'), w: 320, h: 240, children: [node('svg', { testId: 'HomeIcon', w: 24, h: 24 })] });
+  const first = convert(page()).diagnostics.list()[0].output.widget;
+  const second = convert(page()).diagnostics.list()[0].output.widget;
+  assert.equal(first, 'icon_home');
+  assert.equal(second, 'icon_home');
+});

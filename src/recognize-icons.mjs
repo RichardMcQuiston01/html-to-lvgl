@@ -14,7 +14,11 @@
  */
 
 const ICON_FONT_CLASS = /^(material-icons|material-symbols)/;
-const ICON_FONT_PREFIX = /^(fa|bi-|bx-|icon)/;
+// Font Awesome's base class is exactly fa, fas, far, fab, fal, fad or fat; its
+// icons are fa-<name>. Bootstrap Icons and Boxicons use bi/bx plus bi-<name>/
+// bx-<name>. A bare "icon" or icon-<name> is a common convention. Matching on
+// the whole class name keeps "fancy" and "iconic" from counting as icons.
+const ICON_FONT_PREFIX = /^(fa[srbldt]?|fa-.+|bi|bi-.+|bx|bx-.+|icon|icon-.+)$/;
 const SMALL_SQUARE_MAX = 48;
 const FALLBACK_HINT = 'icon';
 
@@ -92,6 +96,35 @@ export function iconHint(node) {
   return FALLBACK_HINT;
 }
 
+/**
+ * How many icons with each hint this run has named, so the second "menu" icon
+ * is "icon_menu_2" here, in the diagnostic, and in the generated file. If the
+ * name were left to convert() to number, the TODO.txt entry would send the
+ * reader looking for "icon_menu" while the file held "icon_menu_2".
+ * Keyed by the tree, which is the same object for every icon in one run.
+ * @type {WeakMap<object, Map<string, number>>}
+ */
+const namesByTree = new WeakMap();
+
+/**
+ * @param {object} tree
+ * @param {string} hint
+ * @returns {string}
+ */
+function uniqueName(tree, hint) {
+  // A real run always passes the tree. Without one there is nothing to count
+  // against, so leave the name plain and let convert() number any duplicates.
+  if (tree === null || typeof tree !== 'object') return `icon_${hint}`;
+  let counts = namesByTree.get(tree);
+  if (!counts) {
+    counts = new Map();
+    namesByTree.set(tree, counts);
+  }
+  const n = (counts.get(hint) ?? 0) + 1;
+  counts.set(hint, n);
+  return n === 1 ? `icon_${hint}` : `icon_${hint}_${n}`;
+}
+
 /** @type {import('./recognize.mjs').ComponentDef} */
 const icon = {
   name: 'icon',
@@ -103,7 +136,7 @@ const icon = {
   leaf: true,
   build(node, ctx) {
     const hint = iconHint(node);
-    const name = `icon_${hint}`;
+    const name = uniqueName(ctx.tree, hint);
     const color = node.styles?.color ?? [128, 128, 128];
     ctx.diagnostics.add({
       code: 'ICON_PLACEHOLDER',
