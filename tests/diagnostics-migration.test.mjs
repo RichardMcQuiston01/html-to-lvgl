@@ -62,14 +62,21 @@ test('convert() returns diagnostics and matching warning strings', () => {
   assertComplete(diagnostics.list());
 });
 
-test('diagnostic source selectors prefer the stable node key', () => {
+test('diagnostic source selectors use the stable node key', () => {
+  // convert() runs recognize(), which gives every node a key, so the key is
+  // what a diagnostic reports: an author-set name or id, else a path.
   const sel = (n) => convert(page(n)).diagnostics.list()[0].source.selector;
-  assert.equal(sel(node('canvas', { key: 'body/canvas[0]' })), 'body/canvas[0]');
-  assert.equal(sel(node('canvas', { id: 'chart', key: '#chart' })), '#chart');
-  assert.equal(sel(node('canvas', { lvName: 'c', key: 'name:c' })), 'name:c');
-  // No key: the old fallbacks still apply
-  assert.equal(sel(node('canvas')), '<canvas>');
-  assert.equal(sel(node('canvas', { lvName: 'c' })), '[data-lv-name="c"]');
+  assert.equal(sel(node('canvas')), 'body/canvas[0]');
+  assert.equal(sel(node('canvas', { id: 'chart' })), '#chart');
+  assert.equal(sel(node('canvas', { lvName: 'c' })), 'name:c');
+});
+
+test('sourceOf falls back to the tag when a node has no key', async () => {
+  // Reachable only for a node that bypassed recognize(); kept as a safety net.
+  const { sourceOf } = await import('../src/convert.mjs');
+  assert.equal(sourceOf(node('canvas')).selector, '<canvas>');
+  assert.equal(sourceOf(node('canvas', { lvName: 'c' })).selector, '[data-lv-name="c"]');
+  assert.equal(sourceOf(node('canvas', { key: 'body/canvas[0]' })).selector, 'body/canvas[0]');
 });
 
 test('unknown data-lv-widget reports WIDGET_UNSUPPORTED', () => {
