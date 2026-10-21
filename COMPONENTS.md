@@ -84,20 +84,47 @@ Drawer and Modal are told apart by geometry, which the extractor already has.
 
 ### Behavior with LVGL subjects
 
-State lives in an LVGL **subject**. The trigger toggles it. The target binds a flag to it. In a flex column, hiding the body reflows its siblings, so an Accordion needs no manual layout:
+State lives in an LVGL **subject**. The trigger changes it. The target binds a flag to it. In a flex column, hiding the body reflows its siblings, so an Accordion needs no manual layout:
 
 ```xml
+<!-- globals.xml -->
+<globals>
+  <subjects>
+    <int name="acc1_open" value="0"/>
+  </subjects>
+</globals>
+
+<!-- page -->
 <lv_obj flex_flow="column">
   <lv_button> <!-- header -->
     <subject_toggle_event subject="acc1_open"/>
   </lv_button>
   <lv_obj name="acc1_body">
-    <bind_flag_if_not_eq subject="acc1_open" flag="hidden" ref_value="1"/>
+    <bind_flag_if_eq subject="acc1_open" flag="hidden" ref_value="0"/>
   </lv_obj>
 </lv_obj>
 ```
 
-The tag names above are from memory. **The first build step is a spike that confirms which subject and event tags LVGL 9.4's XML runtime supports.** The C, C++, and MicroPython emitters need equivalent output, which means a small generated helper for the toggle.
+These tags were checked against the LVGL v9.4.0 source and docs (`src/others/xml/lv_xml.c`, `docs/src/details/xml/`):
+
+| Need | Tag | Notes |
+|---|---|---|
+| Declare state | `<int name value/>` inside `<subjects>` in `globals.xml` | Only `int` and `string` are documented. Source also has float events. |
+| Toggle on click | `<subject_toggle_event subject trigger/>` | Registered in 9.4.0 but missing from the docs. `trigger` defaults to `clicked`. The subject must be `int`, or it logs a warning and does nothing. |
+| Set a value | `<subject_set_int_event trigger subject value/>` | There is also `_float_` and `_string_`. |
+| Step a value | `<subject_increment_event trigger subject step min_value max_value rollover/>` | `int` or `float` subjects. Useful for Stepper and Pagination. |
+| Show or hide | `<bind_flag_if_eq/not_eq/gt/ge/lt/le subject flag ref_value/>` | The `lv_obj-` prefix is optional. `bind_state_if_*` works the same way for states. |
+| Run code | `<event_cb callback trigger user_data/>` | The user must register the function. The exported C assumes it exists. |
+| Load a screen | `<screen_load_event>` and `<screen_create_event>` | Already used for navigation. |
+| Animate | `<animations>` with `<timeline>` and `<animation prop target start end duration delay/>`, played by `<play_timeline_event>` | For the Drawer slide. |
+
+Consequences for the design:
+
+- **Subjects are global.** Every subject lives in `globals.xml`, in one shared scope. Generated names must be unique per page and per component instance (for example `<screen>_<name>_open`), and conversion must write a `globals.xml`. This is new output.
+- **Open question:** whether a component can declare subjects in its own scope. The source passes a `scope` to `lv_xml_get_subject`, but the docs only show `globals.xml`. Phase 5's spike answers this.
+- **No dedicated Modal or Drawer tags.** Use the same pattern: a subject, a toggle or set event on the opener, and `bind_flag_if_*` on the target.
+- **Top layer.** Nothing in the XML docs mentions `lv_layer_top()`. A Modal or Drawer may need a small C helper, or a child created on the top layer by the application. The spike must check whether XML alone can do this.
+- The C, C++, and MicroPython emitters need equivalent output (`lv_subject_init_int`, `lv_obj_add_subject_toggle_event`, `lv_obj_bind_flag_if_eq`, and so on). A subject-aware helper replaces most of the hand-written glue.
 
 Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, and so on). The existing componentize step already makes parameterized components, so the recognizer only fills in the props.
 

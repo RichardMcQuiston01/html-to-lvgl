@@ -49,7 +49,7 @@ Goal: a place to report problems, and a clean boundary for framework code. Nothi
 | A (serial) | Define the diagnostic type and a collector that replaces `ctx.warnings`. Define the plugin interface (`load`, `components`, `sourceOf`, `recognizers`, `pluginApi`) as types and docs only. | `src/diagnostics.mjs`, `src/plugin.mjs` | none, runs first |
 | B | Migrate every existing warning to a coded diagnostic. Write `TODO.txt` and `diagnostics.json`. Shrink console output to a summary. | `src/convert.mjs`, `src/cli.mjs`, `src/componentize.mjs` | C, D |
 | C | Move the React path behind the plugin interface with no output change. Add `--plugin` and `html2lvgl.config.mjs` discovery. | `src/extract-react.mjs`, `src/cli.mjs` (discovery only), `src/plugin.mjs` | B, D |
-| D | Spike: confirm which subject and event tags LVGL 9.4's XML runtime supports (toggle, set, flag binding). Write results and a minimal working XML sample to `spike/subjects/`. Add it to CI. | `spike/subjects/`, `.github/workflows/ci.yml` | B, C |
+| D | Spike: the tag names are confirmed from the 9.4.0 source (see [COMPONENTS.md](COMPONENTS.md#behavior-with-lvgl-subjects)). Still open: can a component declare its own subjects, can XML place content on `lv_layer_top()`, and what is the cleanest `globals.xml` generation. Write results and a minimal working XML sample to `spike/subjects/`, and run it in CI against a real build. | `spike/subjects/`, `.github/workflows/ci.yml` | B, C |
 
 Done when: all goldens are unchanged, `TODO.txt` exists for a page with a font fallback, React still converts through the plugin seam, and the spike's findings are written down.
 
