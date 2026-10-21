@@ -617,10 +617,3 @@ jobs:
       # widget geometry, flags and subject values (see spike/subjects/README.md)
       - name: Run the subject-pattern scenarios
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run.sh
-
-      - name: Upload screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: subjects-spike-screenshots
-          path: spike/subjects/out/*.png
