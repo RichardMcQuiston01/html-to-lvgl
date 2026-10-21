@@ -8,6 +8,7 @@
 
 ### Changed
 
+- **Warnings are now coded diagnostics:** every converter warning has a stable code and a `Fix:` line. The CLI writes `TODO.txt` and `diagnostics.json` to the output directory and prints one summary line instead of one line per warning. Neither file is written when there is nothing to report, and stale copies are deleted. `convert()` still returns `warnings` strings and now also returns `diagnostics`. New code: `COMPONENT_ATTR_NOT_PROPPABLE`.
 - **Publishing now runs on a version tag, not on a push to `release`:** `publish.yml` triggers when a tag like `0.3.0` or `v0.3.0` is pushed. It refuses to publish unless the tagged commit is on `main` and the tag matches the `package.json` version.
 
 ## [0.3.0] - 2026-10-20

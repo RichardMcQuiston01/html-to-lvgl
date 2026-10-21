@@ -19,7 +19,7 @@ import { extractReactPage } from './extract-react.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { render as renderXml } from './emit-xml.mjs';
-import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
+import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -64,12 +64,12 @@ export async function startPreview(input, options) {
       });
       const fonts = built.length ? customFonts(built) : builtinFonts();
 
-      const { xml, view, warnings } = convert(tree, { name, fonts });
-      warnings.push(...fontWarnings(unresolved));
+      const { xml, view, diagnostics } = convert(tree, { name, fonts });
+      for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
       let pageXml = xml;
       const componentPaths = [];
       if (reactMode) {
-        const { view: pageView, components } = componentize(view, { warnings });
+        const { view: pageView, components } = componentize(view, { diagnostics });
         pageXml = `<component>\n${renderXml(pageView, 1)}\n</component>\n`;
         for (const [cname, cxml] of components) {
           const p = join(outputDir, `${cname}.xml`);
@@ -79,6 +79,7 @@ export async function startPreview(input, options) {
       }
       const xmlPath = join(outputDir, `${name}.xml`);
       writeFileSync(xmlPath, pageXml);
+      const warnings = diagnostics.toWarningStrings();
 
       let render = null;
       if (renderBin) {
