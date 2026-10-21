@@ -2,7 +2,7 @@
 
 ## Status
 
-All originally planned phases (0–4) are complete, and so is Phase 5 (diagnostics and the plugin seam): `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
+All originally planned phases (0–4) are complete, and so are Phases 5 and 6 (diagnostics, the plugin seam, and the component registry): `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
 
 ## Delivered phases
 
@@ -18,6 +18,8 @@ All originally planned phases (0–4) are complete, and so is Phase 5 (diagnosti
 
 **Phase 5 — Diagnostics and plugin seam.** Every converter warning is now a coded diagnostic (`src/diagnostics.mjs`) with a "do this" fix line. A run writes `TODO.txt` (grouped by output file) and `diagnostics.json`, and the console prints a one-line summary. React input moved behind a plugin contract (`src/plugin.mjs`, `src/plugins/react.mjs`, `src/plugin-loader.mjs`) with `--plugin` and `html2lvgl.config.mjs` discovery, and with no change in output. A spike (`spike/subjects/`, a CI job against LVGL v9.4.0) confirmed that the Accordion, Modal and Drawer patterns work in pure XML: subjects, toggle and bind tags, per-instance state through a string prop, a floating in-screen overlay, and a `translate_x` timeline. The findings are in [COMPONENTS.md](COMPONENTS.md) and [`spike/subjects/README.md`](spike/subjects/README.md).
 
+**Phase 6 — Extraction and registry.** The converter can now see ARIA state and hidden content and match a component from a registry. The extractor records `role`, `aria-*`, classes and `data-testid`, and keeps hidden subtrees (bounded) instead of dropping them. A recognition pass (`src/recognize.mjs`) offers each node to a registry of definitions, with stable node keys, `data-lv-widget` as an override, and errors reported as diagnostics instead of crashes. Icons become named placeholders with a `TODO.txt` fix line. `aria-controls` triggers are linked to their targets. Sidecar overrides (`<page>.lvgl.json`) change generated widgets by name without editing the HTML. `--watch` honors plugins, and diagnostics report real node keys. A review of the combined branch found and fixed a naming bug that older conversions had: a named button's label took the name and the button got `_2`. See [FEATURES.md](FEATURES.md) and [COMPONENTS.md](COMPONENTS.md).
+
 Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and MicroPython support (below).
 
 **MicroPython (Phases 0–3, unix port).** The Phase 0 spike proved LVGL's existing `--format xml` output loads **unmodified** on `lv_micropython`'s unix port — no new emitter needed to reach MicroPython at all. README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map`, no new CLI code). A `validate-micropython-xml` CI job renders every golden XML through the unix port the same way `validate-xml` already does for the C harness, catching two real, documented limitations along the way — both traced to the pinned binding's vendored LVGL still being v9.3.0-era, not to html2lvgl's output. Phase 3 added a `--format py` backend for users who'd rather not carry `LV_USE_XML`: idiomatic `lv.*` calls, verified against a real generated binding (which caught two real API divergences a naive C-to-Python translation would have missed) rather than trusted as designed — see [`spike/micropython/README.md`](spike/micropython/README.md) for the full writeup.
@@ -26,7 +28,7 @@ Since the original five phases, the project also shipped its **first public npm 
 
 ## What's next
 
-The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 6 to 11 below build it in order. Phase 5 (diagnostics, the plugin seam, and the subjects spike) is done and listed above.
+The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 7 to 11 below build it in order. Phases 5 and 6 (diagnostics, the plugin seam, the subjects spike, and the recognition registry) are done and listed above.
 
 The earlier **ESP32 real hardware validation** item stays blocked. The QEMU job proves boot-and-execute on every PR, but a rendered proof needs real hardware, which this project's development environment does not have. Revisit if that access becomes available.
 
@@ -41,21 +43,6 @@ Rules for every phase:
 - **Golden tests are the contract.** A lane merges only when `npm test` and the CI jobs pass. Changes to existing golden output need an explanation in the PR.
 - **Verify against real LVGL.** Anything that emits XML or C is checked by the existing `validate-xml` and C harness jobs, not only by string comparison.
 - **A review agent** reads each phase's combined diff before the phase closes. It looks for gaps between lanes, not style.
-
-### Phase 6 — Extraction and registry
-
-Goal: the converter can see ARIA state and hidden content, and can match a component from a registry.
-
-| Lane | Work | Files | Parallel with |
-|---|---|---|---|
-| A (serial) | Define the registry entry shape (`name`, `match`, `props`, `slots`, `build`) and the recognition pass that runs before `convert`. Add stable node names. | `src/recognize.mjs`, `src/convert.mjs` (hook only) | none, runs first |
-| B | Extractor: capture `role`, `aria-*`, `id`, `class`, `data-testid`. Keep hidden subtrees with `hidden: true`. | `src/extract.mjs`, `tests/extract.test.mjs` | C, D |
-| C | Icon placeholder: detect SVG, icon fonts, and ligatures. Emit the named, fixed-size placeholder and its diagnostic. | `src/recognize-icons.mjs`, goldens | B, D |
-| D | `aria-controls` / `aria-expanded` linker: pair each trigger with its target by `id`. Pure function with fixture trees. | `src/link-aria.mjs`, `tests/link-aria.test.mjs` | B, C |
-| E | Sidecar overrides (`page.lvgl.json`), keyed by node name, applied after conversion. | `src/overrides.mjs` | B, C, D |
-| F | Carry-overs from Phase 5: move `--watch` (`src/preview.mjs`) onto the plugin loader so it honors `--plugin` and config plugins. Give diagnostics real source selectors once nodes have stable names. | `src/preview.mjs`, `src/plugin-loader.mjs` | B, C, D, E |
-
-Done when: a fixture page with an inline icon produces a placeholder and a `TODO.txt` entry, and the linker pairs triggers and targets on fixture trees.
 
 ### Phase 7 — Static components
 

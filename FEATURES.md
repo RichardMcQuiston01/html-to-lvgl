@@ -2,7 +2,7 @@
 
 [Back to README](./README.md)
 
-| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
+| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [Icons](#icons) | [Sidecar Overrides](#sidecar-overrides) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
 
 ## What Converts
 
@@ -84,11 +84,11 @@ Labels are sized from the real widths of the font that draws them. Generated C i
 
 ## TODO.txt and Diagnostics
 
-Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, or a component left inline. After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
+Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, a component left inline, an icon that became a placeholder, an `aria-controls` that names no element, or a sidecar entry that names no widget. After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
 
 Two files are written to the output directory:
 
-- `TODO.txt` is for people. It is grouped by output file, and each entry gives the code, the widget name, the source location, what happened, and a `Fix:` line.
+- `TODO.txt` is for people. It is grouped by output file, and each entry gives the code, the widget name, the source location, what happened, and a `Fix:` line. The source location is the element's stable key: `name:save` for `data-lv-name="save"`, `#save` for `id="save"`, or a path such as `body/div[0]/button[1]`.
 - `diagnostics.json` is for tools. It holds the same entries as `{ "version": 1, "diagnostics": [...] }`.
 
 Both files are replaced on every run. When a run finds nothing to report, neither file is written and any copy left by an earlier run is deleted.
@@ -108,6 +108,8 @@ The preview shows:
 
 The LVGL side needs the render program. It is `spike/build/render` by default. Use `--render-bin` to point at another build. Without it, the preview still shows the browser page and the XML.
 
+Watch mode loads input through the same plugin system as a normal run, so `--plugin` and `html2lvgl.config.mjs` plugins work there too. A plugin that fails to load shows its errors in the preview, and the server keeps running.
+
 A broken save shows its error in the page. The server keeps running.
 
 The tool watches the folder that holds the input file, including its subfolders. Changes to files outside that folder do not trigger a rebuild. Keep a React app's files under one folder, or run the command again.
@@ -121,7 +123,7 @@ Add these attributes to your HTML when the automatic result needs a nudge. In Re
 | Attribute | Effect |
 |---|---|
 | `data-lv-widget="switch"` | Forces the widget type. Allowed values are `switch`, `checkbox`, `slider`, `bar`, `button`, `label`, `textarea`, `dropdown`, `table`, and `image`. |
-| `data-lv-name="pump_enable"` | Sets the widget name. Use it with `lv_obj_get_child_by_name()`. |
+| `data-lv-name="pump_enable"` | Sets the widget name. Use it with `lv_obj_get_child_by_name()`. On a button, a link, or a text container, the name goes on the widget itself and its text label gets the name with `_2` added. |
 | `data-lv-ignore` | Drops the element and everything inside it. |
 | `data-lv-component="Name"` | Marks a component by hand, so plain HTML gets the same reuse that React gets. |
 | `data-lv-link="settings.html"` | Turns the element into a button that opens another converted page. It only works when you convert several pages together. |
@@ -157,6 +159,49 @@ Repeated components become reusable LVGL XML components with props:
 - Position stays on each instance.
 - If instances differ too much, the tool writes them inline and prints a warning.
 - C and C++ output stays flat. It works for React input too.
+
+[Back to Top](#features)
+
+## Icons
+
+An icon cannot become a text label, so each one becomes a **placeholder**: an empty `lv_obj` of the icon's size with a 1 px outline, named `icon_<hint>`. The layout stays correct, and each placeholder adds an entry to `TODO.txt` that says what to replace it with.
+
+These are recognized as icons:
+
+- Any `<svg>`.
+- Material UI icons (`MuiSvgIcon-root`, or a `data-testid` ending in `Icon`).
+- `<i>` or `<span>` with a Material Icons or Material Symbols class, or a Font Awesome (`fa`, `fas`, `far`, `fab`, `fa-<name>`), Bootstrap Icons (`bi`, `bi-<name>`), Boxicons (`bx`, `bx-<name>`) or `icon`/`icon-<name>` class. Class names are matched whole, so `class="fancy"` is not an icon.
+- A small square element (up to 48 px) with `aria-hidden="true"`, no text, and an `<svg>` inside.
+
+The name comes from the best hint available: the `data-testid` (`MenuIcon` gives `icon_menu`), then `aria-label`, then the ligature text of a Material icon, then the icon-font class (`fa-home` gives `icon_home`), else `icon`. A second icon with the same hint is `icon_menu_2`, and so on. The name in `TODO.txt` is always the name in the generated file.
+
+To finish the job, replace the `lv_obj` with an `lv_image`, or with an `lv_label` that uses an `LV_SYMBOL_*` or an icon font glyph. You can do that in the generated file, or by adding a [sidecar override](#sidecar-overrides).
+
+[Back to Top](#features)
+
+## Sidecar Overrides
+
+A **sidecar** file changes the generated UI without editing your HTML, and the changes survive the next conversion. Put `<page>.lvgl.json` next to the page (for `home.html`, that is `home.lvgl.json`), or pass `--overrides <file>` for one page.
+
+```json
+{
+  "version": 1,
+  "nodes": {
+    "save": { "attrs": { "width": 120, "style_bg_color": "0xff0000", "text": null } },
+    "debug_panel": { "remove": true }
+  }
+}
+```
+
+- Each key under `nodes` is a widget's **name**.
+- `attrs` sets or replaces an attribute. A `null` value removes it. Values can be strings, numbers, or booleans.
+- `remove: true` deletes the widget and everything inside it.
+- The widget's `name` cannot be overridden.
+- Overrides apply to the generated widget tree, so XML, C, C++ and Python output all change the same way.
+
+Names come from `data-lv-name`, then `id`, then the class. Use **`data-lv-name`** for anything an override targets. A name you set stays the same when you edit the page. A class-derived name with a number on the end (`card_2`) can move when you add, remove or reorder siblings, and the override would land on a different widget.
+
+A problem with the file is reported in `TODO.txt` and conversion carries on. An unreadable or wrong-version file is ignored. A name that matches no widget lists the closest names that do exist, so a typo is easy to fix.
 
 [Back to Top](#features)
 
