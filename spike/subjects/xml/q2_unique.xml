@@ -1,0 +1,7 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0x0b1220" style_border_width="0" style_radius="0" style_pad_all="0" style_pad_row="0" flex_flow="column" scrollable="false" style_text_font="montserrat_14" style_text_color="0xffffff">
+    <ui_acc_g name="instA" title="Instance A (inst_a_open)" subj="inst_a_open"/>
+    <ui_acc_g name="instB" title="Instance B (inst_b_open)" subj="inst_b_open"/>
+    <lv_label name="footer" text="footer"/>
+  </view>
+</screen>

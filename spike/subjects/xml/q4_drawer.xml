@@ -1,0 +1,34 @@
+<screen>
+  <animations>
+    <timeline name="drawer_in">
+      <animation prop="translate_x" target="panel" start="-200" end="0" duration="250"/>
+    </timeline>
+    <timeline name="drawer_out">
+      <animation prop="translate_x" target="panel" start="0" end="-200" duration="250"/>
+    </timeline>
+  </animations>
+  <view width="320" height="240" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="0" style_pad_all="0" style_pad_row="8" flex_flow="column" scrollable="false" style_text_font="montserrat_14" style_text_color="0x0f172a">
+    <lv_button name="open_btn" width="200" height="40" style_bg_color="0x1d4ed8">
+      <lv_label text="Open drawer" align="center" style_text_color="0xffffff"/>
+      <subject_set_int_event subject="drawer_open" value="1"/>
+      <play_timeline_event target="self" timeline="drawer_in"/>
+    </lv_button>
+    <lv_label name="note" text="Page content"/>
+
+    <!-- Scrim: shown while open, closes on tap -->
+    <lv_obj name="scrim" floating="true" x="0" y="0" width="320" height="240" style_bg_color="0x000000" style_bg_opa="40%" style_border_width="0" style_radius="0" style_pad_all="0" scrollable="false">
+      <bind_flag_if_eq subject="drawer_open" flag="hidden" ref_value="0"/>
+      <subject_set_int_event subject="drawer_open" value="0"/>
+      <play_timeline_event target="self" timeline="drawer_out"/>
+    </lv_obj>
+    <!-- Panel: parked off-screen by translate_x, slid in by the timeline -->
+    <lv_obj name="panel" floating="true" x="0" y="0" width="200" height="240" style_translate_x="-200" style_bg_color="0xffffff" style_radius="0" style_border_width="0" scrollable="false">
+      <lv_label text="Drawer" align="top_mid" y="10"/>
+      <lv_button name="drawer_close" width="100" height="36" align="bottom_mid" y="-10" style_bg_color="0xb91c1c">
+        <lv_label text="Close" align="center" style_text_color="0xffffff"/>
+        <subject_set_int_event subject="drawer_open" value="0"/>
+        <play_timeline_event target="self" timeline="drawer_out"/>
+      </lv_button>
+    </lv_obj>
+  </view>
+</screen>

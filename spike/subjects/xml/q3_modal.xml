@@ -1,0 +1,25 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="0" style_pad_all="0" style_pad_row="8" flex_flow="column" scrollable="false" style_text_font="montserrat_14" style_text_color="0x0f172a">
+    <lv_button name="open_btn" width="200" height="40" style_bg_color="0x1d4ed8">
+      <lv_label text="Open modal" align="center" style_text_color="0xffffff"/>
+      <subject_set_int_event subject="modal_open" value="1"/>
+    </lv_button>
+    <lv_button name="under_btn" width="200" height="40" style_bg_color="0x15803d">
+      <lv_label text="Underneath (counts clicks)" align="center" style_text_color="0xffffff"/>
+      <subject_increment_event subject="under_clicks" step="1"/>
+    </lv_button>
+    <lv_label name="note" text="Page content"/>
+
+    <!-- Overlay: last child, floating, hidden while modal_open == 0 -->
+    <lv_obj name="overlay" floating="true" x="0" y="0" width="320" height="240" style_bg_color="0x000000" style_bg_opa="50%" style_border_width="0" style_radius="0" style_pad_all="0" scrollable="false">
+      <bind_flag_if_eq subject="modal_open" flag="hidden" ref_value="0"/>
+      <lv_obj name="dialog" width="240" height="120" align="center" style_bg_color="0xffffff" style_radius="10" style_border_width="0" scrollable="false">
+        <lv_label text="Delete this item?" align="top_mid" y="10"/>
+        <lv_button name="close_btn" width="100" height="36" align="bottom_mid" y="-10" style_bg_color="0xb91c1c">
+          <lv_label text="Close" align="center" style_text_color="0xffffff"/>
+          <subject_set_int_event subject="modal_open" value="0"/>
+        </lv_button>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</screen>

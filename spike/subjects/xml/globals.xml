@@ -1,0 +1,15 @@
+<globals>
+  <subjects>
+    <!-- Q1: two independent accordion panels on one screen -->
+    <int name="acc1_open" value="0"/>
+    <int name="acc2_open" value="1"/>
+    <!-- Q2: one generated subject per component instance -->
+    <int name="inst_a_open" value="0"/>
+    <int name="inst_b_open" value="1"/>
+    <!-- Q3: modal -->
+    <int name="modal_open" value="0"/>
+    <int name="under_clicks" value="0"/>
+    <!-- Q4: drawer -->
+    <int name="drawer_open" value="0"/>
+  </subjects>
+</globals>
