@@ -67,8 +67,10 @@ import { builtinComponents } from './components/index.mjs';
  * @property {UiNode} tree                       The whole tree, hidden nodes included.
  * @property {UiNode | null} parent              The node's parent, or null at the root.
  * @property {Map<string, UiNode>} byId          Every node with an `id`, hidden ones too.
- * @property {Map<string, { controls: string[], controlledBy: string[] }>} links
+ * @property {Map<string, { controls: string[], controlledBy: string[], labelledBy?: string[], describedBy?: string[] }>} links
  *   Keyed by node key. The ARIA trigger/target links (see src/link-aria.mjs).
+ *   `labelledBy` / `describedBy` hold the keys named by the node's own
+ *   `aria-labelledby` / `aria-describedby` (a dialog's title and body).
  * @property {ReturnType<typeof createDiagnostics>} diagnostics
  */
 
@@ -296,7 +298,7 @@ const describe = (error) => (error instanceof Error ? error.message : String(err
  * @param {object} [options]
  * @param {ReturnType<typeof createRegistry>} [options.registry]
  * @param {ReturnType<typeof createDiagnostics>} [options.diagnostics]
- * @param {(tree: UiNode) => RecognizeContext['links']} [options.linker]
+ * @param {(tree: UiNode, options?: { diagnostics?: ReturnType<typeof createDiagnostics> }) => RecognizeContext['links']} [options.linker]
  * @returns {{ tree: UiNode, recognized: number }}
  */
 export function recognize(tree, { registry = defaultRegistry, diagnostics = createDiagnostics(), linker = linkAria } = {}) {
@@ -309,7 +311,7 @@ export function recognize(tree, { registry = defaultRegistry, diagnostics = crea
   /** @type {RecognizeContext['links']} */
   let links = new Map();
   try {
-    links = linker(tree);
+    links = linker(tree, { diagnostics });
   } catch (error) {
     diagnostics.add({
       code: 'RECOGNIZER_ERROR',
