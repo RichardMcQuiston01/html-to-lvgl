@@ -16,6 +16,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
+import { withoutHidden } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
 import { loadOverrides, applyOverrides } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
@@ -213,7 +214,7 @@ async function buildAll() {
       console.error(`extraction produced no visible content for ${page}`);
       process.exit(1);
     }
-    if (opts.debug) writeFileSync(join(opts.output, `${pageName}.json`), JSON.stringify(tree, null, 2));
+    if (opts.debug) writeFileSync(join(opts.output, `${pageName}.json`), JSON.stringify(withoutHidden(tree), null, 2));
     pages.push({ input: page, name: pageName, reactMode: pageReactMode, tree });
   }
 
