@@ -13,6 +13,11 @@
 - **Warnings are now coded diagnostics:** every converter warning has a stable code and a `Fix:` line. The CLI writes `TODO.txt` and `diagnostics.json` to the output directory and prints one summary line instead of one line per warning. Neither file is written when there is nothing to report, and stale copies are deleted. `convert()` still returns `warnings` strings and now also returns `diagnostics`. New code: `COMPONENT_ATTR_NOT_PROPPABLE`.
 - **Publishing now runs on a version tag, not on a push to `release`:** `publish.yml` triggers when a tag like `0.3.0` or `v0.3.0` is pushed. It refuses to publish unless the tagged commit is on `main` and the tag matches the `package.json` version.
 
+### Fixed
+
+- **A name you give a button or a text container now goes on the widget, not on its label.** For `<button data-lv-name="save">Save</button>`, the generated `lv_button` was named `save_2` and its inner `lv_label` was named `save`, so `lv_obj_get_child_by_name(parent, "save")` returned the label and a sidecar override aimed at `save` changed the label instead of the button. The same happened for `id` and class-derived names, for navigation links, and for a `div` that has both its own text and child elements. The widget is now named first and its label takes the `_2`. This matches how a decorated text block (a title bar or badge) was already named. Pages whose buttons have no `data-lv-name`, `id` or class are unchanged, since their widget and label never shared a name.
+  - **Upgrade note:** generated names change for any named button, link or text container. If your own code looks those widgets up by name, swap the `name` and `name_2` lookups. The XML, C, C++ and Python output all change in the same way, and only the names differ.
+
 ## [0.3.0] - 2026-10-20
 
 `src/` gained a new annotation attribute (`data-lv-link`), so this is a minor bump.
