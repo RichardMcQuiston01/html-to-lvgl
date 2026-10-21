@@ -2,7 +2,7 @@
 
 ## Status
 
-All originally planned phases (0–4) are complete: `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
+All originally planned phases (0–4) are complete, and so is Phase 5 (diagnostics and the plugin seam): `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
 
 ## Delivered phases
 
@@ -16,6 +16,8 @@ All originally planned phases (0–4) are complete: `html2lvgl` converts plain H
 
 **Phase 4 — Developer experience.** Watch mode with a live side-by-side preview server (`--watch`), annotation attributes (`data-lv-widget`, `data-lv-name`, `data-lv-ignore`, `data-lv-component`) for overriding the automatic mapping, and a C++ output backend (`--format cpp`) with a documented asset-linkage story.
 
+**Phase 5 — Diagnostics and plugin seam.** Every converter warning is now a coded diagnostic (`src/diagnostics.mjs`) with a "do this" fix line. A run writes `TODO.txt` (grouped by output file) and `diagnostics.json`, and the console prints a one-line summary. React input moved behind a plugin contract (`src/plugin.mjs`, `src/plugins/react.mjs`, `src/plugin-loader.mjs`) with `--plugin` and `html2lvgl.config.mjs` discovery, and with no change in output. A spike (`spike/subjects/`, a CI job against LVGL v9.4.0) confirmed that the Accordion, Modal and Drawer patterns work in pure XML: subjects, toggle and bind tags, per-instance state through a string prop, a floating in-screen overlay, and a `translate_x` timeline. The findings are in [COMPONENTS.md](COMPONENTS.md) and [`spike/subjects/README.md`](spike/subjects/README.md).
+
 Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and MicroPython support (below).
 
 **MicroPython (Phases 0–3, unix port).** The Phase 0 spike proved LVGL's existing `--format xml` output loads **unmodified** on `lv_micropython`'s unix port — no new emitter needed to reach MicroPython at all. README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map`, no new CLI code). A `validate-micropython-xml` CI job renders every golden XML through the unix port the same way `validate-xml` already does for the C harness, catching two real, documented limitations along the way — both traced to the pinned binding's vendored LVGL still being v9.3.0-era, not to html2lvgl's output. Phase 3 added a `--format py` backend for users who'd rather not carry `LV_USE_XML`: idiomatic `lv.*` calls, verified against a real generated binding (which caught two real API divergences a naive C-to-Python translation would have missed) rather than trusted as designed — see [`spike/micropython/README.md`](spike/micropython/README.md) for the full writeup.
@@ -24,7 +26,7 @@ Since the original five phases, the project also shipped its **first public npm 
 
 ## What's next
 
-The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 5 to 10 below build it in order.
+The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 6 to 11 below build it in order. Phase 5 (diagnostics, the plugin seam, and the subjects spike) is done and listed above.
 
 The earlier **ESP32 real hardware validation** item stays blocked. The QEMU job proves boot-and-execute on every PR, but a rendered proof needs real hardware, which this project's development environment does not have. Revisit if that access becomes available.
 
@@ -40,19 +42,6 @@ Rules for every phase:
 - **Verify against real LVGL.** Anything that emits XML or C is checked by the existing `validate-xml` and C harness jobs, not only by string comparison.
 - **A review agent** reads each phase's combined diff before the phase closes. It looks for gaps between lanes, not style.
 
-### Phase 5 — Diagnostics and plugin seam
-
-Goal: a place to report problems, and a clean boundary for framework code. Nothing else depends on anything newer than this phase.
-
-| Lane | Work | Files | Parallel with |
-|---|---|---|---|
-| A (serial) | Define the diagnostic type and a collector that replaces `ctx.warnings`. Define the plugin interface (`load`, `components`, `sourceOf`, `recognizers`, `pluginApi`) as types and docs only. | `src/diagnostics.mjs`, `src/plugin.mjs` | none, runs first |
-| B | Migrate every existing warning to a coded diagnostic. Write `TODO.txt` and `diagnostics.json`. Shrink console output to a summary. | `src/convert.mjs`, `src/cli.mjs`, `src/componentize.mjs` | C, D |
-| C | Move the React path behind the plugin interface with no output change. Add `--plugin` and `html2lvgl.config.mjs` discovery. | `src/extract-react.mjs`, `src/cli.mjs` (discovery only), `src/plugin.mjs` | B, D |
-| D | Spike: the tag names are confirmed from the 9.4.0 source (see [COMPONENTS.md](COMPONENTS.md#behavior-with-lvgl-subjects)). Subject scopes are settled in the source (see COMPONENTS.md). The top layer is settled: XML cannot reach `lv_layer_top()`, so Modal and Drawer default to a floating full-screen overlay inside the screen. Still open: does the unique-name-per-instance approach work at runtime, and does the floating overlay draw and block input correctly in a real render. Write results and a minimal working XML sample to `spike/subjects/`, and run it in CI against a real build. | `spike/subjects/`, `.github/workflows/ci.yml` | B, C |
-
-Done when: all goldens are unchanged, `TODO.txt` exists for a page with a font fallback, React still converts through the plugin seam, and the spike's findings are written down.
-
 ### Phase 6 — Extraction and registry
 
 Goal: the converter can see ARIA state and hidden content, and can match a component from a registry.
@@ -64,6 +53,7 @@ Goal: the converter can see ARIA state and hidden content, and can match a compo
 | C | Icon placeholder: detect SVG, icon fonts, and ligatures. Emit the named, fixed-size placeholder and its diagnostic. | `src/recognize-icons.mjs`, goldens | B, D |
 | D | `aria-controls` / `aria-expanded` linker: pair each trigger with its target by `id`. Pure function with fixture trees. | `src/link-aria.mjs`, `tests/link-aria.test.mjs` | B, C |
 | E | Sidecar overrides (`page.lvgl.json`), keyed by node name, applied after conversion. | `src/overrides.mjs` | B, C, D |
+| F | Carry-overs from Phase 5: move `--watch` (`src/preview.mjs`) onto the plugin loader so it honors `--plugin` and config plugins. Give diagnostics real source selectors once nodes have stable names. | `src/preview.mjs`, `src/plugin-loader.mjs` | B, C, D, E |
 
 Done when: a fixture page with an inline icon produces a placeholder and a `TODO.txt` entry, and the linker pairs triggers and targets on fixture trees.
 
