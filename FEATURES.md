@@ -160,6 +160,19 @@ Repeated components become reusable LVGL XML components with props:
 
 [Back to Top](#features)
 
+## Plugins
+
+Framework support is a plugin. React is built in; others can be added.
+
+- **Flag:** `--plugin <package-or-path>`, repeatable. A path starts with `.` or `/`; anything else is a package resolved from the working directory.
+- **Config file:** `html2lvgl.config.mjs` next to the input, or in the working directory: `export default { plugins: ['./my-plugin.mjs', otherPlugin] }`.
+- **Selection:** by input file extension (`.jsx` and `.tsx` pick the built-in React plugin). Plain `.html` needs no plugin. Plugins from `--plugin` win over the config file, which wins over the built-in.
+- **Bad plugins:** every plugin is validated. An invalid one prints each problem and is skipped; the run continues.
+
+The plugin contract is in `src/plugin.mjs`, with the design in [COMPONENTS.md](COMPONENTS.md#plugins).
+
+[Back to Top](#features)
+
 ## Output Formats
 
 The `--format` option takes a comma-separated list: `xml`, `c`, `cpp`, `py`. The word `both` means `xml,c`.
