@@ -1,0 +1,18 @@
+<component>
+  <api>
+    <prop name="title" type="string" default="Title"/>
+  </api>
+  <subjects>
+    <int name="own_open" value="0"/>
+  </subjects>
+  <view width="320" height="content" style_pad_all="0" style_pad_row="0" style_border_width="0" style_bg_opa="0" flex_flow="column" scrollable="false">
+    <lv_button name="hdr" width="320" height="30" style_bg_color="0xb45309" style_radius="0">
+      <lv_label text="$title" align="left_mid"/>
+      <subject_toggle_event subject="own_open"/>
+    </lv_button>
+    <lv_obj name="body" width="320" height="50" style_bg_color="0x334155" style_radius="0" style_border_width="0">
+      <lv_label text="body" align="center"/>
+      <bind_flag_if_eq subject="own_open" flag="hidden" ref_value="0"/>
+    </lv_obj>
+  </view>
+</component>

@@ -589,3 +589,38 @@ jobs:
           pip install pexpect
           python3 spike/esp32/qemu_boot_test.py /tmp/qemu/qemu/bin/qemu-system-xtensa \
             /tmp/flash_image.bin spike/esp32/qemu_repl_test.py
+
+  validate-subjects-spike:
+    name: Subject patterns (accordion, modal, drawer) on LVGL v9.4
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Same cache key and path as validate-xml, so the clone is shared
+      - name: Cache LVGL checkout
+        id: lvgl-cache
+        uses: actions/cache@v4
+        with:
+          path: lvgl
+          key: lvgl-v9.4.0
+
+      - name: Clone LVGL v9.4.0
+        if: steps.lvgl-cache.outputs.cache-hit != 'true'
+        run: git clone --depth 1 --branch v9.4.0 https://github.com/lvgl/lvgl.git lvgl
+
+      - name: Build the scripted subjects driver
+        run: LVGL_DIR="$GITHUB_WORKSPACE/lvgl" BUILD_DIR="$GITHUB_WORKSPACE/build-subjects" spike/subjects/build.sh
+
+      # Drives a virtual pointer through real LVGL hit-testing and asserts on
+      # widget geometry, flags and subject values (see spike/subjects/README.md)
+      - name: Run the subject-pattern scenarios
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run.sh
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: subjects-spike-screenshots
+          path: spike/subjects/out/*.png
