@@ -155,7 +155,7 @@ if (opts.watch) {
     width,
     height,
     name,
-    reactMode,
+    plugins: opts.plugin,
     outputDir: opts.output,
     port,
     renderBin: opts['render-bin'],

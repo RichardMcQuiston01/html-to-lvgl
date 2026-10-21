@@ -15,7 +15,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join, resolve, dirname, basename, extname, sep } from 'node:path';
 import { extractPage } from './extract.mjs';
-import { extractReactPage } from './extract-react.mjs';
+import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { render as renderXml } from './emit-xml.mjs';
@@ -32,14 +32,14 @@ const DEFAULT_RENDER_BIN = 'spike/build/render';
 const RENDER_TIMEOUT_MS = 30_000;
 
 export async function startPreview(input, options) {
-  const { width, height, name, reactMode, outputDir, port = 8377 } = options;
+  const { width, height, name, outputDir, port = 8377 } = options;
   const renderBin = resolveRenderBin(options.renderBin);
   const webPng = join(outputDir, `${name}_web.png`);
   const lvglBmp = join(outputDir, `${name}_lvgl.bmp`);
 
   mkdirSync(outputDir, { recursive: true });
 
-  let state = { status: 'building', version: 0, xml: '', warnings: [], error: null, render: null };
+  let state = { status: 'building', version: 0, xml: '', warnings: [], error: null, pluginErrors: [], render: null };
   const clients = new Set();
 
   function publish(next) {
@@ -47,11 +47,35 @@ export async function startPreview(input, options) {
     for (const res of clients) res.write(`data: ${state.version}\n\n`);
   }
 
+  // Same discovery as the CLI: --plugin specs, config file, built-in React.
+  // A bad plugin is skipped and reported in the preview, never fatal.
+  let plugins = [];
+  let pluginErrors = [];
+  try {
+    ({ plugins, errors: pluginErrors } = await loadPlugins({
+      specs: options.plugins ?? [],
+      inputs: [input],
+      log: (line) => log(line),
+    }));
+  } catch (err) {
+    pluginErrors = [`plugin loading failed: ${err instanceof Error ? err.message : String(err)}`];
+    log(pluginErrors[0]);
+  }
+  state.pluginErrors = pluginErrors;
+
   async function build() {
     const started = Date.now();
     try {
-      const extractor = reactMode ? extractReactPage : extractPage;
-      const tree = await extractor(input, { width, height, screenshotPath: webPng });
+      const extractOptions = { width, height, screenshotPath: webPng };
+      const plugin = selectPlugin(plugins, input);
+      let tree;
+      if (plugin) {
+        const r = await extractWithPlugin(plugin, input, extractOptions);
+        if (!r.ok) throw new Error(r.error);
+        tree = r.tree;
+      } else {
+        tree = await extractPage(input, extractOptions);
+      }
       if (!tree) throw new Error('extraction produced no visible content');
 
       // Rebuild fonts each pass: editing the CSS can change which sizes and
@@ -68,9 +92,9 @@ export async function startPreview(input, options) {
       for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
       let pageXml = xml;
       const componentPaths = [];
-      if (reactMode) {
+      {
         const { view: pageView, components } = componentize(view, { diagnostics });
-        pageXml = `<component>\n${renderXml(pageView, 1)}\n</component>\n`;
+        if (plugin || components.size) pageXml = `<component>\n${renderXml(pageView, 1)}\n</component>\n`;
         for (const [cname, cxml] of components) {
           const p = join(outputDir, `${cname}.xml`);
           writeFileSync(p, cxml);
@@ -155,6 +179,7 @@ export async function startPreview(input, options) {
         status: state.status,
         version: state.version,
         warnings: state.warnings,
+        pluginErrors: state.pluginErrors,
         error: state.error,
         render: state.render,
         ms: state.ms ?? null,
@@ -340,6 +365,7 @@ function textEl(tag, className, text) {
 function showMessages(s) {
   const warn = document.getElementById('warnings');
   warn.replaceChildren();
+  for (const e of s.pluginErrors || []) warn.appendChild(textEl('div', 'err', e));
   if (s.error) return warn.appendChild(textEl('div', 'err', s.error));
   if (s.render && !s.render.ok) {
     return warn.appendChild(textEl('div', 'err', 'render harness: ' + s.render.message));
