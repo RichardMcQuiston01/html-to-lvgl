@@ -11,16 +11,17 @@
  * --debug also writes the extracted UI tree JSON.
  */
 import { parseArgs } from 'node:util';
-import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
-import { extractReactPage } from './extract-react.mjs';
+import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
-import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
+import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
+import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 
 const { values: opts, positionals } = parseArgs({
@@ -37,6 +38,7 @@ const { values: opts, positionals } = parseArgs({
     watch: { type: 'boolean', short: 'w', default: false },
     port: { type: 'string', default: '8377' },
     'render-bin': { type: 'string' },
+    plugin: { type: 'string', multiple: true, default: [] },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -47,6 +49,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--size WxH] [-o outdir] [--name component]\n' +
     '                 [--format xml|c|cpp|py|both] [--screenshot] [--debug]\n' +
     '                 [--font-map "Family=path.ttf"] ...\n' +
+    '                 [--plugin <package-or-path>] ...\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
@@ -58,6 +61,11 @@ if (opts.help || positionals.length === 0) {
     'emits ui_<name>.py — idiomatic MicroPython (lv.* calls), taking\n' +
     'converted fonts/images at runtime as ui_create()\'s "fonts"/"images"\n' +
     'dict arguments since Python has no compile-time linkage (see README).\n' +
+    '\n' +
+    '--plugin loads an input plugin (repeatable), chosen by file extension.\n' +
+    'html2lvgl.config.mjs next to the input or in the working directory\n' +
+    'can list plugins too: export default { plugins: [...] }. React (.jsx,\n' +
+    '.tsx) is built in.\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -160,6 +168,8 @@ if (opts.watch) {
 }
 
 async function buildAll() {
+  // Invalid plugins print every error line and are skipped, never fatal.
+  const { plugins } = await loadPlugins({ specs: opts.plugin, inputs: positionals });
   // Extract every page before touching fonts: a font used differently by two
   // screens (e.g. a heading on one, body text on the other) needs the union
   // of both screens' glyphs in one shared file, not whichever screen's
@@ -168,12 +178,24 @@ async function buildAll() {
   for (const page of positionals) {
     const pageName = screenMode ? screenName(page) : name;
     const pageReactMode = /\.(jsx|tsx)$/i.test(page);
-    const extractor = pageReactMode ? extractReactPage : extractPage;
-    const tree = await extractor(page, {
+    const extractOptions = {
       width,
       height,
       screenshotPath: opts.screenshot ? join(opts.output, `${pageName}_web.png`) : undefined,
-    });
+    };
+    // Plain .html (or anything no plugin claims) keeps the extractPage path.
+    const plugin = selectPlugin(plugins, page);
+    let tree;
+    if (plugin) {
+      const r = await extractWithPlugin(plugin, page, extractOptions);
+      if (!r.ok) {
+        console.error(r.error);
+        process.exit(1);
+      }
+      tree = r.tree;
+    } else {
+      tree = await extractPage(page, extractOptions);
+    }
     if (!tree) {
       console.error(`extraction produced no visible content for ${page}`);
       process.exit(1);
@@ -203,15 +225,35 @@ async function buildAll() {
     lvInclude: opts['lv-include'],
   });
   const fonts = built.length ? customFonts(built) : builtinFonts();
-  const sharedFontWarnings = fontWarnings(unresolved);
+  const diagnostics = createDiagnostics();
+  for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
 
-  for (const page of pages) await emitPage(page, fonts);
+  for (const page of pages) diagnostics.merge(await emitPage(page, fonts));
 
-  for (const w of sharedFontWarnings) console.warn(`warning: ${w}`);
+  writeDiagnostics(diagnostics.list());
+}
+
+/**
+ * Write TODO.txt and diagnostics.json next to the generated files, or remove
+ * the ones a previous run left behind when this run found nothing to report.
+ * Then print the short console summary.
+ */
+function writeDiagnostics(entries) {
+  const todoPath = join(opts.output, 'TODO.txt');
+  const jsonPath = join(opts.output, 'diagnostics.json');
+  const todo = formatTodo(entries);
+  if (todo) {
+    writeFileSync(todoPath, todo);
+    writeFileSync(jsonPath, formatJson(entries));
+  } else {
+    rmSync(todoPath, { force: true });
+    rmSync(jsonPath, { force: true });
+  }
+  for (const line of formatSummary(entries, { todoPath })) console.warn(line);
 }
 
 async function emitPage({ input, name, tree }, fonts) {
-  const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+  const { xml, view, diagnostics, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
   const written = [];
   if (formats.has('xml')) {
     let pageXml = xml;
@@ -219,7 +261,7 @@ async function emitPage({ input, name, tree }, fonts) {
     // data-lv-component on plain HTML) into reusable LVGL XML components.
     // componentize() is a no-op when the view carries no boundaries, so this
     // runs unconditionally rather than only for reactMode input.
-    const { view: pageView, components } = componentize(view, { warnings });
+    const { view: pageView, components } = componentize(view, { diagnostics });
     if (components.size) {
       const wrapper = screenMode ? 'screen' : 'component';
       pageXml = `<${wrapper}>\n${render(pageView, 1)}\n</${wrapper}>\n`;
@@ -277,5 +319,18 @@ async function emitPage({ input, name, tree }, fonts) {
   console.log(`wrote ${written.join(', ')}`);
   if (collapsed > 0) console.log(`optimizer: collapsed ${collapsed} inert wrapper${collapsed === 1 ? '' : 's'}`);
   if (assets.length) console.log(`assets: ${assets.map((a) => a.src).join(', ')} -> ${assetDir}/`);
-  for (const w of warnings) console.warn(`warning: ${w}`);
+
+  // Point each entry at the file it concerns. Component problems belong to
+  // the component's own file; everything else to the page's main output.
+  const pageFile = formats.has('xml') ? `${name}.xml` : basename(written[0] ?? `${name}.xml`);
+  return {
+    list: () => diagnostics.list().map((d) => ({
+      ...d,
+      source: { file: input, ...d.source },
+      output: {
+        file: d.code.startsWith('COMPONENT_') && d.output?.widget ? `${d.output.widget}.xml` : pageFile,
+        ...d.output,
+      },
+    })),
+  };
 }

@@ -1,0 +1,21 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0x0b1220" style_border_width="0" style_radius="0" style_pad_all="0" style_pad_row="0" flex_flow="column" scrollable="false" style_text_font="montserrat_14" style_text_color="0xffffff">
+    <lv_button name="hdr1" width="320" height="32" style_bg_color="0x1d4ed8" style_radius="0">
+      <lv_label text="Section 1 (starts closed)" align="left_mid"/>
+      <subject_toggle_event subject="acc1_open"/>
+    </lv_button>
+    <lv_obj name="body1" width="320" height="60" style_bg_color="0x334155" style_radius="0" style_border_width="0">
+      <lv_label text="Body 1 content" align="center"/>
+      <bind_flag_if_eq subject="acc1_open" flag="hidden" ref_value="0"/>
+    </lv_obj>
+    <lv_button name="hdr2" width="320" height="32" style_bg_color="0x15803d" style_radius="0">
+      <lv_label text="Section 2 (starts open)" align="left_mid"/>
+      <subject_toggle_event subject="acc2_open"/>
+    </lv_button>
+    <lv_obj name="body2" width="320" height="60" style_bg_color="0x475569" style_radius="0" style_border_width="0">
+      <lv_label text="Body 2 content" align="center"/>
+      <bind_flag_if_eq subject="acc2_open" flag="hidden" ref_value="0"/>
+    </lv_obj>
+    <lv_label name="footer" text="Footer sibling (must reflow)" style_pad_top="6"/>
+  </view>
+</screen>

@@ -2,8 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Design doc:** `COMPONENTS.md` describes ARIA-first recognition of complex components (Accordion, Drawer, Modal, and others), the component registry, `TODO.txt` diagnostics, framework and library plugins, and constraints for a future drag-and-drop editor. `ROADMAP.md` now plans Phases 5 to 11 as parallel agent lanes.
+
+- **Plugin discovery:** `--plugin <package-or-path>` (repeatable) and `html2lvgl.config.mjs` (`export default { plugins: [...] }`, next to the input or in the working directory) load input plugins, chosen by file extension. Every plugin is validated; an invalid one prints all its errors and is skipped. React input now runs through a built-in plugin (`src/plugins/react.mjs`) with identical output; `src/extract-react.mjs` is a thin wrapper.
+
 ### Changed
 
+- **Warnings are now coded diagnostics:** every converter warning has a stable code and a `Fix:` line. The CLI writes `TODO.txt` and `diagnostics.json` to the output directory and prints one summary line instead of one line per warning. Neither file is written when there is nothing to report, and stale copies are deleted. `convert()` still returns `warnings` strings and now also returns `diagnostics`. New code: `COMPONENT_ATTR_NOT_PROPPABLE`.
 - **Publishing now runs on a version tag, not on a push to `release`:** `publish.yml` triggers when a tag like `0.3.0` or `v0.3.0` is pushed. It refuses to publish unless the tagged commit is on `main` and the tag matches the `package.json` version.
 
 ## [0.3.0] - 2026-10-20

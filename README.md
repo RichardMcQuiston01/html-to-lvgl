@@ -90,7 +90,8 @@ node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 - [FEATURES.md](FEATURES.md) lists what HTML and CSS the tool converts. It also covers navigation, fonts, watch mode, annotation attributes, React input, and output formats.
 - [MICROPYTHON.md](MICROPYTHON.md) shows how to run the output on MicroPython.
 - [DEVELOPMENT.md](DEVELOPMENT.md) describes the project layout, tests, and how to release.
-- [ROADMAP.md](ROADMAP.md) shows what is done and what is blocked.
+- [ROADMAP.md](ROADMAP.md) shows what is done, what is planned, and what is blocked.
+- [COMPONENTS.md](COMPONENTS.md) is the design for converting complex components such as Accordion, Drawer, and Modal.
 - [spike/README.md](spike/README.md) is the first proof of concept, with screenshots.
 
 [Back to Top](#table-of-contents)

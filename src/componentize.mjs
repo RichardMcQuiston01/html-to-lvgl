@@ -18,6 +18,7 @@
  * The original (flattened) tree is not mutated — C emission keeps using it.
  */
 import { el, render, escAttr } from './emit-xml.mjs';
+import { createDiagnostics } from './diagnostics.mjs';
 
 const PLACEMENT_ATTRS = new Set([
   'x', 'y', 'width', 'height', 'ignore_layout', 'flex_grow',
@@ -35,7 +36,8 @@ const PROPPABLE_ATTRS = new Set(['text', 'value', 'placeholder_text', 'options',
  */
 const PROPPABLE_COLOR_ATTRS = new Set(['style_bg_color', 'style_text_color', 'style_border_color', 'style_bg_grad_color']);
 
-export function componentize(view, { warnings = [] } = {}) {
+export function componentize(view, { diagnostics: shared = null } = {}) {
+  const diagnostics = createDiagnostics();
   const root = structuredClone(view);
   const components = new Map(); // snake_name -> xml
 
@@ -64,7 +66,12 @@ export function componentize(view, { warnings = [] } = {}) {
 
     const sig = signature(instances[0]);
     if (!instances.every((inst) => signature(inst) === sig)) {
-      warnings.push(`component ${name}: instances differ structurally; left inline`);
+      diagnostics.add({
+        code: 'COMPONENT_INLINE',
+        message: `component ${name}: instances differ structurally; left inline`,
+        fix: `Make every instance of ${name} render the same element structure (same children in the same order), or remove its data-lv-component marker so it stays inline on purpose.`,
+        output: { widget: name },
+      });
       continue;
     }
 
@@ -85,7 +92,12 @@ export function componentize(view, { warnings = [] } = {}) {
         // instead of staying quiet about it.
         if (PLACEMENT_ATTRS.has(key)) {
           if (path.length > 0 && new Set(els.map((e) => String(e.attrs[key]))).size > 1) {
-            warnings.push(`component ${name}: nested "${key}" differs across instances; only the first instance's value is kept`);
+            diagnostics.add({
+              code: 'COMPONENT_NESTED_DIFFERS',
+              message: `component ${name}: nested "${key}" differs across instances; only the first instance's value is kept`,
+              fix: `In the generated ${name}.xml, move the nested "${key}" into a prop, or set it per instance by hand after the component is created.`,
+              output: { widget: name },
+            });
           }
           continue;
         }
@@ -95,12 +107,17 @@ export function componentize(view, { warnings = [] } = {}) {
           const type = PROPPABLE_COLOR_ATTRS.has(key) ? 'color' : 'string';
           props.push({ prop: propName(els[0], key, props), path, key, values, type });
         } else {
-          bail = `component ${name}: instances differ in non-proppable attribute "${key}"; left inline`;
+          bail = { key };
         }
       }
     });
     if (bail) {
-      warnings.push(bail);
+      diagnostics.add({
+        code: 'COMPONENT_ATTR_NOT_PROPPABLE',
+        message: `component ${name}: instances differ in non-proppable attribute "${bail.key}"; left inline`,
+        fix: `Give every instance of ${name} the same "${bail.key}" value, or style it with a shared class so it is identical, then convert again.`,
+        output: { widget: name },
+      });
       continue;
     }
 
@@ -138,7 +155,8 @@ export function componentize(view, { warnings = [] } = {}) {
     });
   }
 
-  return { view: root, components, warnings };
+  if (shared) shared.merge(diagnostics);
+  return { view: root, components, warnings: diagnostics.toWarningStrings(), diagnostics };
 }
 
 /* ----------------------------------------------------------------- utils */

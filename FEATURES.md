@@ -2,7 +2,7 @@
 
 [Back to README](./README.md)
 
-| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
+| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
 
 ## What Converts
 
@@ -82,6 +82,19 @@ Labels are sized from the real widths of the font that draws them. Generated C i
 
 [Back to Top](#features)
 
+## TODO.txt and Diagnostics
+
+Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, or a component left inline. After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
+
+Two files are written to the output directory:
+
+- `TODO.txt` is for people. It is grouped by output file, and each entry gives the code, the widget name, the source location, what happened, and a `Fix:` line.
+- `diagnostics.json` is for tools. It holds the same entries as `{ "version": 1, "diagnostics": [...] }`.
+
+Both files are replaced on every run. When a run finds nothing to report, neither file is written and any copy left by an earlier run is deleted.
+
+[Back to Top](#features)
+
 ## Watch Mode
 
 The `--watch` option rebuilds each time you save. It serves a preview at `http://localhost:8377`. Use `--port` to change the port.
@@ -144,6 +157,19 @@ Repeated components become reusable LVGL XML components with props:
 - Position stays on each instance.
 - If instances differ too much, the tool writes them inline and prints a warning.
 - C and C++ output stays flat. It works for React input too.
+
+[Back to Top](#features)
+
+## Plugins
+
+Framework support is a plugin. React is built in; others can be added.
+
+- **Flag:** `--plugin <package-or-path>`, repeatable. A path starts with `.` or `/`; anything else is a package resolved from the working directory.
+- **Config file:** `html2lvgl.config.mjs` next to the input, or in the working directory: `export default { plugins: ['./my-plugin.mjs', otherPlugin] }`.
+- **Selection:** by input file extension (`.jsx` and `.tsx` pick the built-in React plugin). Plain `.html` needs no plugin. Plugins from `--plugin` win over the config file, which wins over the built-in.
+- **Bad plugins:** every plugin is validated. An invalid one prints each problem and is skipped; the run continues.
+
+The plugin contract is in `src/plugin.mjs`, with the design in [COMPONENTS.md](COMPONENTS.md#plugins).
 
 [Back to Top](#features)
 

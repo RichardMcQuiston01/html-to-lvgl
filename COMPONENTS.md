@@ -1,0 +1,274 @@
+# Components
+
+[Back to README](./README.md)
+
+| [Goal](#goal) | [How Recognition Works](#how-recognition-works) | [The Registry](#the-registry) | [The Disclosure Primitive](#the-disclosure-primitive) | [Modal](#modal) | [Component Mapping](#component-mapping) | [Icons](#icons) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Plugins](#plugins) | [Editor Constraints](#editor-constraints) | [Known Gotchas](#known-gotchas) |
+
+This is a design document. Nothing here is built yet. See [ROADMAP.md](./ROADMAP.md) for the build order.
+
+## Goal
+
+Convert complex web components, such as the ones in React Material UI, into LVGL. Examples are Accordion, App Bar, Drawer, Breadcrumbs, Card, and Modal.
+
+Today the tool reads one rendered snapshot from Chromium and maps tags to widgets. That is not enough for these components:
+
+1. **They have state and behavior.** A collapsed Accordion panel has no height, so extraction drops it. A Drawer or Modal is rendered outside the React root and is not visible until opened.
+2. **They are styled `div` elements.** No tag says "accordion".
+
+The design adds a recognition layer in front of the converter, a registry of component definitions, and a diagnostics system that tells the user what still needs manual work.
+
+[Back to Top](#components)
+
+## How Recognition Works
+
+Recognition is **ARIA-first**. ARIA roles and states are a web standard, so one recognizer works for Material UI, Bootstrap, Radix, Vuetify, and hand-written HTML.
+
+Signals, from most to least general:
+
+| Signal | Example | Works for |
+|---|---|---|
+| ARIA | `aria-expanded`, `role="tablist"`, `<nav aria-label="breadcrumb">` | Any library, plain HTML |
+| Explicit annotation | `data-lv-widget="accordion"` | Anything |
+| Library class names | `MuiAccordion-root` | One library (via a library plugin) |
+| Framework component name | React fiber `Accordion` | One framework (via a framework plugin) |
+
+The annotation always wins, so a user can fix a wrong guess.
+
+### Extractor changes
+
+`src/extract.mjs` must also capture:
+
+- `role`, every `aria-*` attribute, `id`, `class`, and `data-testid`.
+- Hidden subtrees. They are kept and flagged `hidden: true` instead of dropped.
+- For recognized toggles, a **state sweep**: read the mounted but hidden DOM, or click the trigger in the browser and snapshot the result.
+
+[Back to Top](#components)
+
+## The Registry
+
+A new `src/recognize.mjs` holds a registry. It runs on the extracted tree before `convert.mjs`.
+
+Each entry is **data, not code paths**:
+
+```js
+{
+  name: 'accordion',
+  match(node, ctx) { /* ARIA test, returns a score or false */ },
+  props: {
+    title:    { type: 'string', default: '' },
+    expanded: { type: 'bool',   default: false },
+  },
+  slots: ['header', 'body'],
+  build(node, ctx) { /* returns IR nodes and any diagnostics */ },
+}
+```
+
+- `match` returns a confidence score. The highest score wins. A tie prints a diagnostic.
+- `props` and `slots` are plain JSON. The converter does not need them, but the future [editor](#editor-constraints) builds its palette and property panel from them.
+- Entries are pure functions of the tree. They need no browser, so they are unit-testable with fixture trees.
+
+[Back to Top](#components)
+
+## The Disclosure Primitive
+
+Most interactive components share one ARIA pattern: a **trigger** with `aria-controls="id"` and `aria-expanded`, and a **target** with that `id`. The recognizer links the two once. The variants depend on what the target is:
+
+| Target | Pattern | LVGL |
+|---|---|---|
+| Inline panel | `aria-expanded` button and a region | Accordion: header and a body that reflows its siblings |
+| Edge-anchored, full height | `role="dialog"` against a screen edge | Drawer: floating panel inside the screen, slid by a `translate_x` timeline |
+| Centered overlay | `role="dialog"` and `aria-modal="true"` | [Modal](#modal) |
+| Small overlay | `role="menu"` or `aria-haspopup` | Menu: dropdown or list |
+
+Drawer and Modal are told apart by geometry, which the extractor already has.
+
+### Behavior with LVGL subjects
+
+State lives in an LVGL **subject**. The trigger changes it. The target binds a flag to it. In a flex column, hiding the body reflows its siblings, so an Accordion needs no manual layout:
+
+```xml
+<!-- globals.xml -->
+<globals>
+  <subjects>
+    <int name="acc1_open" value="0"/>
+  </subjects>
+</globals>
+
+<!-- page -->
+<lv_obj flex_flow="column">
+  <lv_button> <!-- header -->
+    <subject_toggle_event subject="acc1_open"/>
+  </lv_button>
+  <lv_obj name="acc1_body">
+    <bind_flag_if_eq subject="acc1_open" flag="hidden" ref_value="0"/>
+  </lv_obj>
+</lv_obj>
+```
+
+These tags were checked against the LVGL v9.4.0 source and docs (`src/others/xml/lv_xml.c`, `docs/src/details/xml/`):
+
+| Need | Tag | Notes |
+|---|---|---|
+| Declare state | `<int name value/>` inside `<subjects>` in `globals.xml` | Only `int` and `string` are documented. Source also has float events. |
+| Toggle on click | `<subject_toggle_event subject trigger/>` | Registered in 9.4.0 but missing from the docs. `trigger` defaults to `clicked`. The subject must be `int`, or it logs a warning and does nothing. |
+| Set a value | `<subject_set_int_event trigger subject value/>` | There is also `_float_` and `_string_`. |
+| Step a value | `<subject_increment_event trigger subject step min_value max_value rollover/>` | `int` or `float` subjects. Useful for Stepper and Pagination. |
+| Show or hide | `<bind_flag_if_eq/not_eq/gt/ge/lt/le subject flag ref_value/>` | The `lv_obj-` prefix is optional. `bind_state_if_*` works the same way for states. |
+| Run code | `<event_cb callback trigger user_data/>` | The user must register the function. The exported C assumes it exists. |
+| Load a screen | `<screen_load_event>` and `<screen_create_event>` | Already used for navigation. |
+| Animate | `<animations>` with `<timeline>` and `<animation prop target start end duration delay/>`, played by `<play_timeline_event>` | For the Drawer slide. |
+
+Consequences for the design:
+
+- **Subjects are shared by scope.** Generated subject names must be unique per page and per component instance (for example `<screen>_<name>_open`). For XML output, the simplest approach is a generated `globals.xml`, which is new output.
+- **Where subjects can live.** Three places work in 9.4.0, checked in `lv_xml_component.c` and `lv_xml.c`:
+  1. `<subjects>` in `globals.xml`. Shared by everything.
+  2. `<subjects>` inside a component's own XML. The section parser is generic, and the subject is registered in that component's scope. It is **per component, not per instance**, so two instances of one `ui_accordion` would share state. Per-instance state needs a different approach (see below).
+  3. In application code: create it with `lv_subject_init_int()` and register it with `lv_xml_register_subject(scope, "name", &subject)`. A `NULL` scope means globals. This is what the **C, C++, and Python output** already does naturally, with no `globals.xml` needed.
+- **Per-instance state works.** Verified on a real LVGL v9.4.0 build (`spike/subjects/`). A component with `<prop name="subj" type="string"/>` can use `subject="$subj"` in both the toggle and the bind tags, so one `ui_accordion` serves every instance. The converter passes a generated unique name for each instance (declared in `globals.xml`). A component that declares its own `<subjects>` and is used twice shares one subject: clicking one header opens both bodies.
+- **Scope lookup.** A component-owned subject is not found by `lv_xml_get_subject(NULL, ...)`. It is found only with `lv_xml_get_subject(lv_xml_component_get_scope("component"), ...)`. The C emitters must account for this, or just use globals.
+- **Reflow.** A library component's root needs `height="content"` for its siblings to reflow when a body hides. A fixed height pins the layout.
+- **No dedicated Modal or Drawer tags.** Use the same pattern: a subject, a toggle or set event on the opener, and `bind_flag_if_*` on the target.
+- **Top layer.** Confirmed: XML cannot place content on `lv_layer_top()`. There is no tag for it. The only way is application code, `lv_xml_create(lv_layer_top(), "component", NULL)`. So the default for Modal and Drawer is **an overlay inside the screen**: a full-screen child, last in the screen's child list so it draws on top, with `floating="true"` (so it ignores flex layout) and a `bind_flag_if_*` to show and hide it. It is pure XML and needs no C. Its limit is that it only covers its own screen. Use the top-layer variant (an opt-in generated C helper, flagged in `TODO.txt`) only when an overlay must survive a screen change.
+- **Drawer slide.** Verified: `<animations>` with a `<timeline>` of `<animation prop="translate_x" target="panel" start="-200" end="0" duration="250"/>`, played by `<play_timeline_event target="self" timeline="drawer_in"/>`, slides a left-edge panel in pure XML. A second timeline reverses it. Park the closed panel with `style_translate_x="-200"`. Do **not** put a hide-binding on the panel itself, or the slide-out is invisible. Only the scrim uses the hide-binding. Only the left edge was tried. Other edges, an opacity fade, and starting open are untested.
+- The C, C++, and MicroPython emitters need equivalent output (`lv_subject_init_int`, `lv_obj_add_subject_toggle_event`, `lv_obj_bind_flag_if_eq`, and so on). A subject-aware helper replaces most of the hand-written glue.
+
+Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, and so on). The existing componentize step already makes parameterized components, so the recognizer only fills in the props.
+
+[Back to Top](#components)
+
+## Modal
+
+- **Detect** `role="dialog"` or `role="alertdialog"`. `aria-modal="true"` means a blocking backdrop. `aria-labelledby` and `aria-describedby` give the title and body.
+- **Emit** an overlay inside the screen: the last child, `floating="true"`, at `x=0 y=0` and the full display size, with `style_bg_opa="50%"` for the dim backdrop, and a `bind_flag_if_eq` on its subject. The dialog sits centered inside it. Verified: it draws above earlier siblings and blocks clicks to the widgets beneath while open. A plain `lv_obj` is clickable by default, so no extra attribute is needed. The close button uses `<subject_set_int_event ... value="0"/>`. Backdrop-click-to-close was not tried. The `lv_layer_top()` variant is opt-in (see "Top layer" above). A simple confirm dialog (a title, a message, one or two buttons) could map to `lv_msgbox` instead.
+- **State:** hidden by default and shown by a subject flag. The opener is any element with `aria-controls` or `aria-haspopup="dialog"` that points at the dialog. A dialog that is already open when the page loads starts open.
+- **Dismissal:** a close or cancel button sets the flag back. Click on the backdrop to close is optional.
+- **Portals:** a modal usually sits outside the root DOM. The recognizer matches by `role`, not by DOM position, so this works.
+
+[Back to Top](#components)
+
+## Component Mapping
+
+| Component | LVGL | Notes |
+|---|---|---|
+| Card, Paper, Divider, Chip, Avatar, Badge, Alert | Styled `lv_obj`, `lv_label`, `lv_image` | Mostly works today. Needs elevation to shadow and a round radius for avatars. |
+| App Bar and Toolbar | Top flex-row container | Pinned to the top and kept out of scrolling. |
+| Breadcrumbs | Flex row of labels and buttons | Reuses `data-lv-link` navigation. Separators are plain labels. |
+| Tabs | `lv_tabview` | Native. |
+| Switch, Slider, Select, Linear progress | Existing widgets | Add ARIA detection. |
+| Circular progress | `lv_spinner` or `lv_arc` | Native. |
+| Text field | `lv_textarea` and a label | Floating labels are static in a snapshot. |
+| Dialog, Snackbar, Menu | `lv_msgbox` or a top-layer container | Portals need a special case. |
+| Bottom navigation | `lv_tabview` at the bottom, or a button row | |
+| Date picker | `lv_calendar` | |
+| Accordion | Header button and body container | Composite. See [The Disclosure Primitive](#the-disclosure-primitive). |
+| Drawer | Floating edge-anchored panel and a scrim | Slides in with an `<animations>` timeline. Opened by the app bar's menu button. |
+| Stepper, Pagination, Speed dial | Composites | Later. |
+| Data grid, Autocomplete, Tree view | Out of scope | Needs its own design. |
+
+[Back to Top](#components)
+
+## Icons
+
+Icons (an SVG, an icon font, or a Material Icons ligature) cannot become a label. The first version emits a **named placeholder**:
+
+- A fixed-size `lv_obj` with an outline, so the layout stays stable.
+- The name comes from the best available hint, in this order: `data-testid`, `aria-label`, the SVG `<title>`, then the class. For example `icon_menu`. This makes it easy to find and swap in code.
+- Every placeholder adds a `TODO.txt` entry that says where it is and how to replace it.
+
+Later options, not part of the first version:
+
+- A map from known names to built-in `LV_SYMBOL_*`.
+- A Material Icons subset built with `lv_font_conv`, using the existing font pipeline.
+- Arbitrary SVG rasterized to `lv_image`.
+
+[Back to Top](#components)
+
+## TODO.txt and Diagnostics
+
+Convert today's `ctx.warnings` strings into structured diagnostics:
+
+```js
+{ code, severity, source: { file, selector, line }, output: { file, widgetName }, message, fix }
+```
+
+- Codes are stable: `ICON_PLACEHOLDER`, `DISCLOSURE_NO_TARGET`, `FONT_FALLBACK`, `UNSUPPORTED_WIDGET`, and so on.
+- **`TODO.txt`** is human-readable and grouped by output file. Each entry says what to do and where, in the source file or in the output file. It is regenerated on every run, so it never goes stale.
+- **`diagnostics.json`** carries the same data for tooling and the editor.
+- Source locations: for HTML, `data-lv-name` or a CSS path. For React in a development build, the fiber's `_debugSource` gives `file:line`.
+- Console warnings stay, but shrink to a short summary that points to `TODO.txt`.
+
+Example entry:
+
+```
+ui_home.xml
+  [ICON_PLACEHOLDER] icon_menu (src/App.tsx:42)
+    An icon was replaced by an empty 24x24 box.
+    Fix: replace the lv_obj named "icon_menu" with an lv_image or an lv_label using LV_SYMBOL_LIST.
+```
+
+Everything else reports through this system, so it is built first.
+
+[Back to Top](#components)
+
+## Plugins
+
+Rendering happens in Chromium, so the core never needs to know which framework made the DOM. A framework package covers only the parts that need framework knowledge:
+
+| Hook | Job | React today |
+|---|---|---|
+| `load(entry)` | Bundle or mount the input and return a ready page | esbuild and `createRoot` (`src/extract-react.mjs`) |
+| `components(page)` | Find component boundaries for reusable XML components | Walk the fiber tree |
+| `sourceOf(el)` | Source file and line for `TODO.txt` | `_debugSource` |
+| `recognizers` | Library-specific recognizers (optional) | none yet |
+
+There are two kinds of package, kept separate:
+
+- **Framework plugins:** `html-to-lvgl-react`, `-vue`, `-angular`. They provide `load`, `components`, and `sourceOf`.
+- **Library plugins:** `html-to-lvgl-mui`, `-bootstrap`, `-vuetify`. They provide `recognizers`. A library like Bootstrap works with any framework, so it must not depend on one.
+
+Rules:
+
+- The core package keeps plain HTML, the ARIA recognizers, and the emitters.
+- **Discovery:** an explicit `--plugin <pkg>` flag, or an `html2lvgl.config.mjs` file. Detection by file extension (`.jsx` selects react, `.vue` selects vue) is a convenience on top.
+- A plugin exports a default object `{ name, pluginApi, extensions, load, components, sourceOf, recognizers }`.
+- **Versioning:** `pluginApi` is an integer. The core refuses a plugin built for an incompatible version with a clear message.
+- Each plugin lists its framework and bundler as peer dependencies, so users install only what they use.
+
+### Sequencing
+
+React is built into the core today. It moves behind this interface first, with no change in output and the golden tests as the safety net. Only then is a second framework added, so the interface is checked against more than one example. Vue is the likely second one, because its mounting model is closest to React's.
+
+Deferred:
+
+- **Angular** needs a CLI build, which does not fit "bundle one file". Start with a "convert a built or running app URL" mode. Non-framework users benefit from that mode too.
+- **Server-rendered frameworks** (Next, Nuxt) can use the same URL mode.
+
+[Back to Top](#components)
+
+## Editor Constraints
+
+A drag-and-drop editor is planned. It is not built now, but these rules keep it possible:
+
+1. **Declarative registry entries.** The editor's palette and property panel come from the same `props` and `slots` the converter uses.
+2. **Serializable IR with stable names.** Every node has a persistent `name`, and the IR is plain JSON.
+3. **Overrides in a sidecar file**, such as `page.lvgl.json`, keyed by node name and applied after conversion. Editor changes then survive a re-conversion without rewriting the user's HTML.
+4. **The editor edits the IR or the sidecar** and re-runs the emitters. It does not parse generated XML.
+5. **Reuse watch mode.** `src/preview.mjs` already has the preview server and the LVGL render program, so it can be the editor's canvas.
+6. **A device-size canvas**, the same `--size` the CLI uses.
+
+[Back to Top](#components)
+
+## Known Gotchas
+
+- **Ripples and transitions:** ignore them. Map `:active` to a pressed style, as the tool does today.
+- **Elevation:** Material UI uses multi-layer shadows. Use the largest layer.
+- **Fonts:** Roboto goes through `--font-map`. No new work.
+- **Small screens:** Material UI at 320x240 is tight. Emit a diagnostic for touch targets under about 30 px.
+- **Floating labels and animations:** a snapshot shows one state only.
+
+[Back to Top](#components)
+
+---
+
+[Back to README](./README.md)
