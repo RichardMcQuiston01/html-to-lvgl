@@ -56,6 +56,15 @@ export const CODES = Object.freeze({
   // Assets and fonts
   IMAGE_REGISTER: { severity: 'info' },
   FONT_FALLBACK: { severity: 'warning' },
+  // Recognition
+  RECOGNIZER_ERROR: { severity: 'warning' },
+  RECOGNIZER_AMBIGUOUS: { severity: 'warning' },
+  ICON_PLACEHOLDER: { severity: 'warning' },
+  ARIA_TARGET_MISSING: { severity: 'warning' },
+  // Sidecar overrides
+  OVERRIDE_FILE_INVALID: { severity: 'error' },
+  OVERRIDE_TARGET_UNKNOWN: { severity: 'warning' },
+  OVERRIDE_ATTR_INVALID: { severity: 'warning' },
   // Components
   COMPONENT_INLINE: { severity: 'warning' },
   COMPONENT_NESTED_DIFFERS: { severity: 'warning' },

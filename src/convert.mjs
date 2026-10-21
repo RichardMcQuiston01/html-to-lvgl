@@ -22,6 +22,7 @@ import { builtinFonts } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
+import { recognize, defaultRegistry } from './recognize.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -38,12 +39,17 @@ const JUSTIFY = {
  * @param screens  Set of sibling screen names. When provided, <a href> links
  *                 pointing at one — or any element carrying
  *                 data-lv-link="<page>" — become navigation buttons.
+ * @param registry  Component definitions to recognize before conversion
+ *                 (see src/recognize.mjs). Defaults to the built-in set.
  * @param screenMode  Wrap the output in <screen> instead of <component>, so
  *                 LVGL registers it as a loadable screen.
  */
-export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts() } = {}) {
-  const { tree, removed } = optimize(structuredClone(input));
+export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts(), registry = defaultRegistry } = {}) {
   const diagnostics = createDiagnostics();
+  // Recognition runs first, so a component can rewrite its part of the tree
+  // before the optimizer collapses wrappers or the emitter maps tags.
+  const { tree: recognizedTree } = recognize(structuredClone(input), { registry, diagnostics });
+  const { tree, removed } = optimize(recognizedTree);
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
 
   const rootAttrs = {
