@@ -21,6 +21,7 @@
 import { builtinFonts } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
+import { createDiagnostics } from './diagnostics.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -42,7 +43,8 @@ const JUSTIFY = {
  */
 export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts() } = {}) {
   const { tree, removed } = optimize(structuredClone(input));
-  const ctx = { warnings: [], assets: [], names: new Map(), collapsed: removed, screens, fonts };
+  const diagnostics = createDiagnostics();
+  const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
 
   const rootAttrs = {
     width: tree.w,
@@ -55,7 +57,7 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
   const wrapper = screenMode ? 'screen' : 'component';
   const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
-  return { xml, view, warnings: ctx.warnings, assets: ctx.assets, name, collapsed: ctx.collapsed };
+  return { xml, view, warnings: diagnostics.toWarningStrings(), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -65,6 +67,12 @@ function uid(ctx, node, fallback) {
   const n = (ctx.names.get(base) ?? 0) + 1;
   ctx.names.set(base, n);
   return n === 1 ? base : `${base}_${n}`;
+}
+
+/** Where a node came from in the source page, as precisely as the tree allows. */
+function sourceOf(node) {
+  const selector = node.lvName ? `[data-lv-name="${node.lvName}"]` : node.id ? `#${node.id}` : `<${node.tag}>`;
+  return { selector };
 }
 
 const sanitize = (s) => s.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$|(_)_+/g, '$1') || 'obj';
@@ -216,7 +224,12 @@ function containerLayout(node, ctx) {
   const cross = JUSTIFY[l.alignItems];
   if (l.alignItems === 'baseline' && ctx) {
     // LVGL flex aligns by box edges only; there is no baseline mode.
-    ctx.warnings.push('align-items: baseline has no LVGL equivalent; items are aligned to the track start instead');
+    ctx.diagnostics.add({
+      code: 'BASELINE_ALIGN_UNSUPPORTED',
+      message: 'align-items: baseline has no LVGL equivalent; items are aligned to the track start instead',
+      fix: 'If the items need to line up on their text baseline, nudge them with style_translate_y on the affected children in the generated file, or change align-items to center in the CSS.',
+      source: sourceOf(node),
+    });
   }
   if (main && main !== 'start') attrs.style_flex_main_place = main;
   if (cross && cross !== 'start') {
@@ -274,7 +287,12 @@ function fitText(node, ctx, { managed = false } = {}) {
 
 function emit(node, parent, ctx, index = 0) {
   if (UNSUPPORTED_TAGS.has(node.tag)) {
-    ctx.warnings.push(`<${node.tag}> is not supported; skipped`);
+    ctx.diagnostics.add({
+      code: 'TAG_UNSUPPORTED',
+      message: `<${node.tag}> is not supported; skipped`,
+      fix: `Rebuild this <${node.tag}> by hand in LVGL (for example with lv_image or lv_obj children), or replace it with supported elements in the HTML.`,
+      source: sourceOf(node),
+    });
     return null;
   }
 
@@ -290,7 +308,12 @@ function emitByTag(node, parent, ctx, index) {
   if (node.widget) {
     const forced = emitForced(node, parent, ctx, index);
     if (forced) return forced;
-    ctx.warnings.push(`data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`);
+    ctx.diagnostics.add({
+      code: 'WIDGET_UNSUPPORTED',
+      message: `data-lv-widget="${node.widget}" is not a supported widget; using the default mapping`,
+      fix: 'Fix the spelling of data-lv-widget on this element, or remove the attribute to accept the default mapping. See FEATURES.md for the supported values.',
+      source: sourceOf(node),
+    });
   }
 
   // <a href> pointing at a sibling screen, or an explicit data-lv-link
@@ -302,7 +325,12 @@ function emitByTag(node, parent, ctx, index) {
     const target = resolveScreen(href, ctx.screens);
     if (target) return emitLink(node, parent, ctx, index, target);
     if (node.link) {
-      ctx.warnings.push(`data-lv-link="${node.link}" does not match any of the pages being converted together; ignoring`);
+      ctx.diagnostics.add({
+        code: 'LINK_TARGET_UNKNOWN',
+        message: `data-lv-link="${node.link}" does not match any of the pages being converted together; ignoring`,
+        fix: `Pass the page "${node.link}" to html2lvgl together with the other pages, or correct the data-lv-link value to the name of a page in this run.`,
+        source: sourceOf(node),
+      });
     }
   }
 
@@ -516,9 +544,16 @@ function emitImage(node, parent, ctx, index) {
   const src = node.attrs.src ?? '';
   const assetName = sanitize(src.split('/').pop()?.replace(/\.[a-z]+$/i, '') || 'image');
   ctx.assets.push({ src, name: assetName });
-  ctx.warnings.push(`<img src="${src}">: register image "${assetName}" with lv_xml_register_image() after converting it with LVGL's image converter`);
+  const imageName = uid(ctx, node, assetName);
+  ctx.diagnostics.add({
+    code: 'IMAGE_REGISTER',
+    message: `<img src="${src}">: register image "${assetName}" with lv_xml_register_image() after converting it with LVGL's image converter`,
+    fix: `Convert ${src} with LVGL's image converter, then call lv_xml_register_image(NULL, "${assetName}", <image data>) before creating this screen.`,
+    source: sourceOf(node),
+    output: { widget: imageName },
+  });
   return el('lv_image', {
-    name: uid(ctx, node, assetName),
+    name: imageName,
     ...placement(node, parent, { gridIndex: index }),
     src: assetName,
   });

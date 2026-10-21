@@ -11,7 +11,7 @@
  * --debug also writes the extracted UI tree JSON.
  */
 import { parseArgs } from 'node:util';
-import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { extractReactPage } from './extract-react.mjs';
@@ -20,7 +20,8 @@ import { componentize } from './componentize.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
-import { planFonts, buildFonts, fontWarnings } from './fonts-build.mjs';
+import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
+import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 
 const { values: opts, positionals } = parseArgs({
@@ -203,15 +204,35 @@ async function buildAll() {
     lvInclude: opts['lv-include'],
   });
   const fonts = built.length ? customFonts(built) : builtinFonts();
-  const sharedFontWarnings = fontWarnings(unresolved);
+  const diagnostics = createDiagnostics();
+  for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
 
-  for (const page of pages) await emitPage(page, fonts);
+  for (const page of pages) diagnostics.merge(await emitPage(page, fonts));
 
-  for (const w of sharedFontWarnings) console.warn(`warning: ${w}`);
+  writeDiagnostics(diagnostics.list());
+}
+
+/**
+ * Write TODO.txt and diagnostics.json next to the generated files, or remove
+ * the ones a previous run left behind when this run found nothing to report.
+ * Then print the short console summary.
+ */
+function writeDiagnostics(entries) {
+  const todoPath = join(opts.output, 'TODO.txt');
+  const jsonPath = join(opts.output, 'diagnostics.json');
+  const todo = formatTodo(entries);
+  if (todo) {
+    writeFileSync(todoPath, todo);
+    writeFileSync(jsonPath, formatJson(entries));
+  } else {
+    rmSync(todoPath, { force: true });
+    rmSync(jsonPath, { force: true });
+  }
+  for (const line of formatSummary(entries, { todoPath })) console.warn(line);
 }
 
 async function emitPage({ input, name, tree }, fonts) {
-  const { xml, view, warnings, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+  const { xml, view, diagnostics, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
   const written = [];
   if (formats.has('xml')) {
     let pageXml = xml;
@@ -219,7 +240,7 @@ async function emitPage({ input, name, tree }, fonts) {
     // data-lv-component on plain HTML) into reusable LVGL XML components.
     // componentize() is a no-op when the view carries no boundaries, so this
     // runs unconditionally rather than only for reactMode input.
-    const { view: pageView, components } = componentize(view, { warnings });
+    const { view: pageView, components } = componentize(view, { diagnostics });
     if (components.size) {
       const wrapper = screenMode ? 'screen' : 'component';
       pageXml = `<${wrapper}>\n${render(pageView, 1)}\n</${wrapper}>\n`;
@@ -277,5 +298,18 @@ async function emitPage({ input, name, tree }, fonts) {
   console.log(`wrote ${written.join(', ')}`);
   if (collapsed > 0) console.log(`optimizer: collapsed ${collapsed} inert wrapper${collapsed === 1 ? '' : 's'}`);
   if (assets.length) console.log(`assets: ${assets.map((a) => a.src).join(', ')} -> ${assetDir}/`);
-  for (const w of warnings) console.warn(`warning: ${w}`);
+
+  // Point each entry at the file it concerns. Component problems belong to
+  // the component's own file; everything else to the page's main output.
+  const pageFile = formats.has('xml') ? `${name}.xml` : basename(written[0] ?? `${name}.xml`);
+  return {
+    list: () => diagnostics.list().map((d) => ({
+      ...d,
+      source: { file: input, ...d.source },
+      output: {
+        file: d.code.startsWith('COMPONENT_') && d.output?.widget ? `${d.output.widget}.xml` : pageFile,
+        ...d.output,
+      },
+    })),
+  };
 }
