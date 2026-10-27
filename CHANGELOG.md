@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-27
+
+`src/` gained new capabilities (diagnostics and `TODO.txt`, plugins, icon placeholders, sidecar overrides), so this is a minor bump. One fix renames generated widgets; see the upgrade note under Fixed.
+
 ### Added
 
 - **Design doc:** `COMPONENTS.md` describes ARIA-first recognition of complex components (Accordion, Drawer, Modal, and others), the component registry, `TODO.txt` diagnostics, framework and library plugins, and constraints for a future drag-and-drop editor. `ROADMAP.md` now plans Phases 5 to 11 as parallel agent lanes.
