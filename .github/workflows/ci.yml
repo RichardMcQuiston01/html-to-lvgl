@@ -382,7 +382,14 @@ jobs:
 
   validate-esp32-micropython:
     name: Validate ESP32 boot under QEMU-Xtensa (lv_binding_micropython)
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: GitHub moved ubuntu-latest from 24.04 to 26.04
+    # (Python 3.12 -> 3.14). ESP-IDF names its Python virtualenv after the
+    # interpreter (idf5.2_py3.12_env), and the cached ~/.espressif below was
+    # built on 24.04, so on 26.04 export.sh looks for idf5.2_py3.14_env, which
+    # is not in the cache, and the job stops before building anything. ESP-IDF
+    # v5.2 does not support Python 3.14 either. Move this to a newer image
+    # together with IDF_VERSION, not on its own.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       # Same submodule pin validate-micropython-xml uses (see its own comment):
