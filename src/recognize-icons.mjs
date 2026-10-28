@@ -33,9 +33,16 @@ function classesOf(node) {
 /** @param {string[]} classes */
 const isFontIconClass = (classes) => classes.some((c) => ICON_FONT_CLASS.test(c) || ICON_FONT_PREFIX.test(c));
 
-/** @param {import('./recognize.mjs').UiNode} node */
-function hasSvgChild(node) {
-  return node.children.some((c) => c.tag === 'svg' || hasSvgChild(c));
+/**
+ * True when the node holds SVGs and nothing else: no text of its own or in any
+ * wrapper below it, and no other element. A wrapper that also holds a badge
+ * count or a label must not be replaced, or that content would be lost.
+ * @param {import('./recognize.mjs').UiNode} node
+ */
+function holdsOnlySvg(node) {
+  return node.children.length > 0 && node.children.every(
+    (c) => c.tag === 'svg' || (!c.text && holdsOnlySvg(c)),
+  );
 }
 
 /**
@@ -58,7 +65,7 @@ function confidence(node) {
     node.w > 0 && node.h > 0 &&
     node.w <= SMALL_SQUARE_MAX && node.h <= SMALL_SQUARE_MAX &&
     Math.abs(node.w - node.h) <= 1 &&
-    hasSvgChild(node)
+    holdsOnlySvg(node)
   ) return 0.6;
   return 0;
 }
