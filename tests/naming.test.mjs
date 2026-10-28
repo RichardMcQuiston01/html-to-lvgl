@@ -72,3 +72,13 @@ test('a sidecar override aimed at a named button changes the button, not its lab
   assert.notEqual(label.attrs.width, 150);
   assert.equal(diagnostics.list().length, 0);
 });
+
+test('a name that collides with another node\'s numbered name is still unique', () => {
+  const { xml } = convert(page(
+    node('div', { lvName: 'item_2' }),
+    node('div', { lvName: 'item' }),
+    node('div', { lvName: 'item' }),
+  ));
+  const names = namesOf(xml, 'lv_obj');
+  assert.equal(new Set(names).size, names.length, names.join(','));
+});

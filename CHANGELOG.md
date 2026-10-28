@@ -29,6 +29,11 @@
 
 - **A name you give a button or a text container now goes on the widget, not on its label.** For `<button data-lv-name="save">Save</button>`, the generated `lv_button` was named `save_2` and its inner `lv_label` was named `save`, so `lv_obj_get_child_by_name(parent, "save")` returned the label and a sidecar override aimed at `save` changed the label instead of the button. The same happened for `id` and class-derived names, for navigation links, and for a `div` that has both its own text and child elements. The widget is now named first and its label takes the `_2`. This matches how a decorated text block (a title bar or badge) was already named. Pages whose buttons have no `data-lv-name`, `id` or class are unchanged, since their widget and label never shared a name.
   - **Upgrade note:** generated names change for any named button, link or text container. If your own code looks those widgets up by name, swap the `name` and `name_2` lookups. The XML, C, C++ and Python output all change in the same way, and only the names differ.
+- `data-lv-widget` naming a built-in widget (such as `label`) on an icon-font element is honored again; icon recognition no longer overrides it.
+- Hidden icons are skipped instead of becoming visible placeholders, and an icon's `aria-hidden` wrapper rule now reads the extractor's real field.
+- Icon placeholders and other widgets can no longer end up with the same generated name (for example a widget named `icon_menu_2` next to two menu icons), which broke generated C and C++.
+- Sidecar overrides accept state suffixes such as `style_bg_color:pressed`.
+- `--watch` now applies `--overrides` (or the automatic sidecar) and rebuilds when the sidecar, or a plugin's own file type, changes.
 
 ## [0.3.0] - 2026-10-20
 

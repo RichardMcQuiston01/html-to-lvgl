@@ -333,9 +333,14 @@ export function recognize(tree, { registry = defaultRegistry, diagnostics = crea
     const ctx = { tree, parent, byId, links, diagnostics };
     let current = node;
 
-    const scored = defs
-      .map((def) => ({ def, score: scoreOf(def, node, ctx, diagnostics) }))
-      .filter((s) => s.score > 0);
+    // data-lv-widget naming a built-in widget ("label", "switch", ...) is
+    // convert()'s to honor; no registry definition may guess over it.
+    const builtinChoice = Boolean(node.widget) && !defs.some((d) => d.name === node.widget);
+    const scored = builtinChoice
+      ? []
+      : defs
+        .map((def) => ({ def, score: scoreOf(def, node, ctx, diagnostics) }))
+        .filter((s) => s.score > 0);
 
     if (scored.length) {
       const top = Math.max(...scored.map((s) => s.score));

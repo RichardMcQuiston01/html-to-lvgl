@@ -29,7 +29,8 @@ import { existsSync, readFileSync } from 'node:fs';
 
 export const OVERRIDES_VERSION = 1;
 
-const ATTR_KEY = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// An optional LVGL state suffix is allowed: style_bg_color:pressed.
+const ATTR_KEY = /^[A-Za-z_][A-Za-z0-9_]*(:[a-z_]+)?$/;
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const describe = (v) => (v === undefined ? 'undefined' : Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v);
 
@@ -171,7 +172,7 @@ export function applyOverrides(view, overrides, { diagnostics = null, file } = {
         const problem = key === 'name'
           ? 'the name attribute identifies the widget and cannot be overridden'
           : !ATTR_KEY.test(key)
-            ? 'attribute names may only contain letters, digits and underscores'
+            ? 'attribute names may only contain letters, digits and underscores, plus an optional :state suffix such as :pressed'
             : v !== null && !['string', 'number', 'boolean'].includes(typeof v)
               ? `value must be a string, number, boolean or null, got ${describe(v)}`
               : null;
@@ -191,3 +192,42 @@ export function applyOverrides(view, overrides, { diagnostics = null, file } = {
   };
   return rebuild(view);
 }
+
+/**
+ * Load a sidecar and apply it to a view, reporting problems as diagnostics.
+ * Shared by the CLI and the watch-mode preview so both build the same output.
+ *
+ * @param {object} view
+ * @param {object} options
+ * @param {string} options.path       The sidecar file.
+ * @param {boolean} [options.explicit] True when the user named the path, so a missing file is an error.
+ * @param {{ add: (entry: object) => unknown }} [options.diagnostics]
+ * @returns {{ view: object, applied: boolean }} `applied` is true when the
+ *   returned view differs from the input and any rendered XML must be redone.
+ */
+export function applySidecar(view, { path, explicit = false, diagnostics = null }) {
+  const loaded = loadOverrides(path);
+  if (!loaded.ok) {
+    diagnostics?.add({
+      code: 'OVERRIDE_FILE_INVALID',
+      message: `Sidecar ${path} was ignored: ${loaded.errors.join('; ')}`,
+      fix: `Fix ${path} (expected {"version": 1, "nodes": {"<name>": {"attrs": {...}, "remove": false}}}) and convert again.`,
+      source: { file: path },
+    });
+    return { view, applied: false };
+  }
+  if (explicit && loaded.overrides === null) {
+    diagnostics?.add({
+      code: 'OVERRIDE_FILE_INVALID',
+      message: `Sidecar ${path} does not exist.`,
+      fix: 'Check the --overrides path, or create the file.',
+      source: { file: path },
+    });
+    return { view, applied: false };
+  }
+  if (!loaded.overrides) return { view, applied: false };
+  return { view: applyOverrides(view, loaded.overrides, { diagnostics, file: path }), applied: true };
+}
+
+/** The sidecar next to an input file: page.html -> page.lvgl.json. */
+export const sidecarFor = (input) => input.replace(/\.[^./\\]+$/, '') + '.lvgl.json';

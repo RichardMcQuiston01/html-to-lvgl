@@ -68,11 +68,11 @@ test('rule 3: icon font classes on i or span only', () => {
 
 test('rule 4: aria-hidden small square with no text and an svg child', () => {
   const inner = node('svg');
-  assert.ok(score(node('div', { attrs: { 'aria-hidden': 'true' }, children: [inner] })) > 0);
-  assert.equal(score(node('div', { attrs: { 'aria-hidden': 'true' }, children: [] })), 0);
-  assert.equal(score(node('div', { attrs: { 'aria-hidden': 'true' }, w: 60, h: 60, children: [inner] })), 0);
-  assert.equal(score(node('div', { attrs: { 'aria-hidden': 'true' }, w: 40, h: 20, children: [inner] })), 0);
-  assert.equal(score(node('div', { attrs: { 'aria-hidden': 'true' }, text: 'hi', children: [inner] })), 0);
+  assert.ok(score(node('div', { aria: { hidden: 'true' }, children: [inner] })) > 0);
+  assert.equal(score(node('div', { aria: { hidden: 'true' }, children: [] })), 0);
+  assert.equal(score(node('div', { aria: { hidden: 'true' }, w: 60, h: 60, children: [inner] })), 0);
+  assert.equal(score(node('div', { aria: { hidden: 'true' }, w: 40, h: 20, children: [inner] })), 0);
+  assert.equal(score(node('div', { aria: { hidden: 'true' }, text: 'hi', children: [inner] })), 0);
   assert.equal(score(node('div', { attrs: {}, children: [inner] })), 0);
 });
 
@@ -180,4 +180,49 @@ test('numbering starts again for each conversion', () => {
   const second = convert(page()).diagnostics.list()[0].output.widget;
   assert.equal(first, 'icon_home');
   assert.equal(second, 'icon_home');
+});
+
+test('a hidden icon is not matched, so it takes no name and no diagnostic', () => {
+  assert.equal(score(node('svg', { hidden: true })), 0);
+  const tree = node('body', { w: 320, h: 240, children: [node('svg', { hidden: true, key: 'a' }), node('svg', { key: 'b' })] });
+  const diagnostics = createDiagnostics();
+  const { tree: out } = recognize(tree, { registry: createRegistry([icon]), diagnostics });
+  assert.equal(out.children.length, 1);
+  assert.equal(out.children[0].lvName, 'icon_icon');
+  assert.equal(diagnostics.list().length, 1);
+});
+
+test('data-lv-widget naming a built-in widget wins over icon recognition', () => {
+  const tree = node('body', {
+    w: 320, h: 240,
+    children: [node('span', { classes: ['material-icons'], className: 'material-icons', widget: 'label', text: 'menu', key: 'k' })],
+  });
+  const { tree: out, recognized } = recognize(tree, { registry: createRegistry([icon]) });
+  assert.equal(recognized, 0);
+  assert.equal(out.children[0].widget, 'label');
+});
+
+test('icon names never equal a name the page already holds', () => {
+  const svg = (key) => node('svg', { testId: 'MenuIcon', key });
+  const tree = node('body', { w: 320, h: 240, children: [node('div', { lvName: 'icon_menu', key: 'x' }), svg('a'), svg('b')] });
+  const { xml, diagnostics } = convert(tree);
+  const names = [...xml.matchAll(/<lv_obj[^>]*?name="([^"]*)"/g)].map((m) => m[1]);
+  assert.equal(new Set(names).size, names.length, names.join(','));
+  const todo = formatTodo(diagnostics.list());
+  for (const n of names.filter((x) => x.startsWith('icon_menu_'))) assert.match(todo, new RegExp(`"${n}"`));
+});
+
+test('icon names also avoid the numbered names of repeated widgets', () => {
+  const tree = node('body', {
+    w: 320, h: 240,
+    children: [
+      node('div', { lvName: 'icon_menu', key: 'x' }),
+      node('div', { lvName: 'icon_menu', key: 'y' }),
+      node('svg', { testId: 'MenuIcon', key: 'z' }),
+    ],
+  });
+  const { xml, diagnostics } = convert(tree);
+  const names = [...xml.matchAll(/<lv_obj[^>]*?name="([^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(names, ['icon_menu', 'icon_menu_2', 'icon_menu_3']);
+  assert.match(formatTodo(diagnostics.list()), /"icon_menu_3"/);
 });

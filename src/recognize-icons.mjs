@@ -13,6 +13,8 @@
  * definition also works on trees from an older extractor.
  */
 
+import { ownName } from './names.mjs';
+
 const ICON_FONT_CLASS = /^(material-icons|material-symbols)/;
 // Font Awesome's base class is exactly fa, fas, far, fab, fal, fad or fat; its
 // icons are fa-<name>. Bootstrap Icons and Boxicons use bi/bx plus bi-<name>/
@@ -43,12 +45,15 @@ function hasSvgChild(node) {
  * @returns {number}
  */
 function confidence(node) {
+  // A hidden icon is dropped with its parent; naming it would only waste a
+  // number and leave a TODO.txt entry for a widget that is never emitted.
+  if (node.hidden) return 0;
   if (node.tag === 'svg') return 0.9;
   const classes = classesOf(node);
   if (classes.includes('MuiSvgIcon-root') || (node.testId && /Icon$/.test(node.testId))) return 0.85;
   if ((node.tag === 'i' || node.tag === 'span') && isFontIconClass(classes)) return 0.8;
   if (
-    node.attrs?.['aria-hidden'] === 'true' &&
+    node.aria?.hidden === 'true' &&
     !node.text &&
     node.w > 0 && node.h > 0 &&
     node.w <= SMALL_SQUARE_MAX && node.h <= SMALL_SQUARE_MAX &&
@@ -97,12 +102,13 @@ export function iconHint(node) {
 }
 
 /**
- * How many icons with each hint this run has named, so the second "menu" icon
- * is "icon_menu_2" here, in the diagnostic, and in the generated file. If the
- * name were left to convert() to number, the TODO.txt entry would send the
- * reader looking for "icon_menu" while the file held "icon_menu_2".
+ * Every widget name this run has claimed or will claim, so the second "menu"
+ * icon is "icon_menu_2" here, in the diagnostic, and in the generated file,
+ * and never equals a name the page's own widgets already hold. If the name
+ * were left to convert() to number, the TODO.txt entry would send the reader
+ * looking for "icon_menu" while the file held "icon_menu_2".
  * Keyed by the tree, which is the same object for every icon in one run.
- * @type {WeakMap<object, Map<string, number>>}
+ * @type {WeakMap<object, Set<string>>}
  */
 const namesByTree = new WeakMap();
 
@@ -115,14 +121,32 @@ function uniqueName(tree, hint) {
   // A real run always passes the tree. Without one there is nothing to count
   // against, so leave the name plain and let convert() number any duplicates.
   if (tree === null || typeof tree !== 'object') return `icon_${hint}`;
-  let counts = namesByTree.get(tree);
-  if (!counts) {
-    counts = new Map();
-    namesByTree.set(tree, counts);
+  let taken = namesByTree.get(tree);
+  if (!taken) {
+    // Names the page's own widgets will claim, so "icon_menu_2" is never
+    // handed out when a widget already has it.
+    // convert() numbers repeats (item, item_2, ...), so reserve those too.
+    taken = new Set();
+    const seen = new Map();
+    (function collect(n) {
+      const own = ownName(n);
+      if (own) {
+        const count = (seen.get(own) ?? 0) + 1;
+        seen.set(own, count);
+        taken.add(count === 1 ? own : `${own}_${count}`);
+      }
+      for (const c of n.children ?? []) collect(c);
+    })(tree);
+    namesByTree.set(tree, taken);
   }
-  const n = (counts.get(hint) ?? 0) + 1;
-  counts.set(hint, n);
-  return n === 1 ? `icon_${hint}` : `icon_${hint}_${n}`;
+  let n = 1;
+  let name = `icon_${hint}`;
+  while (taken.has(name)) {
+    n += 1;
+    name = `icon_${hint}_${n}`;
+  }
+  taken.add(name);
+  return name;
 }
 
 /** @type {import('./recognize.mjs').ComponentDef} */
