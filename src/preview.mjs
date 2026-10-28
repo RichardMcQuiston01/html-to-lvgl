@@ -15,16 +15,17 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join, resolve, dirname, basename, extname, sep } from 'node:path';
 import { extractPage } from './extract.mjs';
-import { extractReactPage } from './extract-react.mjs';
+import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
+import { applySidecar, sidecarFor } from './overrides.mjs';
 import { render as renderXml } from './emit-xml.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 
 const execFileAsync = promisify(execFile);
 
-/** Only source edits trigger rebuilds — generated .xml/.c/.bmp must not. */
+/** Source edits trigger rebuilds — generated .xml/.c/.bmp must not (see the watcher for the extra cases). */
 const SOURCE_EXT = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.ts', '.tsx']);
 const DEBOUNCE_MS = 150;
 const DEFAULT_RENDER_BIN = 'spike/build/render';
@@ -32,14 +33,16 @@ const DEFAULT_RENDER_BIN = 'spike/build/render';
 const RENDER_TIMEOUT_MS = 30_000;
 
 export async function startPreview(input, options) {
-  const { width, height, name, reactMode, outputDir, port = 8377 } = options;
+  const { width, height, name, outputDir, port = 8377 } = options;
   const renderBin = resolveRenderBin(options.renderBin);
+  const sidecarPath = resolve(options.overrides ?? sidecarFor(input));
+  const inputAbs = resolve(input);
   const webPng = join(outputDir, `${name}_web.png`);
   const lvglBmp = join(outputDir, `${name}_lvgl.bmp`);
 
   mkdirSync(outputDir, { recursive: true });
 
-  let state = { status: 'building', version: 0, xml: '', warnings: [], error: null, render: null };
+  let state = { status: 'building', version: 0, xml: '', warnings: [], error: null, pluginErrors: [], render: null };
   const clients = new Set();
 
   function publish(next) {
@@ -47,11 +50,35 @@ export async function startPreview(input, options) {
     for (const res of clients) res.write(`data: ${state.version}\n\n`);
   }
 
+  // Same discovery as the CLI: --plugin specs, config file, built-in React.
+  // A bad plugin is skipped and reported in the preview, never fatal.
+  let plugins = [];
+  let pluginErrors = [];
+  try {
+    ({ plugins, errors: pluginErrors } = await loadPlugins({
+      specs: options.plugins ?? [],
+      inputs: [input],
+      log: (line) => log(line),
+    }));
+  } catch (err) {
+    pluginErrors = [`plugin loading failed: ${err instanceof Error ? err.message : String(err)}`];
+    log(pluginErrors[0]);
+  }
+  state.pluginErrors = pluginErrors;
+
   async function build() {
     const started = Date.now();
     try {
-      const extractor = reactMode ? extractReactPage : extractPage;
-      const tree = await extractor(input, { width, height, screenshotPath: webPng });
+      const extractOptions = { width, height, screenshotPath: webPng };
+      const plugin = selectPlugin(plugins, input);
+      let tree;
+      if (plugin) {
+        const r = await extractWithPlugin(plugin, input, extractOptions);
+        if (!r.ok) throw new Error(r.error);
+        tree = r.tree;
+      } else {
+        tree = await extractPage(input, extractOptions);
+      }
       if (!tree) throw new Error('extraction produced no visible content');
 
       // Rebuild fonts each pass: editing the CSS can change which sizes and
@@ -64,13 +91,21 @@ export async function startPreview(input, options) {
       });
       const fonts = built.length ? customFonts(built) : builtinFonts();
 
-      const { xml, view, diagnostics } = convert(tree, { name, fonts });
+      const converted = convert(tree, { name, fonts });
+      const { diagnostics } = converted;
+      let { xml, view } = converted;
       for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
+      // Same sidecar rules as a normal build, so the preview matches the output.
+      const applied = applySidecar(view, { path: sidecarPath, explicit: Boolean(options.overrides), diagnostics });
+      if (applied.applied) {
+        view = applied.view;
+        xml = `<component>\n${renderXml(view, 1)}\n</component>\n`;
+      }
       let pageXml = xml;
       const componentPaths = [];
-      if (reactMode) {
+      {
         const { view: pageView, components } = componentize(view, { diagnostics });
-        pageXml = `<component>\n${renderXml(pageView, 1)}\n</component>\n`;
+        if (plugin || components.size) pageXml = `<component>\n${renderXml(pageView, 1)}\n</component>\n`;
         for (const [cname, cxml] of components) {
           const p = join(outputDir, `${cname}.xml`);
           writeFileSync(p, cxml);
@@ -139,10 +174,30 @@ export async function startPreview(input, options) {
     // Ignore our own output — matching on a path boundary so a sibling
     // directory like `outdated/` next to `out/` is not swallowed too.
     if (full === outAbs || full.startsWith(outAbs + sep)) return;
-    if (!SOURCE_EXT.has(extname(filename))) return;  // ignore generated artifacts
+    // Source edits, the page itself (a plugin may load any extension), and the
+    // sidecar rebuild; generated artifacts do not.
+    const isSource = SOURCE_EXT.has(extname(filename)) || full === inputAbs || full === sidecarPath ||
+      plugins.some((p) => p.extensions?.some((e) => e.toLowerCase() === extname(filename).toLowerCase()));
+    if (!isSource) return;
     clearTimeout(timer);
     timer = setTimeout(trigger, DEBOUNCE_MS);
   });
+
+  // An explicit --overrides file can live outside the page's folder; watch its
+  // own folder (when it exists) so saving it still rebuilds.
+  let sidecarWatcher = null;
+  const sidecarDir = dirname(sidecarPath);
+  if (sidecarDir !== watchDir && !sidecarDir.startsWith(watchDir + sep) && existsSync(sidecarDir)) {
+    try {
+      sidecarWatcher = watch(sidecarDir, (_event, filename) => {
+        if (!filename || resolve(sidecarDir, filename) !== sidecarPath) return;
+        clearTimeout(timer);
+        timer = setTimeout(trigger, DEBOUNCE_MS);
+      });
+    } catch (err) {
+      log(`cannot watch ${sidecarDir}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
 
   /* -------------------------------------------------------------- server */
   const server = createServer((req, res) => {
@@ -155,6 +210,7 @@ export async function startPreview(input, options) {
         status: state.status,
         version: state.version,
         warnings: state.warnings,
+        pluginErrors: state.pluginErrors,
         error: state.error,
         render: state.render,
         ms: state.ms ?? null,
@@ -203,6 +259,7 @@ export async function startPreview(input, options) {
     address: server.address().address,
     close: async () => {
       watcher.close();
+      sidecarWatcher?.close();
       for (const res of clients) res.end();
       await new Promise((ok) => server.close(ok));
     },
@@ -340,6 +397,7 @@ function textEl(tag, className, text) {
 function showMessages(s) {
   const warn = document.getElementById('warnings');
   warn.replaceChildren();
+  for (const e of s.pluginErrors || []) warn.appendChild(textEl('div', 'err', e));
   if (s.error) return warn.appendChild(textEl('div', 'err', s.error));
   if (s.render && !s.render.ok) {
     return warn.appendChild(textEl('div', 'err', 'render harness: ' + s.render.message));

@@ -55,22 +55,22 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(0xffffff), 0);
 
-    lv_obj_t * ack_2 = lv_button_create(header);
-    lv_obj_set_width(ack_2, 64);
-    lv_obj_set_height(ack_2, 24);
-    lv_obj_set_style_bg_color(ack_2, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_border_width(ack_2, 0, 0);
-    lv_obj_set_style_radius(ack_2, 4, 0);
-    lv_obj_set_style_shadow_width(ack_2, 0, 0);
-    lv_obj_set_style_pad_all(ack_2, 0, 0);
-    lv_obj_set_style_bg_color(ack_2, lv_color_hex(0x93c5fd), LV_STATE_PRESSED);
+    lv_obj_t * ack = lv_button_create(header);
+    lv_obj_set_width(ack, 64);
+    lv_obj_set_height(ack, 24);
+    lv_obj_set_style_bg_color(ack, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_border_width(ack, 0, 0);
+    lv_obj_set_style_radius(ack, 4, 0);
+    lv_obj_set_style_shadow_width(ack, 0, 0);
+    lv_obj_set_style_pad_all(ack, 0, 0);
+    lv_obj_set_style_bg_color(ack, lv_color_hex(0x93c5fd), LV_STATE_PRESSED);
 
-    lv_obj_t * ack = lv_label_create(ack_2);
-    lv_obj_set_align(ack, LV_ALIGN_CENTER);
-    lv_label_set_text(ack, "ACK");
-    lv_obj_set_style_text_font(ack, &lv_font_montserrat_10, 0);
-    lv_obj_set_style_text_color(ack, lv_color_hex(0x1e3a8a), 0);
-    lv_obj_set_style_text_align(ack, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_t * ack_2 = lv_label_create(ack);
+    lv_obj_set_align(ack_2, LV_ALIGN_CENTER);
+    lv_label_set_text(ack_2, "ACK");
+    lv_obj_set_style_text_font(ack_2, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_color(ack_2, lv_color_hex(0x1e3a8a), 0);
+    lv_obj_set_style_text_align(ack_2, LV_TEXT_ALIGN_CENTER, 0);
 
     lv_obj_t * alarms = lv_obj_create(root);
     lv_obj_set_style_grid_cell_column_pos(alarms, 0, 0);

@@ -62,22 +62,22 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_text_font(textarea_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(textarea_2, lv_color_hex(0x202124), 0);
 
-    lv_obj_t * login_2 = lv_button_create(root);
-    lv_obj_set_style_margin_top(login_2, 6, 0);
-    lv_obj_set_width(login_2, 240);
-    lv_obj_set_height(login_2, 38);
-    lv_obj_set_style_bg_color(login_2, lv_color_hex(0x2563eb), 0);
-    lv_obj_set_style_border_width(login_2, 0, 0);
-    lv_obj_set_style_radius(login_2, 6, 0);
-    lv_obj_set_style_shadow_width(login_2, 0, 0);
-    lv_obj_set_style_pad_all(login_2, 0, 0);
+    lv_obj_t * login = lv_button_create(root);
+    lv_obj_set_style_margin_top(login, 6, 0);
+    lv_obj_set_width(login, 240);
+    lv_obj_set_height(login, 38);
+    lv_obj_set_style_bg_color(login, lv_color_hex(0x2563eb), 0);
+    lv_obj_set_style_border_width(login, 0, 0);
+    lv_obj_set_style_radius(login, 6, 0);
+    lv_obj_set_style_shadow_width(login, 0, 0);
+    lv_obj_set_style_pad_all(login, 0, 0);
 
-    lv_obj_t * login = lv_label_create(login_2);
-    lv_obj_set_align(login, LV_ALIGN_CENTER);
-    lv_label_set_text(login, "Sign In");
-    lv_obj_set_style_text_font(login, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(login, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_text_align(login, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_t * login_2 = lv_label_create(login);
+    lv_obj_set_align(login_2, LV_ALIGN_CENTER);
+    lv_label_set_text(login_2, "Sign In");
+    lv_obj_set_style_text_font(login_2, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(login_2, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_align(login_2, LV_TEXT_ALIGN_CENTER, 0);
 
     lv_obj_t * hint = lv_label_create(root);
     lv_obj_set_style_margin_top(hint, 12, 0);

@@ -127,23 +127,23 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_slider_set_max_value(slider, 100);
     lv_slider_set_value(slider, 70, LV_ANIM_OFF);
 
-    lv_obj_t * save_2 = lv_button_create(root);
-    lv_obj_set_x(save_2, 12);
-    lv_obj_set_y(save_2, 200);
-    lv_obj_set_width(save_2, 296);
-    lv_obj_set_height(save_2, 30);
-    lv_obj_set_style_bg_color(save_2, lv_color_hex(0x0f766e), 0);
-    lv_obj_set_style_border_width(save_2, 0, 0);
-    lv_obj_set_style_radius(save_2, 6, 0);
-    lv_obj_set_style_shadow_width(save_2, 0, 0);
-    lv_obj_set_style_pad_all(save_2, 0, 0);
+    lv_obj_t * save = lv_button_create(root);
+    lv_obj_set_x(save, 12);
+    lv_obj_set_y(save, 200);
+    lv_obj_set_width(save, 296);
+    lv_obj_set_height(save, 30);
+    lv_obj_set_style_bg_color(save, lv_color_hex(0x0f766e), 0);
+    lv_obj_set_style_border_width(save, 0, 0);
+    lv_obj_set_style_radius(save, 6, 0);
+    lv_obj_set_style_shadow_width(save, 0, 0);
+    lv_obj_set_style_pad_all(save, 0, 0);
 
-    lv_obj_t * save = lv_label_create(save_2);
-    lv_obj_set_align(save, LV_ALIGN_CENTER);
-    lv_label_set_text(save, "Save");
-    lv_obj_set_style_text_font(save, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(save, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_text_align(save, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_t * save_2 = lv_label_create(save);
+    lv_obj_set_align(save_2, LV_ALIGN_CENTER);
+    lv_label_set_text(save_2, "Save");
+    lv_obj_set_style_text_font(save_2, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(save_2, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_align(save_2, LV_TEXT_ALIGN_CENTER, 0);
 
     return root;
 }

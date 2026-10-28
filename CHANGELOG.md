@@ -2,16 +2,38 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-27
+
+`src/` gained new capabilities (diagnostics and `TODO.txt`, plugins, icon placeholders, sidecar overrides), so this is a minor bump. One fix renames generated widgets; see the upgrade note under Fixed.
+
 ### Added
 
 - **Design doc:** `COMPONENTS.md` describes ARIA-first recognition of complex components (Accordion, Drawer, Modal, and others), the component registry, `TODO.txt` diagnostics, framework and library plugins, and constraints for a future drag-and-drop editor. `ROADMAP.md` now plans Phases 5 to 11 as parallel agent lanes.
 
 - **Plugin discovery:** `--plugin <package-or-path>` (repeatable) and `html2lvgl.config.mjs` (`export default { plugins: [...] }`, next to the input or in the working directory) load input plugins, chosen by file extension. Every plugin is validated; an invalid one prints all its errors and is skipped. React input now runs through a built-in plugin (`src/plugins/react.mjs`) with identical output; `src/extract-react.mjs` is a thin wrapper.
 
+- **Icon placeholders:** an `<svg>`, a Material UI icon, or a Material Icons, Font Awesome, Bootstrap Icons or Boxicons icon font element used to be skipped with a `TAG_UNSUPPORTED` warning. It now becomes a named, fixed-size, outlined `lv_obj` called `icon_<hint>` (`icon_menu`, `icon_menu_2`, ...), and `TODO.txt` says how to replace it with an `lv_image` or a symbol label. The name in `TODO.txt` matches the generated file.
+- **Sidecar overrides:** `<page>.lvgl.json` (found next to the page) or `--overrides <file>` changes generated widgets without editing the HTML, by widget name: set, replace or remove attributes, or remove a widget. It applies to XML, C, C++ and Python output. Problems are reported as `OVERRIDE_FILE_INVALID`, `OVERRIDE_TARGET_UNKNOWN` (with the closest names) and `OVERRIDE_ATTR_INVALID`. See FEATURES.md, "Sidecar Overrides".
+- **ARIA linking (internal):** `aria-controls` and `aria-owns` are paired with the element they name, hidden ones included, and `aria-labelledby` and `aria-describedby` are exposed for dialogs. A `aria-controls` that names no element is reported as `ARIA_TARGET_MISSING`. Nothing uses the links yet; the Accordion, Drawer and Modal components in later phases do.
+- **Component recognition (internal):** a pass in front of the converter (`src/recognize.mjs`) finds components that no tag names, from a registry of definitions (`name`, `match`, `props`, `slots`, `build`). It is ARIA-first, `data-lv-widget` always wins, and a definition that throws is reported as `RECOGNIZER_ERROR` while the page converts as before. Every node gets a stable key. `convert()` accepts a `registry` option. The built-in registry holds only the icon placeholder for now; the first components arrive in the next phase.
+- **The extractor records more of the page:** `role`, every `aria-*` attribute, all classes, `data-testid`, and whether the element is hidden. Hidden elements (`display: none`, `visibility: hidden`, zero size) are kept in the extracted tree so a component can read them, bounded to 12 levels and 2000 nodes. Conversion output and font planning ignore them, and the `--debug` JSON omits them.
+
 ### Changed
 
+- **`--watch` honors plugins:** watch mode loads input through the plugin loader, so `--plugin` and `html2lvgl.config.mjs` plugins work there too. A plugin that fails to load shows its errors in the preview and the server keeps running.
+- **Diagnostic locations use stable keys:** the source location in `TODO.txt` and `diagnostics.json` was a bare tag such as `<div>`. It is now the element's key: `name:<data-lv-name>`, `#<id>`, or a path such as `body/div[0]/button[1]`.
 - **Warnings are now coded diagnostics:** every converter warning has a stable code and a `Fix:` line. The CLI writes `TODO.txt` and `diagnostics.json` to the output directory and prints one summary line instead of one line per warning. Neither file is written when there is nothing to report, and stale copies are deleted. `convert()` still returns `warnings` strings and now also returns `diagnostics`. New code: `COMPONENT_ATTR_NOT_PROPPABLE`.
 - **Publishing now runs on a version tag, not on a push to `release`:** `publish.yml` triggers when a tag like `0.3.0` or `v0.3.0` is pushed. It refuses to publish unless the tagged commit is on `main` and the tag matches the `package.json` version.
+
+### Fixed
+
+- **A name you give a button or a text container now goes on the widget, not on its label.** For `<button data-lv-name="save">Save</button>`, the generated `lv_button` was named `save_2` and its inner `lv_label` was named `save`, so `lv_obj_get_child_by_name(parent, "save")` returned the label and a sidecar override aimed at `save` changed the label instead of the button. The same happened for `id` and class-derived names, for navigation links, and for a `div` that has both its own text and child elements. The widget is now named first and its label takes the `_2`. This matches how a decorated text block (a title bar or badge) was already named. Pages whose buttons have no `data-lv-name`, `id` or class are unchanged, since their widget and label never shared a name.
+  - **Upgrade note:** generated names change for any named button, link or text container. If your own code looks those widgets up by name, swap the `name` and `name_2` lookups. The XML, C, C++ and Python output all change in the same way, and only the names differ.
+- `data-lv-widget` naming a built-in widget (such as `label`) on an icon-font element is honored again; icon recognition no longer overrides it.
+- Hidden icons are skipped instead of becoming visible placeholders, and an icon's `aria-hidden` wrapper rule now reads the extractor's real field.
+- Icon placeholders and other widgets can no longer end up with the same generated name (for example a widget named `icon_menu_2` next to two menu icons), which broke generated C and C++.
+- Sidecar overrides accept state suffixes such as `style_bg_color:pressed`.
+- `--watch` now applies `--overrides` (or the automatic sidecar) and rebuilds when the sidecar, or a plugin's own file type, changes.
 
 ## [0.3.0] - 2026-10-20
 

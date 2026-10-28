@@ -16,7 +16,9 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
+import { withoutHidden } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
+import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
@@ -39,6 +41,7 @@ const { values: opts, positionals } = parseArgs({
     port: { type: 'string', default: '8377' },
     'render-bin': { type: 'string' },
     plugin: { type: 'string', multiple: true, default: [] },
+    overrides: { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -50,6 +53,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--format xml|c|cpp|py|both] [--screenshot] [--debug]\n' +
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
+    '                 [--overrides <file.lvgl.json>]\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
@@ -66,6 +70,11 @@ if (opts.help || positionals.length === 0) {
     'html2lvgl.config.mjs next to the input or in the working directory\n' +
     'can list plugins too: export default { plugins: [...] }. React (.jsx,\n' +
     '.tsx) is built in.\n' +
+    '\n' +
+    '--overrides applies a sidecar of per-widget changes (attribute values,\n' +
+    'removed nodes) without editing the HTML. <input>.lvgl.json next to a\n' +
+    'page is picked up automatically; --overrides names one explicitly (single\n' +
+    'page only). Target widgets by name, ideally via data-lv-name.\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -136,6 +145,11 @@ for (const spec of opts['font-map']) {
   fontMap[spec.slice(0, at).trim()] = spec.slice(at + 1).trim();
 }
 
+if (opts.overrides && screenMode) {
+  console.error('--overrides applies to a single page; several screens each use their own <page>.lvgl.json');
+  process.exit(1);
+}
+
 if (opts.watch && screenMode) {
   console.error('--watch previews a single page at a time');
   process.exit(1);
@@ -155,7 +169,8 @@ if (opts.watch) {
     width,
     height,
     name,
-    reactMode,
+    plugins: opts.plugin,
+    overrides: opts.overrides,
     outputDir: opts.output,
     port,
     renderBin: opts['render-bin'],
@@ -200,7 +215,7 @@ async function buildAll() {
       console.error(`extraction produced no visible content for ${page}`);
       process.exit(1);
     }
-    if (opts.debug) writeFileSync(join(opts.output, `${pageName}.json`), JSON.stringify(tree, null, 2));
+    if (opts.debug) writeFileSync(join(opts.output, `${pageName}.json`), JSON.stringify(withoutHidden(tree), null, 2));
     pages.push({ input: page, name: pageName, reactMode: pageReactMode, tree });
   }
 
@@ -253,8 +268,22 @@ function writeDiagnostics(entries) {
 }
 
 async function emitPage({ input, name, tree }, fonts) {
-  const { xml, view, diagnostics, assets, collapsed } = convert(tree, { name, screens, screenMode, fonts });
+  const converted = convert(tree, { name, screens, screenMode, fonts });
+  const { diagnostics, assets, collapsed } = converted;
+  let { xml, view } = converted;
   const written = [];
+
+  // Sidecar overrides edit the shared view tree before any emitter runs (and
+  // before componentize, so component definitions see them too). Without a
+  // sidecar the view and the pre-rendered xml are used untouched.
+  const sidecar = opts.overrides ?? sidecarFor(input);
+  const applied = applySidecar(view, { path: sidecar, explicit: Boolean(opts.overrides), diagnostics });
+  if (applied.applied) {
+    view = applied.view;
+    const wrapper = screenMode ? 'screen' : 'component';
+    xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
+  }
+
   if (formats.has('xml')) {
     let pageXml = xml;
     // Split component boundaries (React fiber-walk stamps, or manual

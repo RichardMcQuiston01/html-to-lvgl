@@ -22,6 +22,8 @@ import { builtinFonts } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
+import { recognize, defaultRegistry } from './recognize.mjs';
+import { sanitize } from './names.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -38,12 +40,17 @@ const JUSTIFY = {
  * @param screens  Set of sibling screen names. When provided, <a href> links
  *                 pointing at one — or any element carrying
  *                 data-lv-link="<page>" — become navigation buttons.
+ * @param registry  Component definitions to recognize before conversion
+ *                 (see src/recognize.mjs). Defaults to the built-in set.
  * @param screenMode  Wrap the output in <screen> instead of <component>, so
  *                 LVGL registers it as a loadable screen.
  */
-export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts() } = {}) {
-  const { tree, removed } = optimize(structuredClone(input));
+export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts(), registry = defaultRegistry } = {}) {
   const diagnostics = createDiagnostics();
+  // Recognition runs first, so a component can rewrite its part of the tree
+  // before the optimizer collapses wrappers or the emitter maps tags.
+  const { tree: recognizedTree } = recognize(structuredClone(input), { registry, diagnostics });
+  const { tree, removed } = optimize(recognizedTree);
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
 
   const rootAttrs = {
@@ -64,18 +71,28 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
 
 function uid(ctx, node, fallback) {
   const base = sanitize(node.lvName || node.id || node.className || fallback || node.tag);
-  const n = (ctx.names.get(base) ?? 0) + 1;
+  // A numbered name can collide with a base another node already used (a
+  // widget called "icon_menu_2" next to two "icon_menu"), so keep counting
+  // until the final name is unused, and record it so later bases see it too.
+  let n = ctx.names.get(base) ?? 0;
+  let name;
+  do {
+    n += 1;
+    name = n === 1 ? base : `${base}_${n}`;
+  } while (n > 1 && ctx.names.has(name));
   ctx.names.set(base, n);
-  return n === 1 ? base : `${base}_${n}`;
+  if (!ctx.names.has(name)) ctx.names.set(name, 1);
+  return name;
 }
 
 /** Where a node came from in the source page, as precisely as the tree allows. */
-function sourceOf(node) {
+export function sourceOf(node) {
+  // node.key is the stable key from recognize(): `name:x`, `#x`, or a path
+  // like body/div[0]/button[1]. It is unique within the page, so prefer it.
+  if (node.key) return { selector: node.key };
   const selector = node.lvName ? `[data-lv-name="${node.lvName}"]` : node.id ? `#${node.id}` : `<${node.tag}>`;
   return { selector };
 }
-
-const sanitize = (s) => s.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$|(_)_+/g, '$1') || 'obj';
 
 const hex = ([r, g, b]) => '0x' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 
@@ -373,12 +390,15 @@ function emitForced(node, parent, ctx, index) {
 
 function emitContainer(node, parent, ctx, index) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  // The widget is named before its own text label, so a name the author chose
+  // (data-lv-name, id, class) lands on the widget, not on its label.
+  const name = uid(ctx, node, 'box');
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', { name: uid(ctx, node, 'label'), text: node.text, ...textStyles(node, font) }));
   }
   return el('lv_obj', {
-    name: uid(ctx, node, 'box'),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx),
     ...containerLayout(node, ctx),
@@ -423,6 +443,8 @@ function emitText(node, parent, ctx, index) {
 
 function emitButton(node, parent, ctx, index) {
   const children = node.children.map((c) => emit(c, node, ctx)).filter(Boolean);
+  // Name the button before its label: see emitContainer.
+  const name = uid(ctx, node, 'button');
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
@@ -433,7 +455,7 @@ function emitButton(node, parent, ctx, index) {
     }));
   }
   return el('lv_button', {
-    name: uid(ctx, node, 'button'),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
   }, children);
@@ -460,6 +482,8 @@ function resolveScreen(href, screens) {
  */
 function emitLink(node, parent, ctx, index, screen) {
   const children = node.children.map((c, i) => emit(c, node, ctx, i)).filter(Boolean);
+  // Name the button before its label: see emitContainer.
+  const name = uid(ctx, node, `to_${screen}`);
   if (node.text) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
@@ -471,7 +495,7 @@ function emitLink(node, parent, ctx, index, screen) {
   }
   children.push(el('screen_create_event', { screen }));
   return el('lv_button', {
-    name: uid(ctx, node, `to_${screen}`),
+    name,
     ...placement(node, parent, { gridIndex: index }),
     ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
   }, children);
