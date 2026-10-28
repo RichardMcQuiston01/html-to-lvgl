@@ -18,13 +18,14 @@ import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
+import { applySidecar, sidecarFor } from './overrides.mjs';
 import { render as renderXml } from './emit-xml.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 
 const execFileAsync = promisify(execFile);
 
-/** Only source edits trigger rebuilds — generated .xml/.c/.bmp must not. */
+/** Source edits trigger rebuilds — generated .xml/.c/.bmp must not (see the watcher for the extra cases). */
 const SOURCE_EXT = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.ts', '.tsx']);
 const DEBOUNCE_MS = 150;
 const DEFAULT_RENDER_BIN = 'spike/build/render';
@@ -34,6 +35,8 @@ const RENDER_TIMEOUT_MS = 30_000;
 export async function startPreview(input, options) {
   const { width, height, name, outputDir, port = 8377 } = options;
   const renderBin = resolveRenderBin(options.renderBin);
+  const sidecarPath = resolve(options.overrides ?? sidecarFor(input));
+  const inputAbs = resolve(input);
   const webPng = join(outputDir, `${name}_web.png`);
   const lvglBmp = join(outputDir, `${name}_lvgl.bmp`);
 
@@ -88,8 +91,16 @@ export async function startPreview(input, options) {
       });
       const fonts = built.length ? customFonts(built) : builtinFonts();
 
-      const { xml, view, diagnostics } = convert(tree, { name, fonts });
+      const converted = convert(tree, { name, fonts });
+      const { diagnostics } = converted;
+      let { xml, view } = converted;
       for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
+      // Same sidecar rules as a normal build, so the preview matches the output.
+      const applied = applySidecar(view, { path: sidecarPath, explicit: Boolean(options.overrides), diagnostics });
+      if (applied.applied) {
+        view = applied.view;
+        xml = `<component>\n${renderXml(view, 1)}\n</component>\n`;
+      }
       let pageXml = xml;
       const componentPaths = [];
       {
@@ -163,7 +174,11 @@ export async function startPreview(input, options) {
     // Ignore our own output — matching on a path boundary so a sibling
     // directory like `outdated/` next to `out/` is not swallowed too.
     if (full === outAbs || full.startsWith(outAbs + sep)) return;
-    if (!SOURCE_EXT.has(extname(filename))) return;  // ignore generated artifacts
+    // Source edits, the page itself (a plugin may load any extension), and the
+    // sidecar rebuild; generated artifacts do not.
+    const isSource = SOURCE_EXT.has(extname(filename)) || full === inputAbs || full === sidecarPath ||
+      plugins.some((p) => p.extensions?.some((e) => e.toLowerCase() === extname(filename).toLowerCase()));
+    if (!isSource) return;
     clearTimeout(timer);
     timer = setTimeout(trigger, DEBOUNCE_MS);
   });

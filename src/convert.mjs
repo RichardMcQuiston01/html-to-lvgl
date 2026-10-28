@@ -23,6 +23,7 @@ import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
+import { sanitize } from './names.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -70,9 +71,18 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
 
 function uid(ctx, node, fallback) {
   const base = sanitize(node.lvName || node.id || node.className || fallback || node.tag);
-  const n = (ctx.names.get(base) ?? 0) + 1;
+  // A numbered name can collide with a base another node already used (a
+  // widget called "icon_menu_2" next to two "icon_menu"), so keep counting
+  // until the final name is unused, and record it so later bases see it too.
+  let n = ctx.names.get(base) ?? 0;
+  let name;
+  do {
+    n += 1;
+    name = n === 1 ? base : `${base}_${n}`;
+  } while (n > 1 && ctx.names.has(name));
   ctx.names.set(base, n);
-  return n === 1 ? base : `${base}_${n}`;
+  if (!ctx.names.has(name)) ctx.names.set(name, 1);
+  return name;
 }
 
 /** Where a node came from in the source page, as precisely as the tree allows. */
@@ -83,8 +93,6 @@ export function sourceOf(node) {
   const selector = node.lvName ? `[data-lv-name="${node.lvName}"]` : node.id ? `#${node.id}` : `<${node.tag}>`;
   return { selector };
 }
-
-const sanitize = (s) => s.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$|(_)_+/g, '$1') || 'obj';
 
 const hex = ([r, g, b]) => '0x' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 

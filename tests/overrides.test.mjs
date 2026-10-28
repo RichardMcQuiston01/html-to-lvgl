@@ -187,3 +187,11 @@ test('CLI: --overrides names an explicit file; an invalid sidecar is reported, o
   assert.match(readFileSync(join(dir, 'out3', 'TODO.txt'), 'utf8'), /does not exist/);
   assert.match(run(['--help']).stderr, /--overrides/);
 });
+
+test('applyOverrides accepts a state suffix such as :pressed', () => {
+  const view = { tag: 'view', attrs: {}, children: [{ tag: 'lv_button', attrs: { name: 'go', 'style_bg_color:pressed': '0x111111' }, children: [] }] };
+  const diagnostics = createDiagnostics();
+  const out = applyOverrides(view, { version: 1, nodes: { go: { attrs: { 'style_bg_color:pressed': '0x222222' } } } }, { diagnostics });
+  assert.equal(out.children[0].attrs['style_bg_color:pressed'], '0x222222');
+  assert.equal(diagnostics.list().length, 0);
+});

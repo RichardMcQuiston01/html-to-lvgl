@@ -18,7 +18,7 @@ import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mj
 import { convert } from './convert.mjs';
 import { withoutHidden } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
-import { loadOverrides, applyOverrides } from './overrides.mjs';
+import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
@@ -170,6 +170,7 @@ if (opts.watch) {
     height,
     name,
     plugins: opts.plugin,
+    overrides: opts.overrides,
     outputDir: opts.output,
     port,
     renderBin: opts['render-bin'],
@@ -275,24 +276,10 @@ async function emitPage({ input, name, tree }, fonts) {
   // Sidecar overrides edit the shared view tree before any emitter runs (and
   // before componentize, so component definitions see them too). Without a
   // sidecar the view and the pre-rendered xml are used untouched.
-  const sidecar = opts.overrides ?? input.replace(/\.[^./\\]+$/, '') + '.lvgl.json';
-  const loaded = loadOverrides(sidecar);
-  if (!loaded.ok) {
-    diagnostics.add({
-      code: 'OVERRIDE_FILE_INVALID',
-      message: `Sidecar ${sidecar} was ignored: ${loaded.errors.join('; ')}`,
-      fix: `Fix ${sidecar} (expected {"version": 1, "nodes": {"<name>": {"attrs": {...}, "remove": false}}}) and convert again.`,
-      source: { file: sidecar },
-    });
-  } else if (opts.overrides && loaded.overrides === null) {
-    diagnostics.add({
-      code: 'OVERRIDE_FILE_INVALID',
-      message: `Sidecar ${sidecar} does not exist.`,
-      fix: 'Check the --overrides path, or create the file.',
-      source: { file: sidecar },
-    });
-  } else if (loaded.overrides) {
-    view = applyOverrides(view, loaded.overrides, { diagnostics, file: sidecar });
+  const sidecar = opts.overrides ?? sidecarFor(input);
+  const applied = applySidecar(view, { path: sidecar, explicit: Boolean(opts.overrides), diagnostics });
+  if (applied.applied) {
+    view = applied.view;
     const wrapper = screenMode ? 'screen' : 'component';
     xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
   }
