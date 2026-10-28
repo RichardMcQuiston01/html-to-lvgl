@@ -183,6 +183,22 @@ export async function startPreview(input, options) {
     timer = setTimeout(trigger, DEBOUNCE_MS);
   });
 
+  // An explicit --overrides file can live outside the page's folder; watch its
+  // own folder (when it exists) so saving it still rebuilds.
+  let sidecarWatcher = null;
+  const sidecarDir = dirname(sidecarPath);
+  if (sidecarDir !== watchDir && !sidecarDir.startsWith(watchDir + sep) && existsSync(sidecarDir)) {
+    try {
+      sidecarWatcher = watch(sidecarDir, (_event, filename) => {
+        if (!filename || resolve(sidecarDir, filename) !== sidecarPath) return;
+        clearTimeout(timer);
+        timer = setTimeout(trigger, DEBOUNCE_MS);
+      });
+    } catch (err) {
+      log(`cannot watch ${sidecarDir}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   /* -------------------------------------------------------------- server */
   const server = createServer((req, res) => {
     const url = req.url.split('?')[0];
@@ -243,6 +259,7 @@ export async function startPreview(input, options) {
     address: server.address().address,
     close: async () => {
       watcher.close();
+      sidecarWatcher?.close();
       for (const res of clients) res.end();
       await new Promise((ok) => server.close(ok));
     },

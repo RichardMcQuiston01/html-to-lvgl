@@ -125,10 +125,16 @@ function uniqueName(tree, hint) {
   if (!taken) {
     // Names the page's own widgets will claim, so "icon_menu_2" is never
     // handed out when a widget already has it.
+    // convert() numbers repeats (item, item_2, ...), so reserve those too.
     taken = new Set();
+    const seen = new Map();
     (function collect(n) {
       const own = ownName(n);
-      if (own) taken.add(own);
+      if (own) {
+        const count = (seen.get(own) ?? 0) + 1;
+        seen.set(own, count);
+        taken.add(count === 1 ? own : `${own}_${count}`);
+      }
       for (const c of n.children ?? []) collect(c);
     })(tree);
     namesByTree.set(tree, taken);

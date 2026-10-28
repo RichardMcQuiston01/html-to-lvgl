@@ -211,3 +211,18 @@ test('icon names never equal a name the page already holds', () => {
   const todo = formatTodo(diagnostics.list());
   for (const n of names.filter((x) => x.startsWith('icon_menu_'))) assert.match(todo, new RegExp(`"${n}"`));
 });
+
+test('icon names also avoid the numbered names of repeated widgets', () => {
+  const tree = node('body', {
+    w: 320, h: 240,
+    children: [
+      node('div', { lvName: 'icon_menu', key: 'x' }),
+      node('div', { lvName: 'icon_menu', key: 'y' }),
+      node('svg', { testId: 'MenuIcon', key: 'z' }),
+    ],
+  });
+  const { xml, diagnostics } = convert(tree);
+  const names = [...xml.matchAll(/<lv_obj[^>]*?name="([^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(names, ['icon_menu', 'icon_menu_2', 'icon_menu_3']);
+  assert.match(formatTodo(diagnostics.list()), /"icon_menu_3"/);
+});
