@@ -34,6 +34,7 @@
 - Icon placeholders and other widgets can no longer end up with the same generated name (for example a widget named `icon_menu_2` next to two menu icons), which broke generated C and C++.
 - Sidecar overrides accept state suffixes such as `style_bg_color:pressed`.
 - `--watch` now applies `--overrides` (or the automatic sidecar) and rebuilds when the sidecar, or a plugin's own file type, changes.
+- An `aria-hidden` icon wrapper is only replaced by a placeholder when it holds nothing but SVGs, so a badge count or label beside the icon is no longer dropped.
 
 ## [0.3.0] - 2026-10-20
 
