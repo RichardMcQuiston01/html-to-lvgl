@@ -226,3 +226,12 @@ test('icon names also avoid the numbered names of repeated widgets', () => {
   assert.deepEqual(names, ['icon_menu', 'icon_menu_2', 'icon_menu_3']);
   assert.match(formatTodo(diagnostics.list()), /"icon_menu_3"/);
 });
+
+test('rule 4: a wrapper that also holds text or other content is not replaced', () => {
+  const inner = node('svg');
+  const badge = node('span', { text: '3', w: 8, h: 8 });
+  const wrapper = (children) => node('div', { aria: { hidden: 'true' }, children });
+  assert.equal(score(wrapper([inner, badge])), 0);
+  assert.equal(score(wrapper([inner, node('div', { children: [badge] })])), 0);
+  assert.ok(score(wrapper([node('div', { children: [inner] })])) > 0);
+});
