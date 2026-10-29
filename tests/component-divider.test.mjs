@@ -141,6 +141,27 @@ test('a divider with text becomes line, content, line; the content survives', ()
   assert.equal(plainText.children[1].text, 'or');
 });
 
+test('a divider with both direct text and child elements keeps both', () => {
+  const strong = node('strong', { text: 'email', w: 40, h: 14 });
+  const out = divider.build(node('div', { role: 'separator', text: 'Continue with', w: 296, h: 14, children: [strong] }), ctx());
+  const middle = out.children.slice(1, -1);
+  assert.equal(middle.length, 2);
+  assert.equal(middle[0].text, 'Continue with');
+  assert.equal(middle[1].tag, 'strong');
+});
+
+test('a standalone line keeps its own opacity; synthesized side lines are fully opaque', () => {
+  const faded = divider.build(hr({ styles: { ...styles(), borderWidth: 1, borderColor: grey, opacity: 0.4 } }), ctx());
+  assert.equal(faded.styles.opacity, 0.4);
+  const hidden = divider.build(hr({ styles: { ...styles(), borderWidth: 1, borderColor: grey, opacity: 0 } }), ctx());
+  assert.equal(hidden.styles.opacity, 0);
+  const withText = divider.build(node('div', {
+    role: 'separator', text: 'or', w: 200, h: 14, styles: { ...styles(), borderColor: grey, borderWidth: 1, opacity: 0.5 },
+  }), ctx());
+  assert.equal(withText.styles.opacity, 0.5, 'the container keeps its opacity');
+  assert.equal(withText.children[0].styles.opacity, 1, 'its lines do not fade twice');
+});
+
 test('a block with a separator role that is not line-shaped keeps its content', () => {
   const big = node('div', { role: 'separator', w: 200, h: 100, children: [node('span', { text: 'x' })] });
   const out = divider.build(big, ctx());

@@ -78,9 +78,12 @@ function lineLook(node, parent, vertical) {
  * @param {UiNode} node
  * @param {Partial<UiNode>} over
  * @param {number[]} color
+ * @param {number} [opacity]  Defaults to the node's own, so a faded or hidden
+ *   separator stays that way; a line synthesized inside a content divider
+ *   passes 1, since the container's opacity already applies to it.
  * @returns {UiNode}
  */
-function lineBox(node, over, color) {
+function lineBox(node, over, color, opacity = node.styles?.opacity ?? 1) {
   return {
     ...node,
     tag: 'div',
@@ -91,7 +94,7 @@ function lineBox(node, over, color) {
       ...node.styles,
       bgColor: color,
       borderColor: null, borderWidth: 0, borderBottomColor: null, borderBottomWidth: 0,
-      radius: 0, shadow: null, gradient: null, opacity: 1,
+      radius: 0, shadow: null, gradient: null, opacity,
       padLeft: 0, padRight: 0, padTop: 0, padBottom: 0,
     },
   };
@@ -117,22 +120,26 @@ const divider = {
     if (hasContent(node) && !vertical) {
       // A line, the content, a line. The container's own border is not drawn.
       const surface = surfaceBehind(node, ctx?.parent);
-      const content = node.text
-        ? [{
+      // Direct text and child elements both survive: the extractor stores them
+      // apart ("Continue with <strong>email</strong>"), so keep the text, then
+      // the children.
+      const content = [
+        ...(node.text ? [{
           ...node, tag: 'span', text: node.text, children: [], key: `${node.key}/text`,
           id: null, className: null, classes: [], lvName: null, widget: null, component: null, link: null,
           role: null, aria: {}, testId: null,
           styles: { ...node.styles, bgColor: null, borderWidth: 0, borderBottomWidth: 0 },
           layout: { ...node.layout, marginLeft: 0, marginRight: 0, marginTop: 0, marginBottom: 0 },
-        }]
-        : node.children.map((c) => keepTextPadding(c, surface));
+        }] : []),
+        ...node.children.map((c) => keepTextPadding(c, surface)),
+      ];
       const side = (suffix) => lineBox(node, {
         key: `${node.key}/line${suffix}`,
         id: null, className: null, classes: [], lvName: 'divider_line', widget: null, component: null, link: null,
         role: null, aria: {}, testId: null, hidden: false,
         w: 1, h: thickness,
         layout: { ...node.layout, flexGrow: 1, marginLeft: 0, marginRight: 0, marginTop: 0, marginBottom: 0 },
-      }, color);
+      }, color, 1);
       return {
         ...withName(node, 'divider'),
         tag: 'div',
