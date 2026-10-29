@@ -199,3 +199,22 @@ test('a page with hidden content converts to the same XML as one without', async
   assert.equal(convert(withHidden).xml, convert(without).xml);
   assert.deepEqual(planFonts(withHidden), planFonts(without), 'font planning ignores hidden text');
 });
+
+test('a multi-layer box-shadow keeps its largest layer', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><body style="margin:0">
+    <div id="a" style="width:80px;height:40px;box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 6px 18px 2px rgba(0,0,0,.12), inset 0 0 40px 0 rgba(0,0,0,.5)">x</div>
+  </body></html>`);
+  const node = findByText(tree, 'x');
+  assert.equal(node.styles.shadow.blur, 18);
+  assert.equal(node.styles.shadow.y, 6);
+  assert.equal(node.styles.shadow.spread, 2);
+});
+
+test('a percentage border radius resolves against the box', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><body style="margin:0">
+    <div style="width:40px;height:40px;border-radius:50%">c</div>
+    <div style="width:80px;height:32px;border-radius:25%">p</div>
+  </body></html>`);
+  assert.equal(findByText(tree, 'c').styles.radius, 20);
+  assert.equal(findByText(tree, 'p').styles.radius, 8);
+});

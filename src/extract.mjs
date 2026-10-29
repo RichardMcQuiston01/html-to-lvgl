@@ -160,14 +160,35 @@ export function buildTree() {
     return { from: colors[0], to: colors[1], dir };
   }
 
-  /** First box-shadow -> {color, x, y, blur, spread}; "none" -> null. */
+  /**
+   * The box-shadow -> {color, x, y, blur, spread}; "none" -> null. LVGL has one
+   * shadow per object, so a multi-layer shadow (Material UI elevation stacks
+   * three) keeps its largest layer, by blur then spread. Inset layers are skipped.
+   */
   function parseShadow(boxShadow) {
     if (!boxShadow || boxShadow === 'none') return null;
-    const m = boxShadow.match(/(rgba?\([\d.,\s]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px(?:\s+(-?[\d.]+)px)?/);
-    if (!m) return null;
-    const color = parseColor(m[1]);
-    if (!color) return null;
-    return { color, x: Math.round(+m[2]), y: Math.round(+m[3]), blur: Math.round(+m[4]), spread: Math.round(+m[5] || 0) };
+    // Computed values put `inset` last, authored ones may put it first.
+    const layer = /(inset\s+)?(rgba?\([\d.,\s]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px(?:\s+(-?[\d.]+)px)?(\s+inset)?/g;
+    let best = null;
+    for (const m of boxShadow.matchAll(layer)) {
+      if (m[1] || m[7]) continue;
+      const color = parseColor(m[2]);
+      if (!color) continue;
+      const found = { color, x: Math.round(+m[3]), y: Math.round(+m[4]), blur: Math.round(+m[5]), spread: Math.round(+m[6] || 0) };
+      if (!best || found.blur > best.blur || (found.blur === best.blur && found.spread > best.spread)) best = found;
+    }
+    return best;
+  }
+
+  /**
+   * A border radius in px. A percentage ("50%" on an avatar) resolves against
+   * the smaller side of the box, so a circle comes out as half its size.
+   */
+  function radiusPx(value, width, height) {
+    if (typeof value === 'string' && value.endsWith('%')) {
+      return Math.round((parseFloat(value) / 100) * Math.min(width, height)) || 0;
+    }
+    return px(value);
   }
 
   /**
@@ -274,7 +295,7 @@ export function buildTree() {
         borderWidth: px(cs.borderTopWidth),
         borderBottomColor: parseColor(cs.borderBottomColor),
         borderBottomWidth: px(cs.borderBottomWidth),
-        radius: px(cs.borderTopLeftRadius),
+        radius: radiusPx(cs.borderTopLeftRadius, r.width, r.height),
         fontSize: px(cs.fontSize) || 16,
         // Identity of the typeface actually used, for lv_font_conv
         fontFamily: resolveFontFamily(cs),
