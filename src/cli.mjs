@@ -42,6 +42,7 @@ const { values: opts, positionals } = parseArgs({
     'render-bin': { type: 'string' },
     plugin: { type: 'string', multiple: true, default: [] },
     overrides: { type: 'string' },
+    'min-touch-target': { type: 'string', default: '30' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -54,6 +55,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
     '                 [--overrides <file.lvgl.json>]\n' +
+    '                 [--min-touch-target <px>]\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
@@ -75,6 +77,10 @@ if (opts.help || positionals.length === 0) {
     'removed nodes) without editing the HTML. <input>.lvgl.json next to a\n' +
     'page is picked up automatically; --overrides names one explicitly (single\n' +
     'page only). Target widgets by name, ideally via data-lv-name.\n' +
+    '\n' +
+    '--min-touch-target reports buttons, links, inputs and other pressable\n' +
+    'elements smaller than <px> (default 30) in TODO.txt as TOUCH_TARGET_SMALL\n' +
+    'notes. 0 turns the check off.\n' +
     '\n' +
     '--font-map points a CSS family at a font file, which is converted with\n' +
     'lv_font_conv at the exact sizes the page uses. @font-face sources are\n' +
@@ -101,6 +107,12 @@ if (!m) {
   process.exit(1);
 }
 const [width, height] = [Number(m[1]), Number(m[2])];
+
+if (!/^\d+$/.test(opts['min-touch-target'])) {
+  console.error(`invalid --min-touch-target "${opts['min-touch-target']}" (expected a non-negative whole number of pixels; 0 turns the check off)`);
+  process.exit(1);
+}
+const minTouchTarget = Number(opts['min-touch-target']);
 
 const screenName = (p) => basename(p).replace(/\.[a-z]+$/i, '').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
 
@@ -176,6 +188,7 @@ if (opts.watch) {
     renderBin: opts['render-bin'],
     fontMap,
     lvInclude: opts['lv-include'],
+    minTouchTarget,
   });
   // Server and watcher keep the process alive.
 } else {
@@ -268,7 +281,7 @@ function writeDiagnostics(entries) {
 }
 
 async function emitPage({ input, name, tree }, fonts) {
-  const converted = convert(tree, { name, screens, screenMode, fonts });
+  const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget });
   const { diagnostics, assets, collapsed } = converted;
   let { xml, view } = converted;
   const written = [];
