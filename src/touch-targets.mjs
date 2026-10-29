@@ -62,13 +62,11 @@ export function checkTouchTargets(tree, { diagnostics, minSize = 30 }) {
     if (isTouchTarget(node)) {
       const { w, h } = node;
       if (Number.isFinite(w) && Number.isFinite(h) && (w < minSize || h < minSize)) {
-        const name = node.lvName || null;
         diagnostics.add({
           code: 'TOUCH_TARGET_SMALL',
           message: `${describe(node)} (${node.key ?? 'unknown'}) is ${w}x${h} px; touch targets should be at least ${minSize} px in both width and height`,
-          fix: `Make the element at least ${minSize}x${minSize} px, or add padding or a larger hit area around it, in the HTML or in the generated XML (set width and height on ${name ? `the widget named "${name}"` : 'the widget'}). Pass --min-touch-target 0 to turn this check off.`,
+          fix: `Make the element at least ${minSize}x${minSize} px, or add padding or a larger hit area around it, in the HTML or in the generated XML (set width and height on the generated widget; the selector above names the source element). Pass --min-touch-target 0 to turn this check off.`,
           source: { selector: node.key },
-          output: name ? { widget: name } : null,
         });
         added += 1;
       }

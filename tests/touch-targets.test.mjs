@@ -133,9 +133,11 @@ test('message and fix say what, how big, the minimum, and what to do', () => {
   assert.match(d.message, /at least 30 px/);
   assert.match(d.fix, /at least 30x30 px/);
   assert.match(d.fix, /padding|hit area/);
-  assert.match(d.fix, /save_btn/);
+  // The final widget name is only known after convert() numbers it, so the note
+  // names the source element, never a widget that might be renamed.
+  assert.doesNotMatch(d.fix, /save_btn/);
   assert.deepEqual(d.source, { selector: '#save' });
-  assert.deepEqual(d.output, { widget: 'save_btn' });
+  assert.equal(d.output, null);
 });
 
 test('visible text is the label when there is no aria-label; input shows its type', () => {
