@@ -185,10 +185,14 @@ export function buildTree() {
    * the smaller side of the box, so a circle comes out as half its size.
    */
   function radiusPx(value, width, height) {
-    if (typeof value === 'string' && value.endsWith('%')) {
-      return Math.round((parseFloat(value) / 100) * Math.min(width, height)) || 0;
+    // An elliptical corner computes to "<horizontal> <vertical>" ("12px 50%").
+    // LVGL has one radius per corner, so use the horizontal one and check its
+    // unit on its own.
+    const horizontal = typeof value === 'string' ? value.trim().split(/\s+/)[0] : value;
+    if (typeof horizontal === 'string' && horizontal.endsWith('%')) {
+      return Math.round((parseFloat(horizontal) / 100) * Math.min(width, height)) || 0;
     }
-    return px(value);
+    return px(horizontal);
   }
 
   /**
