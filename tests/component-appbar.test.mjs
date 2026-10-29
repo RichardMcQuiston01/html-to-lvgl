@@ -160,6 +160,31 @@ test('transparent buttons take the bar color so LVGL does not paint them blue', 
   assert.equal(run(page(clear), (t) => t.children[0]).children[0].styles.bgColor, null);
 });
 
+test('the title node is the one findTitle chose, even when a button holds the same words', () => {
+  const inner = node('span', { text: 'Home' });
+  const heading = node('h1', { text: 'Home' });
+  const bar = node('header', { children: [node('button', { children: [inner] }), heading] });
+  const out = run(page(bar), (t) => t.children[0]);
+  assert.equal(out.children[0].children[0].lvName, null, 'the button label must not be named');
+  assert.equal(out.children[1].lvName, 'appbar_title');
+});
+
+test('a transparent button takes the nearest solid color behind it, not always the bar color', () => {
+  const inBar = node('button', { text: 'a' });
+  const inToolbar = node('button', { text: 'b' });
+  const inGradient = node('button', { text: 'c' });
+  const inGlass = node('button', { text: 'd' });
+  const toolbar = node('div', { styles: styles({ bgColor: [255, 255, 255, 255] }), children: [inToolbar] });
+  const gradient = node('div', { styles: styles({ gradient: { from: [0, 0, 0, 255], to: [255, 255, 255, 255], dir: 'hor' } }), children: [inGradient] });
+  const glass = node('div', { styles: styles({ bgColor: [255, 255, 255, 120] }), children: [inGlass] });
+  const bar = node('header', { styles: styles({ bgColor: [25, 118, 210, 255] }), children: [inBar, toolbar, gradient, glass] });
+  const out = run(page(bar), (t) => t.children[0]);
+  assert.deepEqual(out.children[0].styles.bgColor, [25, 118, 210, 255]);
+  assert.deepEqual(out.children[1].children[0].styles.bgColor, [255, 255, 255, 255]);
+  assert.equal(out.children[2].children[0].styles.bgColor, null, 'no single color behind a gradient');
+  assert.equal(out.children[3].children[0].styles.bgColor, null, 'no single color behind a translucent layer');
+});
+
 /* ---- convert(): pinning ---- */
 
 const bar = (position) => node('header', {

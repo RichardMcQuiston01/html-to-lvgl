@@ -54,36 +54,40 @@ function isPageHeader(node, ctx) {
   return chain.every((a, i) => i === 0 || (a.tag === 'div' && !a.role && a.children.length === 1));
 }
 
-/** The heading's text, else the first text outside a button. @param {UiNode} node */
-function findTitle(node) {
-  /** @param {UiNode} n @param {boolean} headingsOnly @returns {string} */
+/**
+ * The title node: the first heading with text, else the first text node
+ * outside a button. Buttons are skipped with their whole subtree.
+ * @param {UiNode} node
+ * @returns {UiNode | null}
+ */
+function findTitleNode(node) {
+  /** @param {UiNode} n @param {boolean} headingsOnly @returns {UiNode | null} */
   const find = (n, headingsOnly) => {
-    if (n.tag === 'button' || n.role === 'button') return '';
+    if (n.tag === 'button' || n.role === 'button') return null;
     const isHeading = HEADING_TAGS.has(n.tag) || n.role === 'heading' || (n.classes ?? []).some((c) => /^MuiTypography-h[1-6]$/.test(c));
-    if (n.text && n.text.trim() && (!headingsOnly || isHeading)) return n.text.trim();
+    if (n.text && n.text.trim() && (!headingsOnly || isHeading)) return n;
     for (const c of n.children) {
       const t = find(c, headingsOnly);
       if (t) return t;
     }
-    return '';
+    return null;
   };
-  return find(node, true) || find(node, false);
+  return find(node, true) ?? find(node, false);
 }
 
-/** Name the title node, so the editor and the generated code can find it. */
+/** The title's text, or an empty string. @param {UiNode} node */
+const findTitle = (node) => findTitleNode(node)?.text?.trim() ?? '';
+
+/**
+ * Name the title node, so the editor and the generated code can find it. The
+ * node is chosen once and named by identity, never found again by its text,
+ * so a button that happens to hold the same words is not mistaken for it.
+ */
 function nameTitleNode(node) {
-  const text = findTitle(node);
-  if (!text) return node;
-  let done = false;
+  const target = findTitleNode(node);
+  if (!target) return node;
   /** @param {UiNode} n @returns {UiNode} */
-  const walk = (n) => {
-    if (done) return n;
-    if (n.tag !== 'button' && n.role !== 'button' && n.text && n.text.trim() === text) {
-      done = true;
-      return withName(n, 'appbar_title');
-    }
-    return { ...n, children: n.children.map(walk) };
-  };
+  const walk = (n) => (n === target ? withName(n, 'appbar_title') : { ...n, children: n.children.map(walk) });
   return { ...node, children: node.children.map(walk) };
 }
 
@@ -91,21 +95,27 @@ function nameTitleNode(node) {
  * Workaround for a converter gap: convert() emits every button with LVGL's
  * default blue fill unless the page gave it a background, so a transparent
  * MUI IconButton or text Button (the normal case in an app bar) would show as
- * a blue blob. On an opaque bar a transparent button looks exactly like the
- * bar behind it, so give it the bar's color. Remove this when convert() maps
- * a transparent button to `style_bg_opa="0"`.
- * @param {UiNode} node @param {number[] | null} bar The bar's background color.
+ * a blue blob. A transparent button looks exactly like whatever is behind it,
+ * so give it the nearest solid color behind it: the bar's, or that of a
+ * container between the bar and the button. Under a gradient or a translucent
+ * layer there is no single color, so the button is left alone. Remove this
+ * when convert() maps a transparent button to `style_bg_opa="0"`.
+ * @param {UiNode} node
+ * @param {number[] | null} behind The nearest solid color behind this node.
  * @returns {UiNode}
  */
-function fillTransparentButtons(node, bar) {
-  if (!bar || bar[3] < 255) return node;
+function fillTransparentButtons(node, behind) {
   const isButton = node.tag === 'button' || node.role === 'button';
   const s = node.styles;
-  const needsFill = isButton && s && !s.bgColor && !s.gradient;
+  const needsFill = Boolean(behind) && isButton && s && !s.bgColor && !s.gradient;
+  // What sits behind this node's children.
+  let next = behind;
+  if (s?.gradient) next = null;
+  else if (s?.bgColor) next = s.bgColor[3] === 255 ? s.bgColor : null;
   return {
     ...node,
-    ...(needsFill ? { styles: { ...s, bgColor: bar } } : {}),
-    children: node.children.map((c) => fillTransparentButtons(c, bar)),
+    ...(needsFill ? { styles: { ...s, bgColor: behind } } : {}),
+    children: node.children.map((c) => fillTransparentButtons(c, next)),
   };
 }
 
@@ -125,7 +135,7 @@ const appbar = {
   slots: ['leading', 'title', 'actions'],
   build(node) {
     const position = POSITIONS.has(node.layout?.position) ? node.layout.position : 'static';
-    const named = withName(nameTitleNode(fillTransparentButtons(node, node.styles?.bgColor ?? null)), 'appbar');
+    const named = withName(nameTitleNode(fillTransparentButtons(node, node.styles?.bgColor?.[3] === 255 ? node.styles.bgColor : null)), 'appbar');
     return { ...named, recognized: { component: 'appbar', props: { title: findTitle(node), position } } };
   },
 };
