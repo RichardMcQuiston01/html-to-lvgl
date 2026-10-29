@@ -61,6 +61,7 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
     scrollable: 'false',
     ...textStyles(tree, ctx.fonts.for(tree.styles)),
   };
+  pinBarsOnTop(tree);
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
   const wrapper = screenMode ? 'screen' : 'component';
   const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
@@ -102,7 +103,29 @@ const isGrid = (node) => node.layout && node.layout.display === 'grid' && node.c
 
 const isManaged = (node) => isFlex(node) || isGrid(node);
 
-const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed');
+const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed' || isPinnedBar(node));
+
+/**
+ * A recognized app bar that stays put while the page scrolls: position fixed
+ * or sticky. LVGL has no sticky, so both become a floating object (see
+ * LV_OBJ_FLAG_FLOATING: ignores layout and is not moved when the parent
+ * scrolls). A sticky bar therefore is out of flow too, like a fixed one.
+ */
+const isPinnedBar = (node) =>
+  node.recognized?.component === 'appbar' && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
+
+/**
+ * Move each pinned app bar to the end of its parent's children. Browsers
+ * paint a fixed or sticky bar over later content; LVGL paints later siblings
+ * over earlier ones, so a bar kept in document order would be covered by the
+ * content that scrolls beneath it.
+ */
+function pinBarsOnTop(node) {
+  for (const child of node.children) pinBarsOnTop(child);
+  if (node.children.some(isPinnedBar)) {
+    node.children = [...node.children.filter((c) => !isPinnedBar(c)), ...node.children.filter(isPinnedBar)];
+  }
+}
 
 /**
  * Grid cell position/span from computed grid-column/row-start/end. Explicit
@@ -150,6 +173,7 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
       if (node.layout[css] > 0) attrs[lv] = node.layout[css];
     }
   }
+  if (isPinnedBar(node)) attrs.floating = 'true';
   if (size) {
     attrs.width = node.w;
     attrs.height = node.h;
