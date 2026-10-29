@@ -7,19 +7,20 @@
  * lv_obj flex row, an `<a>` is a text label, and in a multi-page run an `<a
  * href>` that names a sibling page becomes a screen-navigation button. So the
  * trail already converts as a row of labels and link buttons with the
- * separators as labels. Three things are wrong without help, and build()
- * fixes them:
+ * separators as labels. Two things are wrong without help, and build()
+ * fixes the first and names the nav; the second is a known limit:
  *
  *  1. The current page must not be clickable. In a multi-page run, a trail
  *     whose last item is `<a href="this-page" aria-current="page">` would
  *     become a button that navigates to itself. build() turns the anchor of
  *     the current item into a plain span (no link, no href).
- *  2. CSS separators are invisible. Bootstrap draws "/" with
+ *  2. CSS separators are not reproduced. Bootstrap draws "/" with
  *     `.breadcrumb-item + .breadcrumb-item::before`, and the extractor does
- *     not read pseudo-elements, so the "/" would be lost. For Bootstrap
- *     markup only (the default there is "/"), build() inserts separator
- *     items. Plain ARIA markup with CSS separators is NOT guessed at: add a
- *     real separator element, or the separators are missing in the output.
+ *     not read pseudo-elements, so the "/" is lost. build() does not insert
+ *     separator items: Bootstrap measures each item's width with the
+ *     separator's spacing already inside it, so an extra flex child would
+ *     widen the trail and could push the last item off the row. Add a real
+ *     separator element (as Material UI does) to keep the separators.
  *  3. The nav gets a readable name, `breadcrumbs`.
  *
  * Width: the row keeps the widths the browser laid out. MUI's `flex-wrap:
@@ -114,38 +115,6 @@ function withoutLinks(node) {
 }
 
 /**
- * A separator list item made from its neighbour, so it keeps the font and
- * color of the trail. Position is an estimate; the flex row places it.
- * @param {UiNode} model  The item to copy style from.
- * @param {string} text
- * @returns {UiNode}
- */
-function makeSeparator(model, text) {
-  const fontSize = model.styles?.fontSize ?? 16;
-  const colorSource = model.children.find((c) => c.text) ?? model;
-  return {
-    ...model,
-    tag: 'li',
-    id: null,
-    className: null,
-    classes: ['breadcrumb-separator'],
-    lvName: 'separator',
-    widget: null,
-    component: null,
-    link: null,
-    role: null,
-    aria: { hidden: 'true' },
-    text,
-    attrs: {},
-    w: Math.max(4, Math.round(fontSize * 0.5)),
-    styles: { ...model.styles, color: colorSource.styles?.color ?? model.styles?.color },
-    children: [],
-    key: `${model.key}~separator`,
-    recognized: undefined,
-  };
-}
-
-/**
  * @param {UiNode} node
  * @returns {UiNode}
  */
@@ -153,16 +122,10 @@ function build(node) {
   const list = findList(node);
   if (!list) return withName(node, 'breadcrumbs');
 
-  let items = list.children.map((item) => (isSeparator(item) || !isCurrent(item) ? item : withoutLinks(item)));
+  const items = list.children.map((item) => (isSeparator(item) || !isCurrent(item) ? item : withoutLinks(item)));
 
   const separatorItem = items.find(isSeparator);
   const separator = (separatorItem && textOf(separatorItem).trim()) || DEFAULT_SEPARATOR;
-
-  const pages = items.filter((item) => !isSeparator(item));
-  const bootstrap = hasClass(node, 'breadcrumb') || hasClass(list, 'breadcrumb') || pages.some((p) => hasClass(p, 'breadcrumb-item'));
-  if (!separatorItem && bootstrap && pages.length > 1) {
-    items = items.flatMap((item, i) => (i < items.length - 1 ? [item, makeSeparator(item, separator)] : [item]));
-  }
 
   const rebuilt = { ...list, children: items };
   /** @param {UiNode} n @returns {UiNode} */

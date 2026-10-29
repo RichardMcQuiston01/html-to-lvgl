@@ -173,7 +173,9 @@ test('build: an author-set data-lv-name is kept', () => {
   assert.equal(breadcrumbs.build(trail({ lvName: 'crumbs' }), ctx()).lvName, 'crumbs');
 });
 
-test('build: Bootstrap items without separator elements get "/" separators', () => {
+test('build: Bootstrap items without separator elements are left as they are', () => {
+  // The browser's item widths already include Bootstrap's CSS separator spacing,
+  // so inserting separator children would widen the trail.
   const item = (text, href, cls = []) => node('li', {
     classes: ['breadcrumb-item', ...cls],
     children: [href ? node('a', { text, attrs: { href } }) : node('span', { text })],
@@ -184,10 +186,9 @@ test('build: Bootstrap items without separator elements get "/" separators', () 
   });
   const built = breadcrumbs.build(nav, ctx());
   const kids = built.children[0].children;
-  assert.equal(kids.length, 5);
-  assert.deepEqual(kids.map((k) => k.text ?? k.children[0].text), ['Home', '/', 'Library', '/', 'Data']);
-  assert.equal(kids[1].lvName, 'separator');
-  assert.equal(kids[1].aria.hidden, 'true');
+  assert.equal(kids.length, 3);
+  assert.deepEqual(kids.map((k) => k.children[0].text), ['Home', 'Library', 'Data']);
+  assert.deepEqual(kids.map((k) => k.w), nav.children[0].children.map((k) => k.w));
 });
 
 test('build: plain ARIA markup with no separator elements is not guessed at', () => {
