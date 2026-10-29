@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden; padding: 8px 12px; color: rgba(0,0,0,0.87); }
+  .cap { font-size: 10px; color: #757575; margin-bottom: 4px; }
+  /* Plain HTML and ARIA */
+  hr { border: none; border-top: 1px solid #bdbdbd; margin: 6px 0; }
+  .sep { height: 1px; background-color: #e91e63; margin: 6px 0; }
+  .line { font-size: 12px; }
+  .bar { display: flex; align-items: center; height: 24px; gap: 8px; font-size: 12px; }
+  .vsep { width: 1px; height: 18px; background-color: #9e9e9e; }
+  /* Material UI style */
+  .MuiDivider-root { border: 0; border-style: solid; border-color: rgba(0,0,0,0.12); border-bottom-width: thin; margin: 6px 0; }
+  .MuiDivider-vertical { border-bottom-width: 0; border-right-width: thin; height: 18px; margin: 0; }
+  ul { list-style: none; }
+  li.MuiDivider-root { border-bottom-width: thin; }
+  .MuiDivider-withChildren { display: flex; align-items: center; border-bottom-width: 0; font-size: 11px; color: rgba(0,0,0,0.6); margin: 6px 0; }
+  .MuiDivider-withChildren::before, .MuiDivider-withChildren::after { content: ""; flex: 1; border-top: thin solid rgba(0,0,0,0.12); }
+  .MuiDivider-wrapper { padding: 0 8px; }
+</style>
+</head>
+<body>
+  <div class="cap">hr, role=separator</div>
+  <div class="line">Above the hr</div>
+  <hr>
+  <div class="line">Between hr and separator</div>
+  <div class="sep" role="separator"></div>
+  <div class="line">Then a vertical rule</div>
+  <div class="bar"><span>Left</span><div class="vsep" role="separator" aria-orientation="vertical"></div><span>Right</span></div>
+  <div class="cap" style="margin-top:6px">Material UI</div>
+  <hr class="MuiDivider-root MuiDivider-fullWidth">
+  <div class="bar"><span>One</span><hr class="MuiDivider-root MuiDivider-vertical" aria-orientation="vertical"><span>Two</span></div>
+  <ul><li class="line">List item</li><li class="MuiDivider-root MuiDivider-fullWidth" role="separator"></li><li class="line">Next item</li></ul>
+  <div class="MuiDivider-root MuiDivider-withChildren" role="separator"><span class="MuiDivider-wrapper">OR</span></div>
+</body>
+</html>
