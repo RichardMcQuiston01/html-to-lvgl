@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Breadcrumbs navigation</title>
+<!-- Convert together with the sibling pages so the links resolve:
+       node src/cli.mjs examples/nav/home.html examples/nav/settings.html examples/components/breadcrumbs-devices.html -o out
+     Home and Settings become screen-navigation buttons. The current page
+     (aria-current="page") links to itself and must stay a plain label. -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden;
+         display: flex; flex-direction: column; gap: 14px; padding: 14px 16px; }
+  h1 { font-size: 18px; font-weight: 500; color: #111827; }
+  ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  li { font-size: 13px; color: #6b7280; }
+  li a { color: #1d4ed8; text-decoration: none; display: block; padding: 4px 8px; border-radius: 4px; background-color: #eff6ff; }
+  li a[aria-current="page"] { color: #111827; background-color: transparent; }
+</style>
+</head>
+<body>
+  <nav aria-label="Breadcrumb">
+    <ol>
+      <li><a href="home.html">Home</a></li>
+      <li aria-hidden="true">/</li>
+      <li><a href="settings.html">Settings</a></li>
+      <li aria-hidden="true">/</li>
+      <li><a href="breadcrumbs-devices.html" aria-current="page">Devices</a></li>
+    </ol>
+  </nav>
+  <h1>Devices</h1>
+</body>
+</html>
