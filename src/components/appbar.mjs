@@ -15,7 +15,7 @@
  * sticky; this definition reports that position as a prop. The bar's colors,
  * radius and shadow come from computed styles like any other box.
  */
-import { SCORE_SEMANTIC, SCORE_MUI, hasMuiRoot, withName } from './shared.mjs';
+import { SCORE_SEMANTIC, SCORE_MUI, hasMuiRoot, muiRoots, withName } from './shared.mjs';
 
 /** @typedef {import('../recognize.mjs').UiNode} UiNode */
 
@@ -54,9 +54,22 @@ function isPageHeader(node, ctx) {
   return chain.every((a, i) => i === 0 || (a.tag === 'div' && !a.role && a.children.length === 1));
 }
 
+/** Material UI roots whose text belongs to that component, not to the bar. */
+const OWNED_ROOTS = ['Avatar', 'Chip', 'Badge', 'Alert', 'Card', 'Paper', 'Divider'];
+
+/** @param {UiNode} n True when another component will recognize this child. */
+const isOwnedByComponent = (n) =>
+  Boolean(n.widget) || n.role === 'alert' || n.role === 'status' || muiRoots(n).some((r) => OWNED_ROOTS.includes(r));
+
 /**
  * The title node: the first heading with text, else the first text node
- * outside a button. Buttons are skipped with their whole subtree.
+ * outside a button. Buttons are skipped with their whole subtree, and so is
+ * any child another component will claim (an avatar's initials, a chip's
+ * label, a badge's count): that text belongs to its own widget, and naming it
+ * "appbar_title" would rename the avatar or chip, because a name set here is
+ * never replaced by the child's own definition. Children are not recognized
+ * yet when this runs (a parent is built first), so this looks at the same
+ * signals the other definitions match on.
  * @param {UiNode} node
  * @returns {UiNode | null}
  */
@@ -64,6 +77,7 @@ function findTitleNode(node) {
   /** @param {UiNode} n @param {boolean} headingsOnly @returns {UiNode | null} */
   const find = (n, headingsOnly) => {
     if (n.tag === 'button' || n.role === 'button') return null;
+    if (n !== node && isOwnedByComponent(n)) return null;
     const isHeading = HEADING_TAGS.has(n.tag) || n.role === 'heading' || (n.classes ?? []).some((c) => /^MuiTypography-h[1-6]$/.test(c));
     if (n.text && n.text.trim() && (!headingsOnly || isHeading)) return n;
     for (const c of n.children) {
