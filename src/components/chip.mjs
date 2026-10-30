@@ -30,7 +30,10 @@ import { SCORE_MUI, hasClass, hasMuiRoot, withName } from './shared.mjs';
  * @param {UiNode} node
  * @returns {boolean}
  */
-const isRow = (node) => Boolean(node.layout) && node.layout.display === 'flex' && !String(node.layout.flexDirection).startsWith('column');
+// A reversed row is left alone: its children sit right to left, so a gap
+// measured in document order would be nonsense.
+const isRow = (node) => Boolean(node.layout) && node.layout.display === 'flex' && node.layout.flexDirection !== 'column' &&
+  node.layout.flexDirection !== 'column-reverse' && node.layout.flexDirection !== 'row-reverse';
 
 /** @param {UiNode} node */
 const isOutOfFlow = (node) => node.layout?.position === 'absolute' || node.layout?.position === 'fixed';
@@ -113,7 +116,9 @@ function withMeasuredGaps(node) {
     cursor = left + width;
     adjusted.set(child, {
       ...child,
-      styles: { ...child.styles, padLeft: 0, padRight: 0 },
+      // Only a plain text label has its padding moved into the margin; a padded
+      // container (an icon or avatar wrapper) keeps its own padding.
+      styles: textOnly ? { ...child.styles, padLeft: 0, padRight: 0 } : child.styles,
       layout: { ...child.layout, marginLeft: gap, marginRight: 0 },
     });
   }
@@ -193,19 +198,33 @@ export function solidBackdropOf(ctx, node) {
 }
 
 /**
- * The text a chip shows: its own text, else the text of its first label-like
- * descendant.
+ * The text a chip shows: the MuiChip-label (or the label build() made from the
+ * chip's own text), else the chip's own text, else the first text found
+ * outside an avatar, icon, button or delete control.
  * @param {UiNode} node
  * @returns {string}
  */
 function labelOf(node) {
+  const label = node.children.find((c) => c.lvName === 'chip_label' || hasClass(c, 'MuiChip-label'));
+  if (label) return textOf(label);
+  if (node.text) return node.text;
+  return textOf(node, true);
+}
+
+/** Text of a node and its descendants, optionally skipping decoration parts. */
+function textOf(node, skipParts = false) {
+  if (skipParts && isDecoration(node)) return '';
   if (node.text) return node.text;
   for (const c of node.children) {
-    const t = labelOf(c);
+    const t = textOf(c, skipParts);
     if (t) return t;
   }
   return '';
 }
+
+/** @param {UiNode} node */
+const isDecoration = (node) => node.tag === 'button' || node.tag === 'svg' || node.recognized?.component === 'icon' ||
+  node.lvName === 'chip_avatar' || hasClass(node, 'MuiChip-avatar', 'MuiAvatar-root', 'MuiChip-deleteIcon', 'MuiSvgIcon-root');
 
 /** @type {import('../recognize.mjs').ComponentDef} */
 const chip = {

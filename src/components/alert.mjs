@@ -71,6 +71,8 @@ function variantOf(node) {
 
 /** A text-only child whose own text fits on one line. @param {UiNode} node */
 function isSingleLineText(node) {
+  // Buttons keep their measured box: only plain message labels are adjusted.
+  if (node.tag === 'button' || node.role === 'button') return false;
   if (!node.text || node.children.length > 0) return false;
   const content = node.h - node.styles.padTop - node.styles.padBottom;
   return content < (node.styles.fontSize || 14) * 2;
@@ -100,7 +102,8 @@ const alert = {
     next = withTextAsChild(next, 'alert_message');
 
     const isRow = next.layout?.display === 'flex' && !String(next.layout.flexDirection).startsWith('column');
-    const hasMultiLine = next.children.some((c) => c.text && c.children.length === 0 && !isSingleLineText(c));
+    const isButton = (c) => c.tag === 'button' || c.role === 'button';
+    const hasMultiLine = next.children.some((c) => !isButton(c) && c.text && c.children.length === 0 && !isSingleLineText(c));
 
     next = {
       ...next,

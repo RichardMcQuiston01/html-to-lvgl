@@ -194,3 +194,14 @@ test('convert(): icon placeholder, message text and the action stay in one flex 
   assert.ok(codes(diagnostics).includes('ICON_PLACEHOLDER'));
   assert.ok(!codes(diagnostics).includes('RECOGNIZER_AMBIGUOUS'));
 });
+
+test('a direct action button keeps its measured box and does not make the row look multi-line', () => {
+  const a = muiAlert();
+  a.children.push(node('button', { x: 250, y: 12, w: 60, h: 36, text: 'Undo', st: { padTop: 8, padBottom: 8, bgColor: [9, 9, 9, 255] } }));
+  a.children.push(node('div', { role: 'button', x: 250, y: 12, w: 60, h: 36, text: 'Redo', st: { padTop: 8, padBottom: 8 } }));
+  const out = run(page(a)).tree.children[0];
+  assert.equal(out.children[2].h, 36);
+  assert.equal(out.children[2].styles.padTop, 8);
+  assert.equal(out.children[3].h, 36);
+  assert.equal(out.layout.alignItems, 'center', 'the one-line message still centers the row');
+});

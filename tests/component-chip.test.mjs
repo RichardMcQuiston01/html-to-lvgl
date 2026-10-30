@@ -90,7 +90,7 @@ test('build() names the chip, its label and avatar, and reports label and varian
   const { tree } = run(page(muiChip({ w: 90, children: [avatar, label] })));
   const c = tree.children[0];
   assert.equal(c.lvName, 'chip');
-  assert.deepEqual(c.recognized.props, { label: 'M', variant: 'filled' });
+  assert.deepEqual(c.recognized.props, { label: 'Avatar', variant: 'filled' });
   assert.deepEqual(c.children.map((x) => x.lvName), ['chip_avatar', 'chip_label']);
 });
 
@@ -198,4 +198,28 @@ test('convert(): an icon in a chip becomes a placeholder inside the chip', () =>
   const { xml, diagnostics } = convert(page(muiChip({ w: 70, children: [label, icon] })));
   assert.match(xml, /name="icon_cancel"/);
   assert.ok(codes(diagnostics).includes('ICON_PLACEHOLDER'));
+});
+
+test('label prop: the MuiChip-label wins over avatar initials; decoration text is not a fallback', () => {
+  const avatar = node('div', { classes: ['MuiAvatar-root', 'MuiChip-avatar'], x: 15, y: 14, w: 24, h: 24, text: 'M' });
+  const x = node('button', { x: 80, y: 14, w: 16, h: 16, text: 'x' });
+  const label = node('span', { classes: ['MuiChip-label'], x: 45, y: 10, w: 40, h: 18, text: 'Real' });
+  assert.equal(run(page(muiChip({ w: 100, children: [avatar, label, x] }))).tree.children[0].recognized.props.label, 'Real');
+  assert.equal(run(page(muiChip({ w: 100, children: [avatar, x] }))).tree.children[0].recognized.props.label, '', 'no label: avatar and delete text are not it');
+});
+
+test('a row-reverse chip is not given measured margins', () => {
+  const a = node('span', { x: 80, y: 10, w: 20, h: 18, text: 'A' });
+  const b = node('span', { x: 20, y: 10, w: 20, h: 18, text: 'B' });
+  const c = run(page(muiChip({ w: 100, lay: { display: 'flex', flexDirection: 'row-reverse' }, children: [a, b] }))).tree.children[0];
+  assert.deepEqual(c.children.map((n) => n.layout.marginLeft), [0, 0]);
+});
+
+test('gap correction moves padding only for plain text labels; a padded container keeps its own', () => {
+  const wrap = node('div', { x: 15, y: 14, w: 30, h: 24, st: { padLeft: 3, padRight: 3 }, lay: { display: 'flex' }, children: [node('svg', { x: 18, y: 14, w: 24, h: 24 })] });
+  const label = node('span', { classes: ['MuiChip-label'], x: 45, y: 10, w: 40, h: 18, text: 'Hi', st: { padLeft: 12, padRight: 12 } });
+  const c = run(page(muiChip({ w: 100, children: [wrap, label] }))).tree.children[0];
+  assert.equal(c.children[0].styles.padLeft, 3);
+  assert.equal(c.children[0].styles.padRight, 3);
+  assert.equal(c.children[1].styles.padLeft, 0);
 });

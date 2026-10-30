@@ -23,7 +23,7 @@
  *    that holds an image, for a converter hunk to read (see the lane report).
  *    Until then the photo keeps its square corners.
  */
-import { SCORE_MUI, hasClass, hasMuiRoot, withName } from './shared.mjs';
+import { SCORE_MUI, hasMuiRoot, withName } from './shared.mjs';
 
 /** @typedef {import('../recognize.mjs').UiNode} UiNode */
 
@@ -62,9 +62,9 @@ const avatar = {
 
     /** @type {'circular' | 'rounded' | 'square'} */
     let shape;
-    if (hasClass(node, 'MuiAvatar-square')) shape = 'square';
-    else if (hasClass(node, 'MuiAvatar-rounded')) shape = 'rounded';
-    else if (hasClass(node, 'MuiAvatar-circular') || (s.radius > 0 && s.radius >= half - 1)) shape = 'circular';
+    // The MEASURED radius decides: a page can override the variant class with
+    // its own border-radius, and the extractor already resolved 50% to half.
+    if (s.radius > 0 && s.radius >= half - 1) shape = 'circular';
     else shape = s.radius > 0 ? 'rounded' : 'square';
 
     const image = findImage(node);

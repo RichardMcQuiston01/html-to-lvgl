@@ -143,3 +143,11 @@ test('convert(): a circle is style_radius 32767, a rounded square its pixels, th
   assert.match(xml, /text="H"/);
   assert.match(xml, /text="N"/);
 });
+
+test('the measured radius wins over the variant class (circular class with border-radius:4px is rounded)', () => {
+  const a = run(page(muiAvatar({ st: { bgColor: [1, 2, 3, 255], radius: 4 } }))).tree.children[0];
+  assert.equal(a.styles.radius, 4);
+  assert.equal(a.recognized.props.shape, 'rounded');
+  const sq = run(page(muiAvatar({ classes: ['MuiAvatar-root', 'MuiAvatar-square'], st: { bgColor: [1, 2, 3, 255], radius: 20 } }))).tree.children[0];
+  assert.equal(sq.recognized.props.shape, 'circular', 'a page that rounds a square avatar fully is a circle');
+});
