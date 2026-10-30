@@ -2,7 +2,7 @@
 
 [Back to README](./README.md)
 
-| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [Icons](#icons) | [Sidecar Overrides](#sidecar-overrides) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
+| [What Converts](#what-converts) | [Multi-Screen Navigation](#multi-screen-navigation) | [Custom Fonts](#custom-fonts) | [TODO.txt and Diagnostics](#todotxt-and-diagnostics) | [Watch Mode](#watch-mode) | [Annotation Attributes](#annotation-attributes) | [Icons](#icons) | [Components](#components) | [Sidecar Overrides](#sidecar-overrides) | [React Input](#react-input) | [Output Formats](#output-formats) | [Fidelity](#fidelity) |
 
 ## What Converts
 
@@ -84,7 +84,7 @@ Labels are sized from the real widths of the font that draws them. Generated C i
 
 ## TODO.txt and Diagnostics
 
-Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, a component left inline, an icon that became a placeholder, an `aria-controls` that names no element, or a sidecar entry that names no widget. After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
+Every problem the converter finds is a coded diagnostic: an unsupported tag, an unknown `data-lv-widget`, a `data-lv-link` with no matching page, `align-items: baseline`, a missing font, an image to register, a component left inline, an icon that became a placeholder, an `aria-controls` that names no element, a sidecar entry that names no widget, or a button or link smaller than 30 px (an info note, see [Components](#components)). After a run, the console prints one summary line, such as `3 warnings. See out/TODO.txt for what to do about them.`
 
 Two files are written to the output directory:
 
@@ -176,6 +176,38 @@ These are recognized as icons:
 The name comes from the best hint available: the `data-testid` (`MenuIcon` gives `icon_menu`), then `aria-label`, then the ligature text of a Material icon, then the icon-font class (`fa-home` gives `icon_home`), else `icon`. A second icon with the same hint is `icon_menu_2`, and so on. The name in `TODO.txt` is always the name in the generated file.
 
 To finish the job, replace the `lv_obj` with an `lv_image`, or with an `lv_label` that uses an `LV_SYMBOL_*` or an icon font glyph. You can do that in the generated file, or by adding a [sidecar override](#sidecar-overrides).
+
+[Back to Top](#features)
+
+## Components
+
+Ten common components are recognized by their ARIA role or markup, by Material UI class names, or by a generic library class, and are named and tidied so the generated code is easy to find your way around. An explicit `data-lv-widget="<name>"` always wins. Nothing is dropped: recognition only names the widget and fixes what the plain conversion got wrong.
+
+| Component | Recognized from | What the converter does |
+|---|---|---|
+| `card` | `MuiCard-root`, or a `card` class | Names it `card` and its parts `card_header`, `card_body`, `card_actions`. Keeps the elevation shadow or the 1 px outline. |
+| `paper` | `MuiPaper-root` when it is the only Material UI root | Names it `paper`. A Card, Alert or app bar never matches as a Paper. |
+| `divider` | `<hr>`, `role="separator"`, `MuiDivider-root` | A one pixel solid line, horizontal or vertical, named `divider`. A divider with text becomes line, text, line. |
+| `chip` | `MuiChip-root` | Keeps the pill shape, the label, an avatar and a delete icon (an icon placeholder). |
+| `avatar` | `MuiAvatar-root` | Circles use `style_radius="32767"`; rounded and square avatars keep their radius; initials are centered. |
+| `badge` | `MuiBadge-root`, or a small `badge` class | Keeps the anchor's size and names the pinned count or dot. |
+| `alert` | `role="alert"`, a boxed `role="status"`, `MuiAlert-root`, an `alert` class | Reads severity and variant; the icon becomes a placeholder; message and action keep their row. |
+| `appbar` | `role="banner"`, a page-level `<header>`, `MuiAppBar-root` | Names it `appbar`. A `fixed` or `sticky` bar stays put while the page scrolls (see below). |
+| `toolbar` | `role="toolbar"`, `MuiToolbar-root` | Names it `toolbar`; keeps Material UI's empty spacer so content stays below a fixed bar. |
+| `breadcrumbs` | `<nav aria-label="breadcrumb">`, `MuiBreadcrumbs-root`, a `breadcrumb` list | A row of labels and link buttons; the current page is not clickable. |
+
+**Pinned app bars.** A recognized app bar with `position: fixed` or `sticky` is emitted with `floating="true"` (XML), `LV_OBJ_FLAG_FLOATING` (C and C++) or `set_flag(lv.obj.FLAG.FLOATING, True)` (Python). LVGL does not scroll a floating object with its parent. The bar is also moved last among its siblings, because LVGL paints later siblings on top.
+
+**Elevation and radius.** A multi-layer `box-shadow` (Material UI elevation) keeps its largest layer, since LVGL has one shadow per object. A percentage `border-radius` resolves against the box, so `50%` on an avatar is a circle.
+
+**Touch targets.** These pressable elements smaller than 30 px in width or height get an info note in `TODO.txt` with their size and a fix: `<button>`, `<select>`, `<textarea>`, `<a href>`, `<input>` of type checkbox, radio, range, button or submit, anything with `data-lv-link`, `data-lv-widget` switch, checkbox or slider, and elements with the role button, link, checkbox, radio, switch, slider, tab, menuitem or option. Text-style inputs (`type="text"`, `password`, and so on) are not checked, so a quiet report is not a guarantee about them. Hidden elements and targets inside another target are skipped. Change the minimum with `--min-touch-target <px>`; `0` turns the check off. It never changes the generated output.
+
+**Known limits.**
+- A badge that overhangs its anchor is clipped by LVGL until the converter emits an overflow setting for it.
+- A photo avatar keeps square corners until the converter emits `style_clip_corner`.
+- CSS-drawn parts (`::before` and `::after`, such as Bootstrap's breadcrumb `/`) are invisible to the extractor and are not reproduced. Use a real separator element.
+- A breadcrumb trail wider than the screen is clipped at the right edge, not collapsed to an ellipsis as Material UI does.
+- Translucent `rgba()` colors, `text-transform`, negative margins, and left and right borders are not fully handled by the base converter. Card, paper, chip, alert and the app bar work around the first few for their own parts.
 
 [Back to Top](#features)
 
