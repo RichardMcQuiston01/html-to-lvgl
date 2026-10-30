@@ -218,3 +218,12 @@ test('a percentage border radius resolves against the box', async () => {
   assert.equal(findByText(tree, 'c').styles.radius, 20);
   assert.equal(findByText(tree, 'p').styles.radius, 8);
 });
+
+test('an elliptical border radius uses its horizontal value in its own unit', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><body style="margin:0">
+    <div style="width:40px;height:40px;border-top-left-radius:12px 50%">m</div>
+    <div style="width:40px;height:40px;border-top-left-radius:50% 12px">n</div>
+  </body></html>`);
+  assert.equal(findByText(tree, 'm').styles.radius, 12);
+  assert.equal(findByText(tree, 'n').styles.radius, 20);
+});
