@@ -41,7 +41,7 @@ import { FONT_SIZES } from './fonts.mjs';
 // of these names but does share the prefix).
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
-const FLAG_ATTRS = { scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT' };
+const FLAG_ATTRS = { scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT', floating: 'LV_OBJ_FLAG_FLOATING' };
 
 const ENUMS = {
   flex_flow: (v) => `LV_FLEX_FLOW_${v.toUpperCase()}`,

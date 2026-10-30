@@ -30,7 +30,7 @@
  *     Python bool; this emitter passes `False` where the C emitter passes
  *     the macro name.
  *
- * Flag constants (scrollable/hidden/ignore_layout) live under the widget
+ * Flag constants (scrollable/hidden/ignore_layout/floating) live under the widget
  * class's nested FLAG enum (`lv.obj.FLAG.HIDDEN`), not a top-level
  * `lv.OBJ_FLAG` — there is no such top-level name in the binding.
  *
@@ -64,7 +64,7 @@ import { FONT_SIZES } from './fonts.mjs';
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
-const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT' };
+const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING' };
 
 // Enum group names verified against a real generated binding (see module
 // doc comment) rather than assumed from the C macro spelling.
