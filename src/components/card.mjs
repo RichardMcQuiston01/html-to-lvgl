@@ -12,8 +12,10 @@
  *   2. A text-only block that has padding (CardContent) becomes a bare label,
  *      which cannot hold padding, so the text slides to the card's edge. It is
  *      wrapped in a box that keeps the padding.
- *   3. A text button with no background (CardActions) gets LVGL's default blue
- *      fill, so its background is made transparent.
+ *   3. A text button with no background (CardActions, or a CardHeader action
+ *      IconButton) gets LVGL's default blue fill, so its background is made
+ *      transparent. This covers every button below the card, not only the
+ *      actions row.
  *
  * Signals: Material UI `MuiCard-root` (0.7), a generic `card` class as
  * Bootstrap uses it (0.5). A node that is only a `MuiPaper-root` is a Paper,
@@ -134,8 +136,8 @@ export function keepTextPadding(n, surface) {
  * @param {UiNode} n
  * @returns {UiNode}
  */
-function transparentTextButtons(n) {
-  if (n.tag === 'button' && !n.styles?.bgColor && !n.styles?.gradient) {
+export function transparentTextButtons(n) {
+  if ((n.tag === 'button' || n.role === 'button') && !n.styles?.bgColor && !n.styles?.gradient) {
     return { ...n, styles: { ...n.styles, bgColor: [0, 0, 0, 0] } };
   }
   if (n.children.length === 0) return n;
@@ -167,11 +169,13 @@ const card = {
   slots: ['header', 'body', 'actions'],
   build(node, ctx) {
     const surface = surfaceBehind(node, ctx?.parent);
-    const children = node.children.map((child) => {
+    // A header action (an IconButton) or a button in the body is as likely as
+    // one in the actions row, so every button below the card is covered.
+    const children = node.children.map(transparentTextButtons).map((child) => {
       const slot = slotOf(child);
       if (!slot) return child;
       let next = withName(child, `card_${slot}`);
-      next = slot === 'actions' ? transparentTextButtons(next) : keepTextPadding(next, surface);
+      if (slot !== 'actions') next = keepTextPadding(next, surface);
       return next;
     });
     return {

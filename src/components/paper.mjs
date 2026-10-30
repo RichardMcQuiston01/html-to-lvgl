@@ -12,7 +12,7 @@
  */
 
 import { SCORE_MUI, muiRoots, withName } from './shared.mjs';
-import { solidBorderStyles, surfaceVariant } from './card.mjs';
+import { solidBorderStyles, surfaceVariant, transparentTextButtons } from './card.mjs';
 
 /** @type {import('../recognize.mjs').ComponentDef} */
 const paper = {
@@ -27,6 +27,7 @@ const paper = {
     return {
       ...withName(node, 'paper'),
       styles: solidBorderStyles(node, ctx?.parent),
+      children: node.children.map(transparentTextButtons),
       recognized: { component: 'paper', props: { variant: surfaceVariant(node) } },
     };
   },
