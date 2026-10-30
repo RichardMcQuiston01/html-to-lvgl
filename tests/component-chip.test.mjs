@@ -208,6 +208,12 @@ test('label prop: the MuiChip-label wins over avatar initials; decoration text i
   assert.equal(run(page(muiChip({ w: 100, children: [avatar, x] }))).tree.children[0].recognized.props.label, '', 'no label: avatar and delete text are not it');
 });
 
+test('label prop: a chip that is itself a <button> still reports the text inside it', () => {
+  const inner = node('span', { x: 12, y: 10, w: 30, h: 18, text: 'Tag' });
+  const chip = node('button', { widget: 'chip', w: 60, h: 32, children: [inner] });
+  assert.equal(run(page(chip)).tree.children[0].recognized.props.label, 'Tag');
+});
+
 test('a row-reverse chip is not given measured margins', () => {
   const a = node('span', { x: 80, y: 10, w: 20, h: 18, text: 'A' });
   const b = node('span', { x: 20, y: 10, w: 20, h: 18, text: 'B' });

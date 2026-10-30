@@ -208,7 +208,9 @@ function labelOf(node) {
   const label = node.children.find((c) => c.lvName === 'chip_label' || hasClass(c, 'MuiChip-label'));
   if (label) return textOf(label);
   if (node.text) return node.text;
-  return textOf(node, true);
+  // Start at the children: when the chip itself is a <button>, filtering the chip
+  // would treat the whole chip as a decoration and return nothing.
+  return node.children.map((c) => textOf(c, true)).find(Boolean) || '';
 }
 
 /** Text of a node and its descendants, optionally skipping decoration parts. */
