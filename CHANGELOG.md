@@ -6,7 +6,7 @@
 
 - **Ten recognized components** (Phase 7): `card`, `paper`, `divider`, `chip`, `avatar`, `badge`, `alert`, `appbar`, `toolbar` and `breadcrumbs`. Each is recognized from its ARIA role or markup, from Material UI class names, or from a generic library class, and is named in the generated code. See [FEATURES.md](FEATURES.md#components) for the signals and limits.
 - **Pinned app bars.** An app bar with `position: fixed` or `sticky` is emitted with the LVGL `floating` flag in XML, C, C++ and Python, so it stays put while the page scrolls.
-- **Touch-target notes.** A button, link, input, or element with an interactive role under 30 px is reported as `TOUCH_TARGET_SMALL` (info) in `TODO.txt` and `diagnostics.json`. `--min-touch-target <px>` changes the minimum; `0` turns it off. Generated output does not change.
+- **Touch-target notes.** A button, select, textarea, link, checkbox, radio, range or submit input, `data-lv-link` element, or element with a button, link, checkbox, radio, switch, slider, tab, menuitem or option role under 30 px is reported as `TOUCH_TARGET_SMALL` (info) in `TODO.txt` and `diagnostics.json`. Text-style inputs are not checked. `--min-touch-target <px>` changes the minimum; `0` turns it off. Generated output does not change.
 
 ### Changed
 

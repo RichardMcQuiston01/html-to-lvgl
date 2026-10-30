@@ -200,7 +200,7 @@ Ten common components are recognized by their ARIA role or markup, by Material U
 
 **Elevation and radius.** A multi-layer `box-shadow` (Material UI elevation) keeps its largest layer, since LVGL has one shadow per object. A percentage `border-radius` resolves against the box, so `50%` on an avatar is a circle.
 
-**Touch targets.** A button, link, input, select, or element with an interactive role smaller than 30 px in width or height gets an info note in `TODO.txt` with its size and a fix. Hidden elements and targets inside another target are skipped. Change the minimum with `--min-touch-target <px>`; `0` turns the check off. It never changes the generated output.
+**Touch targets.** These pressable elements smaller than 30 px in width or height get an info note in `TODO.txt` with their size and a fix: `<button>`, `<select>`, `<textarea>`, `<a href>`, `<input>` of type checkbox, radio, range, button or submit, anything with `data-lv-link`, `data-lv-widget` switch, checkbox or slider, and elements with the role button, link, checkbox, radio, switch, slider, tab, menuitem or option. Text-style inputs (`type="text"`, `password`, and so on) are not checked, so a quiet report is not a guarantee about them. Hidden elements and targets inside another target are skipped. Change the minimum with `--min-touch-target <px>`; `0` turns the check off. It never changes the generated output.
 
 **Known limits.**
 - A badge that overhangs its anchor is clipped by LVGL until the converter emits an overflow setting for it.
