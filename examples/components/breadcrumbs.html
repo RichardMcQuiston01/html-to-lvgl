@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Breadcrumbs</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden;
+         display: flex; flex-direction: column; gap: 14px; padding: 14px 16px; }
+  h2 { font-size: 11px; font-weight: 500; color: #6b7280; letter-spacing: 0.5px; }
+  ol, ul { list-style: none; }
+
+  /* Plain ARIA version: nav landmark, ordered list, CSS-free text separators */
+  .trail ol { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; }
+  .trail li { font-size: 13px; color: #374151; }
+  .trail a { color: #2563eb; text-decoration: none; }
+  .trail .sep { color: #9ca3af; }
+  .trail [aria-current="page"] { color: #111827; font-weight: 700; }
+
+  /* Material UI version, hand-written CSS that reproduces MuiBreadcrumbs */
+  .MuiBreadcrumbs-root { font-family: Roboto, Helvetica, Arial, sans-serif; font-weight: 400;
+         font-size: 16px; line-height: 24px; letter-spacing: 0.15px; color: rgba(0,0,0,0.6); }
+  .MuiBreadcrumbs-ol { display: flex; flex-wrap: wrap; align-items: center; padding: 0; margin: 0; list-style: none; }
+  .MuiBreadcrumbs-separator { display: flex; user-select: none; margin-left: 8px; margin-right: 8px; }
+  a.MuiLink-root { color: #1976d2; text-decoration: none; }
+  .MuiTypography-root { margin: 0; font-size: 16px; line-height: 24px; color: rgba(0,0,0,0.87); }
+
+  /* Not breadcrumbs: a site menu, which must stay untouched */
+  nav.menu ul { display: flex; gap: 14px; }
+  nav.menu a { font-size: 13px; color: #374151; text-decoration: none; }
+</style>
+</head>
+<body>
+  <h2>ARIA</h2>
+  <nav class="trail" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li class="sep" aria-hidden="true">/</li>
+      <li><a href="/devices">Devices</a></li>
+      <li class="sep" aria-hidden="true">/</li>
+      <li><a href="/devices/thermostat" aria-current="page">Thermostat</a></li>
+    </ol>
+  </nav>
+
+  <h2>MATERIAL UI</h2>
+  <nav aria-label="breadcrumb" class="MuiBreadcrumbs-root">
+    <ol class="MuiBreadcrumbs-ol">
+      <li class="MuiBreadcrumbs-li"><a class="MuiTypography-root MuiLink-root" href="/">Home</a></li>
+      <li aria-hidden="true" class="MuiBreadcrumbs-separator">/</li>
+      <li class="MuiBreadcrumbs-li"><a class="MuiTypography-root MuiLink-root" href="/settings">Settings</a></li>
+      <li aria-hidden="true" class="MuiBreadcrumbs-separator">/</li>
+      <li class="MuiBreadcrumbs-li"><p class="MuiTypography-root" aria-current="page">Network</p></li>
+    </ol>
+  </nav>
+
+  <h2>NOT BREADCRUMBS</h2>
+  <nav class="menu" aria-label="Main">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/devices">Devices</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+</body>
+</html>
