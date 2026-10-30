@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 10px; }
+  h2 { font-size: 11px; font-weight: 700; color: #616161; margin-bottom: 6px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  /* Plain HTML / ARIA version. A chip has no ARIA role of its own, so each one
+     says data-lv-widget="chip". */
+  .tag { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 14px;
+         background: #e0e7ff; color: #312e81; font-size: 13px; }
+  .tag.outline { background: transparent; border: 1px solid #94a3b8; color: #334155; }
+  .tag .x { margin-left: 8px; border: 0; background: transparent; color: #6366f1; font-size: 14px; }
+  .tag .dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; margin-right: 6px; }
+  /* Material UI version: MUI's own CSS values. */
+  .MuiChip-root { display: inline-flex; align-items: center; justify-content: center; height: 32px;
+    font-size: 13px; white-space: nowrap; border-radius: 16px; color: rgba(0,0,0,0.87);
+    background-color: rgba(0,0,0,0.08); }
+  .MuiChip-label { overflow: hidden; text-overflow: ellipsis; padding-left: 12px; padding-right: 12px; white-space: nowrap; }
+  .MuiChip-outlined { background-color: transparent; border: 1px solid #bdbdbd; }
+  .MuiChip-colorPrimary { background-color: #1976d2; color: #fff; }
+  .MuiChip-avatar { margin-left: 5px; margin-right: -6px; width: 24px; height: 24px; font-size: 12px; }
+  .MuiChip-deleteIcon { width: 22px; height: 22px; margin: 0 5px 0 -6px; color: rgba(0,0,0,0.26); fill: currentColor; }
+  .MuiAvatar-root { display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%;
+    overflow: hidden; color: #fff; background-color: #bdbdbd; line-height: 1; }
+  .MuiSvgIcon-root { width: 1em; height: 1em; font-size: 1.5rem; display: inline-block; fill: currentColor; flex-shrink: 0; }
+</style>
+</head>
+<body>
+  <h2>Plain HTML</h2>
+  <div class="row">
+    <span class="tag" data-lv-widget="chip">Design</span>
+    <span class="tag outline" data-lv-widget="chip">Outlined</span>
+    <span class="tag" data-lv-widget="chip"><span class="dot"></span>Online</span>
+    <span class="tag" data-lv-widget="chip">Tag<button class="x" aria-label="Remove Tag">x</button></span>
+  </div>
+  <h2>Material UI</h2>
+  <div class="row">
+    <div class="MuiChip-root MuiChip-filled"><span class="MuiChip-label">Basic</span></div>
+    <div class="MuiChip-root MuiChip-outlined"><span class="MuiChip-label">Outlined</span></div>
+    <div class="MuiChip-root MuiChip-filled MuiChip-colorPrimary"><span class="MuiChip-label">Primary</span></div>
+  </div>
+  <div class="row">
+    <div class="MuiChip-root MuiChip-filled"><div class="MuiAvatar-root MuiAvatar-circular MuiChip-avatar">M</div><span class="MuiChip-label">Avatar</span></div>
+    <div class="MuiChip-root MuiChip-filled" role="button" tabindex="0"><span class="MuiChip-label">Delete</span><svg class="MuiSvgIcon-root MuiChip-deleteIcon" viewBox="0 0 24 24" data-testid="CancelIcon"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2z"/></svg></div>
+  </div>
+</body>
+</html>

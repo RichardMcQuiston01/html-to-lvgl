@@ -1,0 +1,47 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" x="10" y="10" text="Plain HTML" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row" x="10" y="28" width="300" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="chip" width="64" height="28" style_bg_color="0xe0e7ff" style_border_width="0" style_radius="14" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="chip_2" align="center" text="Design" style_text_font="montserrat_12" style_text_color="0x312e81" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="chip_3" width="74" height="28" style_bg_opa="0" style_border_width="1" style_border_color="0x94a3b8" style_radius="14" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="chip_4" align="center" text="Outlined" style_text_font="montserrat_12" style_text_color="0x334155" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="chip_5" width="76" height="28" style_bg_color="0xe0e7ff" style_border_width="0" style_radius="14" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="dot" style_margin_right="6" width="8" height="8" style_bg_color="0x16a34a" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_label name="chip_label" text="Online" style_text_font="montserrat_12" style_text_color="0x312e81" />
+      </lv_obj>
+      <lv_obj name="chip_6" width="60" height="28" style_bg_color="0xe0e7ff" style_border_width="0" style_radius="14" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="chip_label_2" text="Tag" style_text_font="montserrat_12" style_text_color="0x312e81" />
+        <lv_button name="x" style_margin_left="8" width="7" height="16" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+          <lv_label name="x_2" align="center" text="x" style_text_font="montserrat_14" style_text_color="0x6366f1" style_text_align="center" />
+        </lv_button>
+      </lv_obj>
+    </lv_obj>
+    <lv_label name="label_2" x="10" y="70" text="Material UI" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row_2" x="10" y="88" width="300" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="chip_7" width="56" height="32" style_bg_color="0x000000" style_bg_opa="20" style_border_width="0" style_radius="16" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="chip_label_3" text="Basic" style_text_font="montserrat_12" style_text_color="0x1e1e1e" />
+      </lv_obj>
+      <lv_obj name="chip_8" width="74" height="32" style_bg_opa="0" style_border_width="1" style_border_color="0xbdbdbd" style_radius="16" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="chip_label_4" text="Outlined" style_text_font="montserrat_12" style_text_color="0x212121" />
+      </lv_obj>
+      <lv_obj name="chip_9" width="69" height="32" style_bg_color="0x1976d2" style_border_width="0" style_radius="16" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="chip_label_5" text="Primary" style_text_font="montserrat_12" style_text_color="0xffffff" />
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="row_3" x="10" y="134" width="300" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="chip_10" width="84" height="32" style_bg_color="0x000000" style_bg_opa="20" style_border_width="0" style_radius="16" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="chip_avatar" style_margin_left="5" width="24" height="24" style_bg_color="0xbdbdbd" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="chip_avatar_2" align="center" text="M" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="chip_label_6" style_margin_left="6" text="Avatar" style_text_font="montserrat_12" style_text_color="0x1e1e1e" />
+      </lv_obj>
+      <lv_obj name="chip_11" width="85" height="32" style_bg_color="0x000000" style_bg_opa="20" style_border_width="0" style_radius="16" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="chip_label_7" style_margin_left="12" text="Delete" style_text_font="montserrat_12" style_text_color="0x1e1e1e" />
+        <lv_obj name="icon_cancel" style_margin_left="6" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0xaeaeae" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>
