@@ -6,24 +6,29 @@
  *
  * Findings behind build():
  *  - The extractor resolves `border-radius: 50%` to half the box, and LVGL 9.4
- *    clamps any radius larger than half the shorter side, so `style_radius`
- *    set to half the size is already a circle. LV_RADIUS_CIRCLE (0x7FFF, the
- *    same value as `style_radius="32767"`) gives the same result; the explicit
- *    half is kept because it reads better in the XML. build() only raises a
- *    radius that rounding left a pixel short.
+ *    clamps any radius larger than half the shorter side, so half the size is
+ *    already a circle. The XML has no keyword for it (lv_xml_to_size only knows
+ *    "content" and percentages) but LV_RADIUS_CIRCLE is 0x7FFF, so
+ *    `style_radius="32767"` is a circle whatever size the editor later gives
+ *    the avatar. build() writes that value for a circular avatar and keeps the
+ *    measured radius for a rounded square.
  *  - Initials written straight in the circle (MUI does this) become a label
  *    the converter pins to the left edge, because it reads `text-align`, not
  *    the flex centering the browser used. The text is centered here.
  *  - A photo is a square `lv_image` that LVGL does not clip to the circle.
  *    The style that does it is `style_clip_corner="true"` on the parent (LVGL
- *    docs, "clip_corner"; verified in the XML runtime). The converter has no
- *    way to carry that yet, so build() sets `styles.clipCorner = true` on an
- *    avatar that holds an image, and the converter can read it (see the lane
- *    report). Until then the photo keeps its square corners.
+ *    docs, "clip_corner"; lv_xml_style.c reads `style_clip_corner`). The
+ *    converter does NOT emit it today and this lane may not edit convert.mjs,
+ *    so build() only sets the marker `styles.clipCorner = true` on an avatar
+ *    that holds an image, for a converter hunk to read (see the lane report).
+ *    Until then the photo keeps its square corners.
  */
 import { SCORE_MUI, hasClass, hasMuiRoot, withName } from './shared.mjs';
 
 /** @typedef {import('../recognize.mjs').UiNode} UiNode */
+
+/** LVGL's LV_RADIUS_CIRCLE (lv_draw_rect.h): drawn as a full circle whatever the size. */
+const LV_RADIUS_CIRCLE = 0x7fff;
 
 /** @param {UiNode} node */
 const findImage = (node) => {
@@ -65,7 +70,7 @@ const avatar = {
     const image = findImage(node);
     const textOnly = Boolean(node.text) && node.children.length === 0;
     const styles = { ...s };
-    if (shape === 'circular') styles.radius = Math.max(s.radius, half);
+    if (shape === 'circular') styles.radius = LV_RADIUS_CIRCLE;
     if (textOnly) styles.textAlign = 'center';
     if (image && styles.radius > 0) styles.clipCorner = true;
 

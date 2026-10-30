@@ -16,10 +16,11 @@
  *    size (checked on the example page). The wrapper's size is the anchor's.
  *  - LVGL clips a child to its parent unless the parent has the
  *    `overflow_visible` flag, and a badge always sticks out of its anchor. The
- *    converter cannot carry that flag yet, so build() sets
- *    `styles.overflowVisible = true` on a wrapper whose pinned child leaves
- *    its box, for the converter to read (see the lane report). Until then the
- *    pinned part is cut off at the anchor's edge.
+ *    converter does NOT emit that flag today (`overflow_visible="true"` in
+ *    lv_xml_obj_parser.c) and this lane may not edit convert.mjs, so build()
+ *    only sets the marker `styles.overflowVisible = true` on a wrapper whose
+ *    pinned child leaves its box, for a converter hunk to read (see the lane
+ *    report). Until then the pinned part is cut off at the anchor's edge.
  *  - The count is a label inside a flex-centered pill. The converter reads
  *    `text-align`, not that centering, so the text is centered here.
  */

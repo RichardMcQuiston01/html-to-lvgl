@@ -16,6 +16,8 @@
  *  - the converter places a node's own text BEFORE its child elements, so a
  *    chip written as `<span><i class="dot"></i>Online</span>` would put the
  *    dot after the text; the text becomes a real label child at the right place;
+ *  - translucent text/border colors (`rgba(0,0,0,0.87)`) lose their alpha in
+ *    the converter, so they are blended onto the solid background behind them;
  *  - margins below zero and the label's own padding are not applied by the
  *    converter, so an avatar or delete icon would collide with the label; the
  *    gaps the browser laid out are re-applied as positive margins.
@@ -122,6 +124,74 @@ function withMeasuredGaps(node) {
   };
 }
 
+
+/**
+ * The converter writes colors as 0xRRGGBB and drops their alpha, so a text or
+ * border color such as `rgba(0,0,0,0.87)` (Material UI's text color) would come
+ * out as pure black. Blend each translucent text/border color onto the
+ * background it sits on, so the solid color is what the browser showed.
+ *
+ * The background is the NEAREST solid one met while descending. Under a
+ * gradient, a translucent layer (opacity below 1) or a translucent fill with
+ * nothing solid behind it the backdrop is unknown, so nothing is changed there.
+ * Opacity itself is never touched.
+ *
+ * @param {UiNode} node
+ * @param {[number, number, number] | null} base  Solid color behind the node, if known.
+ * @returns {UiNode}
+ */
+export function blendTranslucentColors(node, base) {
+  const s = node.styles;
+  let behind = base;
+  if (s.gradient || s.opacity < 1) behind = null;
+  else if (s.bgColor && s.bgColor[3] > 0) {
+    const [r, g, b, a] = s.bgColor;
+    if (a >= 255) behind = [r, g, b];
+    else behind = behind ? mix([r, g, b], a, behind) : null;
+  }
+  /** @param {number[] | null | undefined} c */
+  const solid = (c) => (c && c[3] < 255 && behind ? [...mix([c[0], c[1], c[2]], c[3], behind), 255] : c);
+  const styles = { ...s, color: solid(s.color), borderColor: solid(s.borderColor), borderBottomColor: solid(s.borderBottomColor) };
+  const children = node.children.map((c) => blendTranslucentColors(c, behind));
+  return { ...node, styles, children };
+}
+
+/** @param {number[]} fg @param {number} alpha 0-255 @param {number[]} bg */
+const mix = (fg, alpha, bg) => fg.map((v, i) => Math.round((v * alpha + bg[i] * (255 - alpha)) / 255));
+
+/**
+ * The solid color behind a node: the nearest ancestor with an opaque
+ * background. Null when a gradient, a translucent fill or a translucent layer
+ * (opacity below 1) is met first, or when nothing solid exists, because the
+ * backdrop is then unknown. Ancestors are found by searching ctx.tree for the
+ * node's key (a node does not know its parent), falling back to ctx.parent.
+ * @param {{ tree?: UiNode, parent?: UiNode | null } | undefined} ctx
+ * @param {UiNode} node
+ * @returns {[number, number, number] | null}
+ */
+export function solidBackdropOf(ctx, node) {
+  /** @type {UiNode[] | null} */
+  let path = null;
+  /** @param {UiNode} n @param {UiNode[]} trail @param {(n: UiNode) => boolean} is */
+  const find = (n, trail, is) => {
+    if (is(n)) { path = trail; return true; }
+    return n.children.some((c) => find(c, [...trail, n], is));
+  };
+  // By identity first: a parent's build() may hand its children on as copies,
+  // and hand-built trees reuse one key everywhere. By key as the fallback.
+  if (ctx?.tree && !find(ctx.tree, [], (n) => n === node) && node.key !== undefined) {
+    find(ctx.tree, [], (n) => n.key === node.key);
+  }
+  const ancestors = path ?? (ctx?.parent ? [ctx.parent] : []);
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const s = ancestors[i].styles;
+    if (!s) continue;
+    if (s.gradient || s.opacity < 1) return null;
+    if (s.bgColor && s.bgColor[3] > 0) return s.bgColor[3] >= 255 ? [s.bgColor[0], s.bgColor[1], s.bgColor[2]] : null;
+  }
+  return null;
+}
+
 /**
  * The text a chip shows: its own text, else the text of its first label-like
  * descendant.
@@ -151,7 +221,7 @@ const chip = {
     variant: { type: 'string', default: 'filled' },
   },
   slots: ['icon', 'delete'],
-  build(node) {
+  build(node, ctx) {
     let next = { ...node, widget: node.widget === 'chip' ? null : node.widget };
 
     const outlined = hasClass(node, 'MuiChip-outlined') ||
@@ -159,6 +229,7 @@ const chip = {
     const variant = outlined ? 'outlined' : 'filled';
 
     next = withTransparentButtons(next);
+    next = blendTranslucentColors(next, solidBackdropOf(ctx, node));
     const beforeText = next;
     next = withTextAsChild(next, 'chip_label');
     const hadMixedText = next !== beforeText;

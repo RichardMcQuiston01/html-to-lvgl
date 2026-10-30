@@ -27,7 +27,7 @@
  *    it becomes a real label child at the right place.
  */
 import { SCORE_SEMANTIC, SCORE_MUI, SCORE_GENERIC_CLASS, classesOf, hasClass, hasMuiRoot, withName } from './shared.mjs';
-import { withTextAsChild, withTransparentButtons } from './chip.mjs';
+import { blendTranslucentColors, solidBackdropOf, withTextAsChild, withTransparentButtons } from './chip.mjs';
 
 /** @typedef {import('../recognize.mjs').UiNode} UiNode */
 
@@ -92,10 +92,11 @@ const alert = {
     variant: { type: 'string', default: 'standard' },
   },
   slots: ['icon', 'message', 'action'],
-  build(node) {
+  build(node, ctx) {
     let next = { ...node, widget: node.widget === 'alert' ? null : node.widget };
 
     next = withTransparentButtons(next);
+    next = blendTranslucentColors(next, solidBackdropOf(ctx, node));
     next = withTextAsChild(next, 'alert_message');
 
     const isRow = next.layout?.display === 'flex' && !String(next.layout.flexDirection).startsWith('column');
