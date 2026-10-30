@@ -21,9 +21,9 @@ import { formatTodo, createDiagnostics } from '../src/diagnostics.mjs';
 import { recognize, defaultRegistry } from '../src/recognize.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixture = () => JSON.parse(readFileSync(join(here, 'fixtures', 'material-ui.json'), 'utf8'));
+const fixture = () => JSON.parse(readFileSync(join(here, 'fixtures', 'material_ui.json'), 'utf8'));
 
-const result = convert(fixture(), { name: 'material-ui' });
+const result = convert(fixture(), { name: 'material_ui' });
 const diagnostics = result.diagnostics.list();
 
 /** Names of every `name="..."` in the XML, in document order. */
@@ -69,9 +69,9 @@ test('widget names are unique', () => {
 
 test('the generated C, C++ and Python agree with the XML on widget names', () => {
   // The view's own root is called "root" in code and has no name in the XML.
-  const c = emitC(result.view, { name: 'material-ui' }).c;
-  const cpp = emitCpp(result.view, { name: 'material-ui' }).c;
-  const py = emitPy(result.view, { name: 'material-ui' }).py;
+  const c = emitC(result.view, { name: 'material_ui' }).c;
+  const cpp = emitCpp(result.view, { name: 'material_ui' }).c;
+  const py = emitPy(result.view, { name: 'material_ui' }).py;
   const cNames = [...c.matchAll(/lv_obj_t \* (\w+) = lv_\w+_create\(/g)].map((m) => m[1]).filter((n) => n !== 'root');
   const cppNames = [...cpp.matchAll(/lv_obj_t \* (\w+) = lv_\w+_create\(/g)].map((m) => m[1]).filter((n) => n !== 'root');
   const pyNames = [...py.matchAll(/^ {4}(\w+) = lv\.\w+\(/gm)].map((m) => m[1]).filter((n) => n !== 'root');
