@@ -1,0 +1,31 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" x="10" y="10" text="Plain HTML" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row" x="10" y="28" width="300" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="avatar" width="40" height="40" style_bg_color="0x3f51b5" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="label_2" text="AB" style_text_font="montserrat_16" style_text_color="0xffffff" />
+      </lv_obj>
+      <lv_obj name="avatar_2" width="40" height="40" style_bg_color="0x00897b" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="label_3" text="CD" style_text_font="montserrat_16" style_text_color="0xffffff" />
+      </lv_obj>
+      <lv_obj name="avatar_3" width="40" height="40" style_bg_color="0x9c27b0" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="label_4" text="EF" style_text_font="montserrat_16" style_text_color="0xffffff" />
+      </lv_obj>
+    </lv_obj>
+    <lv_label name="label_5" x="10" y="82" text="Material UI" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row_2" x="10" y="100" width="300" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="avatar_4" width="40" height="40" style_bg_color="0xff5722" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="avatar_5" align="center" text="H" style_text_font="montserrat_20" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="avatar_6" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="avatar_7" align="center" text="N" style_text_font="montserrat_20" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="avatar_8" width="40" height="40" style_bg_color="0x2e7d32" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="avatar_9" align="center" text="RS" style_text_font="montserrat_20" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="avatar_10" width="40" height="40" style_bg_color="0xbdbdbd" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="avatar_11" align="center" text="OP" style_text_font="montserrat_20" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>
