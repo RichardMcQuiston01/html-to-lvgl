@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-31
+
+`src/` gained new capabilities (ten recognized components, pinned app bars, touch-target notes), so this is a minor bump. One default changes what the CLI writes: a page with a small button or link now produces a `TODO.txt`; see the note under Changed, and pass `--min-touch-target 0` to turn it off.
+
 ### Added
 
 - **Ten recognized components** (Phase 7): `card`, `paper`, `divider`, `chip`, `avatar`, `badge`, `alert`, `appbar`, `toolbar` and `breadcrumbs`. Each is recognized from its ARIA role or markup, from Material UI class names, or from a generic library class, and is named in the generated code. See [FEATURES.md](FEATURES.md#components) for the signals and limits.
