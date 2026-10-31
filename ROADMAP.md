@@ -2,7 +2,7 @@
 
 ## Status
 
-All originally planned phases (0–4) are complete, and so are Phases 5 and 6 (diagnostics, the plugin seam, and the component registry): `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
+All originally planned phases (0–4) are complete, and so are Phases 5, 6 and 7 (diagnostics, the plugin seam, the component registry, and the first ten static components): `html2lvgl` converts plain HTML and React/JSX into LVGL XML, plain C, or C++, with flex/grid layout, real font metrics, componentized React output, multi-screen navigation, watch-mode preview, and CI validation against LVGL v9.4.0.
 
 ## Delivered phases
 
@@ -20,6 +20,8 @@ All originally planned phases (0–4) are complete, and so are Phases 5 and 6 (d
 
 **Phase 6 — Extraction and registry.** The converter can now see ARIA state and hidden content and match a component from a registry. The extractor records `role`, `aria-*`, classes and `data-testid`, and keeps hidden subtrees (bounded) instead of dropping them. A recognition pass (`src/recognize.mjs`) offers each node to a registry of definitions, with stable node keys, `data-lv-widget` as an override, and errors reported as diagnostics instead of crashes. Icons become named placeholders with a `TODO.txt` fix line. `aria-controls` triggers are linked to their targets. Sidecar overrides (`<page>.lvgl.json`) change generated widgets by name without editing the HTML. `--watch` honors plugins, and diagnostics report real node keys. A review of the combined branch found and fixed a naming bug that older conversions had: a named button's label took the name and the button got `_2`. See [FEATURES.md](FEATURES.md) and [COMPONENTS.md](COMPONENTS.md).
 
+**Phase 7 — Static components.** Ten components are now recognized and named: card, paper, divider, chip, avatar, badge, alert, app bar, toolbar and breadcrumbs, each from its ARIA role or markup, Material UI class names, or a generic library class. A fixed or sticky app bar is emitted with the LVGL `floating` flag in XML, C, C++ and Python, and was checked against a scrolled LVGL render. The extractor keeps the largest layer of a multi-layer shadow and resolves percentage radii (so an avatar is a circle). Touch targets under 30 px get an info note in `TODO.txt` (`--min-touch-target`). A single Material UI screen that uses every component together found two defects between lanes (an app bar title stealing an avatar's text; card and paper leaving transparent buttons on LVGL's default blue), both fixed, and a render-harness heap limit that would have failed CI. Fidelity against Chromium on a real LVGL v9.4.0 render: card 94.7%, divider 95.2%, chip 96.3%, avatar 98.4%, alert 95.0%, badge 97.9% (but visibly clipped, see below), app bar 92.9%, breadcrumbs 94.8%, and the combined Material UI screen 89.5%. See [FEATURES.md](FEATURES.md#components).
+
 Since the original five phases, the project also shipped its **first public npm release** (`@richardmcquiston01/html-to-lvgl`) and MicroPython support (below).
 
 **MicroPython (Phases 0–3, unix port).** The Phase 0 spike proved LVGL's existing `--format xml` output loads **unmodified** on `lv_micropython`'s unix port — no new emitter needed to reach MicroPython at all. README's "Using with MicroPython" section documents `lv.xml_init()` + `lv.xml_component_register_from_data()` usage and the `.bin`-fonts-alongside-XML convention (already the natural output of `--font-map`, no new CLI code). A `validate-micropython-xml` CI job renders every golden XML through the unix port the same way `validate-xml` already does for the C harness, catching two real, documented limitations along the way — both traced to the pinned binding's vendored LVGL still being v9.3.0-era, not to html2lvgl's output. Phase 3 added a `--format py` backend for users who'd rather not carry `LV_USE_XML`: idiomatic `lv.*` calls, verified against a real generated binding (which caught two real API divergences a naive C-to-Python translation would have missed) rather than trusted as designed — see [`spike/micropython/README.md`](spike/micropython/README.md) for the full writeup.
@@ -28,7 +30,7 @@ Since the original five phases, the project also shipped its **first public npm 
 
 ## What's next
 
-The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 7 to 11 below build it in order. Phases 5 and 6 (diagnostics, the plugin seam, the subjects spike, and the recognition registry) are done and listed above.
+The next work is **component support**: converting complex web components (Accordion, App Bar, Drawer, Breadcrumbs, Card, Modal, and others) to LVGL. The design is in [COMPONENTS.md](COMPONENTS.md). Phases 8 to 11 below build it in order. Phases 5 to 7 (diagnostics, the plugin seam, the subjects spike, the recognition registry, and the static components) are done and listed above.
 
 The earlier **ESP32 real hardware validation** item stays blocked. The QEMU job proves boot-and-execute on every PR, but a rendered proof needs real hardware, which this project's development environment does not have. Revisit if that access becomes available.
 
@@ -44,18 +46,19 @@ Rules for every phase:
 - **Verify against real LVGL.** Anything that emits XML or C is checked by the existing `validate-xml` and C harness jobs, not only by string comparison.
 - **A review agent** reads each phase's combined diff before the phase closes. It looks for gaps between lanes, not style.
 
-### Phase 7 — Static components
+### Carry-over from Phase 7: converter fidelity
 
-Goal: components with no state, which prove the registry. Lanes are independent because each adds its own registry entries, examples, and goldens.
+Not a numbered phase. These are gaps in the base converter that the Phase 7 lanes had to work around inside their own components, or could not fix. Fixing them in `src/convert.mjs` and `src/extract.mjs` lets the workarounds in card, paper, chip, alert and the app bar be deleted, and is worth doing before the stateful components add more of the same markup.
 
-| Lane | Work |
-|---|---|
-| A | Card, Paper, Divider, Chip, Avatar, Badge, Alert. Elevation to shadow. Round avatars. |
-| B | App Bar and Toolbar (pinned top row). |
-| C | Breadcrumbs (flex row, `data-lv-link` navigation, separators). |
-| D | Touch-target size diagnostic, and a Material UI example page that uses every Phase 7 component, for end-to-end tests. |
-
-Each lane adds `src/components/<name>.mjs`, `examples/components/<name>.html`, and a golden. The only shared file is the registry index, which the serial step of Phase 6 already prepared for one-line additions. Done when each example converts, renders in the LVGL simulator, and scores a fidelity result recorded in the PR.
+- **Badge overhang is clipped.** LVGL draws a child outside its parent only with `overflow_visible` and a nonzero extended-draw size (an outline or shadow with opacity above 2) on the parent and every ancestor. Hand-edited XML renders correctly; the converter needs to emit it.
+- **Photo avatar corners are square.** `style_clip_corner="true"` on the parent works in the XML runtime; the converter does not emit it.
+- **`rgba()` alpha is dropped** on borders and on text colors, so translucent colors render opaque.
+- **A `<button>` with no background gets LVGL's default blue.** It should map to a transparent fill.
+- **A padded text-only block loses its padding**, and negative margins, `text-transform`, and left and right borders are not handled.
+- **Mixed font sizes** for one CSS size, because the font fit depends on label width, and `font-weight` is not rendered bold.
+- **Touch-target noise.** A link that becomes a plain label (single-page output, or a target that is not a screen) is still reported as too small to press.
+- **Names.** Unrecognized Material UI parts get class-derived names such as `muiiconbutton_root`, and an empty spacer toolbar costs an object.
+- **Render harness.** It now has a 512 KB heap; it should also print a clear error instead of crashing when memory runs out.
 
 ### Phase 8 — Stateful components
 
