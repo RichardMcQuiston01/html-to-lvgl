@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  /* Plain HTML / ARIA version: role="alert" is the signal. */
+  .note { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; border: 1px solid #fca5a5;
+          background: #fef2f2; color: #991b1b; font-size: 13px; }
+  .note .msg { flex: 1; }
+  .note .close { border: 0; background: transparent; color: #991b1b; font-size: 12px; font-weight: 700; }
+  .ico { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+  .note.status { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+  /* Material UI version: MUI's own CSS values (standard severity). */
+  .MuiPaper-root { background-color: #fff; color: rgba(0,0,0,0.87); }
+  .MuiAlert-root { display: flex; padding: 6px 16px; border-radius: 4px; font-size: 14px; line-height: 1.43; font-weight: 400; background-color: transparent; }
+  .MuiAlert-standardWarning { color: rgb(102,60,0); background-color: rgb(255,244,229); }
+  .MuiAlert-standardInfo { color: rgb(1,67,97); background-color: rgb(229,246,253); }
+  .MuiAlert-icon { margin-right: 12px; padding: 7px 0; display: flex; font-size: 22px; opacity: 0.9; }
+  .MuiAlert-message { padding: 8px 0; min-width: 0; overflow: auto; }
+  .MuiAlert-action { display: flex; align-items: flex-start; padding: 4px 0 0 16px; margin-left: auto; margin-right: -8px; }
+  .MuiSvgIcon-root { width: 1em; height: 1em; font-size: 1.5rem; fill: currentColor; flex-shrink: 0; display: inline-block; }
+  .MuiButton-root { border: 0; background: transparent; color: inherit; font-size: 13px; font-weight: 500; padding: 4px 5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="note" role="alert"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2L1 21h22z"/></svg><span class="msg">Connection lost</span><button class="close" aria-label="Dismiss">X</button></div>
+  <div class="note status" role="status"><span class="msg">Settings saved</span></div>
+  <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation0 MuiAlert-root MuiAlert-colorWarning MuiAlert-standardWarning MuiAlert-standard" role="alert">
+    <div class="MuiAlert-icon"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit" viewBox="0 0 24 24" data-testid="ReportProblemOutlinedIcon"><path d="M12 5.99L19.53 19H4.47L12 5.99z"/></svg></div>
+    <div class="MuiAlert-message">Check your battery level</div>
+  </div>
+  <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation0 MuiAlert-root MuiAlert-colorInfo MuiAlert-standardInfo MuiAlert-standard" role="alert">
+    <div class="MuiAlert-icon"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit" viewBox="0 0 24 24" data-testid="InfoOutlinedIcon"><path d="M11 7h2v2h-2z"/></svg></div>
+    <div class="MuiAlert-message">Firmware 2.1 is available</div>
+    <div class="MuiAlert-action"><button class="MuiButton-root" type="button">Update</button></div>
+  </div>
+</body>
+</html>

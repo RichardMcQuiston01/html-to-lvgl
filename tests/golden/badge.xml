@@ -1,0 +1,42 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" x="10" y="10" text="Plain HTML" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row" x="10" y="28" width="300" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="4" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="22" style_pad_column="22" scrollable="false">
+      <lv_obj name="badge" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="anchor" width="40" height="40" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="badge_count" x="30" y="-6" ignore_layout="true" width="18" height="18" style_bg_color="0xdc2626" style_border_width="0" style_radius="9" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="badge_count_2" align="center" text="4" style_text_font="montserrat_10" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="badge_2" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="anchor_2" width="40" height="40" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="badge_dot" x="33" y="-3" ignore_layout="true" width="10" height="10" style_bg_color="0x16a34a" style_border_width="0" style_radius="5" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      </lv_obj>
+      <lv_obj name="badge_3" width="39" height="20" style_bg_color="0x0d6efd" style_border_width="0" style_radius="160" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="badge_4" align="center" text="New" style_text_font="montserrat_10" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+      <lv_obj name="badge_5" width="40" height="20" style_bg_color="0x6c757d" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="badge_6" align="center" text="Beta" style_text_font="montserrat_10" style_text_color="0xffffff" style_text_align="center" />
+      </lv_obj>
+    </lv_obj>
+    <lv_label name="label_2" x="10" y="84" text="Material UI" style_text_font="montserrat_10" style_text_color="0x616161" />
+    <lv_obj name="row_2" x="10" y="102" width="300" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="4" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="22" style_pad_column="22" scrollable="false">
+      <lv_obj name="badge_7" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="anchor_3" width="40" height="40" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="badge_count_3" x="30" y="-10" ignore_layout="true" width="20" height="20" style_bg_color="0xd32f2f" style_border_width="0" style_radius="10" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="badge_count_4" align="center" text="4" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="badge_8" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="anchor_4" width="40" height="40" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="badge_dot_2" x="36" y="-4" ignore_layout="true" width="8" height="8" style_bg_color="0x1976d2" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      </lv_obj>
+      <lv_obj name="badge_9" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="anchor_5" width="40" height="40" style_bg_color="0xe2e8f0" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="badge_count_5" x="24" y="-10" ignore_layout="true" width="32" height="20" style_bg_color="0xd32f2f" style_border_width="0" style_radius="10" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="badge_count_6" align="center" text="99+" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

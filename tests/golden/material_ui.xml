@@ -1,0 +1,78 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="toolbar" x="0" y="0" width="320" height="56" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    <lv_obj name="breadcrumbs" x="0" y="56" width="320" height="22" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="box_6" x="16" y="4" width="288" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="6" style_pad_column="6" scrollable="false">
+        <lv_obj name="box" width="32" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="label" x="0" y="0" text="Home" style_text_font="montserrat_10" style_text_color="0x1976d2" />
+        </lv_obj>
+        <lv_obj name="box_2" width="3" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="label_2" text="/" style_text_font="montserrat_12" style_text_color="0x000000" />
+        </lv_obj>
+        <lv_obj name="box_3" width="43" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="label_3" x="0" y="0" text="Devices" style_text_font="montserrat_10" style_text_color="0x1976d2" />
+        </lv_obj>
+        <lv_obj name="box_4" width="3" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="label_4" text="/" style_text_font="montserrat_12" style_text_color="0x000000" />
+        </lv_obj>
+        <lv_obj name="box_5" width="61" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="label_5" text="Thermostat" style_text_font="montserrat_10" style_text_color="0x000000" />
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="card" x="16" y="78" width="288" height="89" style_bg_color="0xffffff" style_border_width="0" style_radius="4" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="8" style_shadow_offset_y="1" style_pad_all="0" scrollable="false">
+      <lv_obj name="card_header" x="0" y="0" width="288" height="48" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="6" style_pad_bottom="6" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="avatar" width="36" height="36" style_bg_color="0xff5722" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="avatar_2" align="center" text="LR" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_obj name="muicardheader_content" flex_grow="1" width="192" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="muicardheader_title" x="0" y="0" text="Living room" style_text_font="montserrat_14" style_text_color="0x000000" />
+          <lv_label name="muicardheader_subheader" x="0" y="18" text="Heating, 21.5 C" style_text_font="montserrat_10" style_text_color="0x000000" />
+        </lv_obj>
+        <lv_obj name="badge" width="24" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_obj name="icon_wifi" x="0" y="0" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x000000" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+          <lv_obj name="badge_dot" x="20" y="-4" width="8" height="8" style_bg_color="0x2e7d32" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="divider" x="0" y="48" width="288" height="1" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_obj name="card_body" x="0" y="49" width="288" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="8" style_pad_bottom="8" flex_flow="row" style_pad_row="6" style_pad_column="6" scrollable="false">
+        <lv_obj name="chip" width="45" height="24" style_bg_color="0x1976d2" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_label name="chip_label" text="Auto" style_text_font="montserrat_12" style_text_color="0xffffff" />
+        </lv_obj>
+        <lv_obj name="chip_2" width="59" height="24" style_bg_color="0x000000" style_bg_opa="20" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_obj name="chip_avatar" style_margin_left="4" width="18" height="18" style_bg_color="0x9c27b0" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="chip_avatar_2" align="center" text="E" style_text_font="montserrat_10" style_text_color="0xffffff" style_text_align="center" />
+          </lv_obj>
+          <lv_label name="chip_label_2" style_margin_left="6" text="Eco" style_text_font="montserrat_12" style_text_color="0x1e1e1e" />
+        </lv_obj>
+        <lv_obj name="chip_3" width="67" height="24" style_bg_color="0x000000" style_bg_opa="20" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_label name="chip_label_3" style_margin_left="10" text="Away" style_text_font="montserrat_12" style_text_color="0x1e1e1e" />
+          <lv_obj name="icon_cancel" style_margin_left="7" width="18" height="18" style_bg_opa="0" style_border_width="1" style_border_color="0xaeaeae" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="paper" x="16" y="175" width="288" height="26" style_bg_color="0xffffff" style_border_width="0" style_radius="4" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="3" style_shadow_offset_y="1" style_pad_all="0" scrollable="false">
+      <lv_label name="paper_2" align="left_mid" x="12" text="Next schedule change at 18:00" style_text_font="montserrat_12" style_text_color="0x000000" />
+    </lv_obj>
+    <lv_obj name="alert" x="16" y="209" width="288" height="28" style_bg_color="0xfff4e5" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="6" style_pad_bottom="6" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="icon_warning" width="16" height="16" style_bg_opa="0" style_border_width="1" style_border_color="0x663c00" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_label name="label_6" text="Filter needs replacing soon" style_text_font="montserrat_12" style_text_color="0x663c00" />
+    </lv_obj>
+    <lv_obj name="appbar" x="0" y="0" floating="true" width="320" height="56" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="10" style_shadow_offset_y="1" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_obj name="toolbar_2" width="320" height="56" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_button name="muiiconbutton_root" style_margin_right="8" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
+          <lv_obj name="icon_menu" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0xffffff" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        </lv_button>
+        <lv_label name="appbar_title" flex_grow="1" text="Thermostat" style_text_font="montserrat_18" style_text_color="0xffffff" />
+        <lv_obj name="badge_2" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_button name="muiiconbutton_root_2" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
+            <lv_obj name="icon_notifications" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0xffffff" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+          </lv_button>
+          <lv_obj name="badge_count" x="31" y="-9" ignore_layout="true" width="18" height="18" style_bg_color="0xd32f2f" style_border_width="0" style_radius="9" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="badge_count_2" align="center" text="3" style_text_font="montserrat_10" style_text_color="0xffffff" style_text_align="center" />
+          </lv_obj>
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

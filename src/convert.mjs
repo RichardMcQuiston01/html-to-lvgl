@@ -23,6 +23,7 @@ import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
+import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize } from './names.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
@@ -42,14 +43,18 @@ const JUSTIFY = {
  *                 data-lv-link="<page>" — become navigation buttons.
  * @param registry  Component definitions to recognize before conversion
  *                 (see src/recognize.mjs). Defaults to the built-in set.
+ * @param minTouchTarget  Smallest pressable size in px before TOUCH_TARGET_SMALL
+ *                 is reported (default 30; 0 turns the check off).
  * @param screenMode  Wrap the output in <screen> instead of <component>, so
  *                 LVGL registers it as a loadable screen.
  */
-export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts(), registry = defaultRegistry } = {}) {
+export function convert(input, { name = 'page', screens = null, screenMode = false, fonts = builtinFonts(), registry = defaultRegistry, minTouchTarget = 30 } = {}) {
   const diagnostics = createDiagnostics();
   // Recognition runs first, so a component can rewrite its part of the tree
   // before the optimizer collapses wrappers or the emitter maps tags.
   const { tree: recognizedTree } = recognize(structuredClone(input), { registry, diagnostics });
+  // Info-only and read-only: reports pressables under minTouchTarget px (0 = off).
+  checkTouchTargets(recognizedTree, { diagnostics, minSize: minTouchTarget });
   const { tree, removed } = optimize(recognizedTree);
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
 
@@ -61,10 +66,11 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
     scrollable: 'false',
     ...textStyles(tree, ctx.fonts.for(tree.styles)),
   };
+  pinBarsOnTop(tree);
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
   const wrapper = screenMode ? 'screen' : 'component';
   const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
-  return { xml, view, warnings: diagnostics.toWarningStrings(), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
+  return { xml, view, warnings: diagnostics.list().filter((d) => d.code !== 'TOUCH_TARGET_SMALL').map((d) => d.message), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -102,7 +108,29 @@ const isGrid = (node) => node.layout && node.layout.display === 'grid' && node.c
 
 const isManaged = (node) => isFlex(node) || isGrid(node);
 
-const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed');
+const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed' || isPinnedBar(node));
+
+/**
+ * A recognized app bar that stays put while the page scrolls: position fixed
+ * or sticky. LVGL has no sticky, so both become a floating object (see
+ * LV_OBJ_FLAG_FLOATING: ignores layout and is not moved when the parent
+ * scrolls). A sticky bar therefore is out of flow too, like a fixed one.
+ */
+const isPinnedBar = (node) =>
+  node.recognized?.component === 'appbar' && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
+
+/**
+ * Move each pinned app bar to the end of its parent's children. Browsers
+ * paint a fixed or sticky bar over later content; LVGL paints later siblings
+ * over earlier ones, so a bar kept in document order would be covered by the
+ * content that scrolls beneath it.
+ */
+function pinBarsOnTop(node) {
+  for (const child of node.children) pinBarsOnTop(child);
+  if (node.children.some(isPinnedBar)) {
+    node.children = [...node.children.filter((c) => !isPinnedBar(c)), ...node.children.filter(isPinnedBar)];
+  }
+}
 
 /**
  * Grid cell position/span from computed grid-column/row-start/end. Explicit
@@ -150,6 +178,7 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
       if (node.layout[css] > 0) attrs[lv] = node.layout[css];
     }
   }
+  if (isPinnedBar(node)) attrs.floating = 'true';
   if (size) {
     attrs.width = node.w;
     attrs.height = node.h;

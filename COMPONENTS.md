@@ -151,9 +151,9 @@ Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, a
 
 | Component | LVGL | Notes |
 |---|---|---|
-| Card, Paper, Divider, Chip, Avatar, Badge, Alert | Styled `lv_obj`, `lv_label`, `lv_image` | Mostly works today. Needs elevation to shadow and a round radius for avatars. |
-| App Bar and Toolbar | Top flex-row container | Pinned to the top and kept out of scrolling. |
-| Breadcrumbs | Flex row of labels and buttons | Reuses `data-lv-link` navigation. Separators are plain labels. |
+| Card, Paper, Divider, Chip, Avatar, Badge, Alert | Styled `lv_obj`, `lv_label`, `lv_image` | **Done (Phase 7).** Elevation keeps the largest shadow layer; avatars use `LV_RADIUS_CIRCLE`. A badge that overhangs its anchor and photo-avatar corner clipping need small converter changes. See [FEATURES.md](FEATURES.md#components). |
+| App Bar and Toolbar | Top flex-row container | **Done (Phase 7).** A `fixed` or `sticky` bar is emitted with the `floating` flag and moved last among its siblings. |
+| Breadcrumbs | Flex row of labels and buttons | **Done (Phase 7).** Reuses `data-lv-link` navigation; the current page is not clickable. CSS-drawn separators are not reproduced. |
 | Tabs | `lv_tabview` | Native. |
 | Switch, Slider, Select, Linear progress | Existing widgets | Add ARIA detection. |
 | Circular progress | `lv_spinner` or `lv_arc` | Native. |
@@ -264,7 +264,7 @@ A drag-and-drop editor is planned. It is not built now, but these rules keep it 
 - **Ripples and transitions:** ignore them. Map `:active` to a pressed style, as the tool does today.
 - **Elevation:** Material UI uses multi-layer shadows. Use the largest layer.
 - **Fonts:** Roboto goes through `--font-map`. No new work.
-- **Small screens:** Material UI at 320x240 is tight. Emit a diagnostic for touch targets under about 30 px.
+- **Small screens:** Material UI at 320x240 is tight. A `TOUCH_TARGET_SMALL` note is emitted for touch targets under 30 px (`--min-touch-target` changes it).
 - **Floating labels and animations:** a snapshot shows one state only.
 
 [Back to Top](#components)

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 10px; }
+  h2 { font-size: 11px; font-weight: 700; color: #616161; margin-bottom: 6px; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  /* No <img> avatars here: a photo needs an image asset, and the C golden of this
+     page would then reference an undefined lv_image_dsc_t. Photos are covered by
+     the unit tests. */
+  /* Plain HTML / ARIA version: data-lv-widget says "avatar" because a styled
+     div has no semantic signal. */
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #3f51b5; color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; }
+  .square { border-radius: 8px; background: #00897b; }
+  /* Material UI version: real class names, MUI's own CSS values. */
+  .MuiAvatar-root { position: relative; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; width: 40px; height: 40px; font-size: 20px; line-height: 1; border-radius: 50%;
+    overflow: hidden; user-select: none; color: #fff; background-color: #bdbdbd; }
+  .MuiAvatar-rounded { border-radius: 4px; }
+  .MuiAvatar-square { border-radius: 0; }
+  .deep { background-color: #ff5722; } .blue { background-color: #1976d2; }
+</style>
+</head>
+<body>
+  <h2>Plain HTML</h2>
+  <div class="row">
+    <div class="avatar" data-lv-widget="avatar"><span>AB</span></div>
+    <div class="avatar square" data-lv-widget="avatar"><span>CD</span></div>
+    <div class="avatar" style="background:#9c27b0" data-lv-widget="avatar"><span>EF</span></div>
+  </div>
+  <h2>Material UI</h2>
+  <div class="row">
+    <div class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault deep">H</div>
+    <div class="MuiAvatar-root MuiAvatar-rounded MuiAvatar-colorDefault blue">N</div>
+    <div class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault" style="background-color:#2e7d32">RS</div>
+    <div class="MuiAvatar-root MuiAvatar-square MuiAvatar-colorDefault">OP</div>
+  </div>
+</body>
+</html>

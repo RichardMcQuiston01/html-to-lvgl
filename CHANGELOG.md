@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-31
+
+`src/` gained new capabilities (ten recognized components, pinned app bars, touch-target notes), so this is a minor bump. One default changes what the CLI writes: a page with a small button or link now produces a `TODO.txt`; see the note under Changed, and pass `--min-touch-target 0` to turn it off.
+
+### Added
+
+- **Ten recognized components** (Phase 7): `card`, `paper`, `divider`, `chip`, `avatar`, `badge`, `alert`, `appbar`, `toolbar` and `breadcrumbs`. Each is recognized from its ARIA role or markup, from Material UI class names, or from a generic library class, and is named in the generated code. See [FEATURES.md](FEATURES.md#components) for the signals and limits.
+- **Pinned app bars.** An app bar with `position: fixed` or `sticky` is emitted with the LVGL `floating` flag in XML, C, C++ and Python, so it stays put while the page scrolls.
+- **Touch-target notes.** A button, select, textarea, link, checkbox, radio, range or submit input, `data-lv-link` element, or element with a button, link, checkbox, radio, switch, slider, tab, menuitem or option role under 30 px is reported as `TOUCH_TARGET_SMALL` (info) in `TODO.txt` and `diagnostics.json`. Text-style inputs are not checked. `--min-touch-target <px>` changes the minimum; `0` turns it off. Generated output does not change.
+
+### Changed
+
+- A multi-layer `box-shadow` (Material UI elevation) now keeps its largest layer instead of the first, and inset layers are skipped.
+- A percentage `border-radius` now resolves against the box, so `50%` on an avatar is a circle instead of 50 px. An elliptical corner such as `12px 50%` uses its horizontal value in its own unit.
+- Generated widget names stay unique when a numbered name collides with another name on the page (a widget called `item_2` next to two `item`s).
+- The `warnings` array that `convert()` returns leaves out the new info-level touch-target notes, so existing consumers see the same list.
+- Because the touch-target check is on by default, running the CLI on a page with a small button or link now writes a `TODO.txt` that did not exist before.
+- The donate link moved from Stripe to PayPal: the README's Buy Me a Coffee section, its QR image (`donate.png`, replacing `donate.svg`), and the `funding` entry in `package.json`, so `npm fund` and the npm page now show the PayPal link.
+
+### Known limits
+
+- A badge that overhangs its anchor is clipped by LVGL, and a photo avatar keeps square corners, until a converter change emits the overflow and corner-clip settings.
+- CSS-drawn parts such as Bootstrap's breadcrumb `/` separators are not reproduced.
+
 ## [0.4.0] - 2026-10-27
 
 `src/` gained new capabilities (diagnostics and `TODO.txt`, plugins, icon placeholders, sidecar overrides), so this is a minor bump. One fix renames generated widgets; see the upgrade note under Fixed.

@@ -47,8 +47,8 @@ function assertComplete(entries) {
   }
 }
 
-function runCli(file, out) {
-  const r = spawnSync('node', [cli, file, '-o', out], { encoding: 'utf8' });
+function runCli(file, out, extraArgs = []) {
+  const r = spawnSync('node', [cli, file, '-o', out, ...extraArgs],{ encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   return r;
 }
@@ -171,7 +171,8 @@ test('the CLI writes TODO.txt and diagnostics.json, prints a summary, and clears
   assert.doesNotMatch(first.stderr, /^warning: /m);
 
   // Same output directory, now a page with nothing to report: stale files go.
-  const second = runCli(dashboard, out);
+  // dashboard.html has a 22 px <select>; switch the touch-target note off, since this test is about stale-file cleanup.
+  const second = runCli(dashboard, out, ['--min-touch-target', '0']);
   assert.ok(!existsSync(join(out, 'TODO.txt')));
   assert.ok(!existsSync(join(out, 'diagnostics.json')));
   assert.doesNotMatch(second.stderr, /TODO\.txt/);
@@ -179,6 +180,7 @@ test('the CLI writes TODO.txt and diagnostics.json, prints a summary, and clears
 
 test('a clean example writes no TODO.txt', () => {
   const out = mkdtempSync(join(tmpdir(), 'html2lvgl-diag-'));
-  runCli(dashboard, out);
+  // The dashboard's 22 px <select> would add a TOUCH_TARGET_SMALL note, so turn that check off.
+  runCli(dashboard, out, ['--min-touch-target', '0']);
   assert.ok(!existsSync(join(out, 'TODO.txt')));
 });

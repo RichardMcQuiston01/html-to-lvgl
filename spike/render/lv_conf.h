@@ -8,6 +8,11 @@
 
 #define LV_COLOR_DEPTH 32
 
+/* LVGL's built-in heap defaults to 64 KB, which a page of about 50 widgets
+ * (a realistic Material UI screen) exhausts; the harness then dies with a
+ * segfault and no message. This is a harness limit, not a converter one. */
+#define LV_MEM_SIZE (512 * 1024)
+
 /* The whole point of the spike: load UIs from XML at runtime */
 #define LV_USE_XML 1
 #define LV_USE_OBJ_NAME 1

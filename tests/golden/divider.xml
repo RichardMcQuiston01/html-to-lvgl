@@ -1,0 +1,38 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="cap" x="12" y="8" text="hr, role=separator" style_text_font="montserrat_10" style_text_color="0x757575" />
+    <lv_label name="line" x="12" y="23" text="Above the hr" style_text_font="montserrat_12" style_text_color="0x000000" />
+    <lv_obj name="divider" x="12" y="43" width="296" height="1" style_bg_color="0xbdbdbd" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    <lv_label name="line_2" x="12" y="50" text="Between hr and separator" style_text_font="montserrat_12" style_text_color="0x000000" />
+    <lv_obj name="divider_2" x="12" y="70" width="296" height="1" style_bg_color="0xe91e63" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    <lv_label name="line_3" x="12" y="77" text="Then a vertical rule" style_text_font="montserrat_12" style_text_color="0x000000" />
+    <lv_obj name="bar" x="12" y="91" width="296" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_label name="label" text="Left" style_text_font="montserrat_12" style_text_color="0x000000" />
+      <lv_obj name="divider_3" width="1" height="18" style_bg_color="0x9e9e9e" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_label name="label_2" text="Right" style_text_font="montserrat_12" style_text_color="0x000000" />
+    </lv_obj>
+    <lv_label name="cap_2" x="12" y="121" text="Material UI" style_text_font="montserrat_10" style_text_color="0x757575" />
+    <lv_obj name="divider_4" x="12" y="138" width="296" height="1" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    <lv_obj name="bar_2" x="12" y="145" width="296" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_label name="label_3" text="One" style_text_font="montserrat_12" style_text_color="0x000000" />
+      <lv_obj name="divider_5" width="1" height="18" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_label name="label_4" text="Two" style_text_font="montserrat_12" style_text_color="0x000000" />
+    </lv_obj>
+    <lv_obj name="box" x="12" y="169" width="296" height="41" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="line_4" x="0" y="0" width="296" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="line_5" text="List item" style_text_font="montserrat_12" style_text_color="0x000000" />
+      </lv_obj>
+      <lv_obj name="divider_6" x="0" y="20" width="296" height="1" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_obj name="line_6" x="0" y="27" width="296" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="line_7" text="Next item" style_text_font="montserrat_12" style_text_color="0x000000" />
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="divider_7" x="12" y="216" width="296" height="12" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_obj name="divider_line" flex_grow="1" width="1" height="1" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_obj name="muidivider_wrapper" width="33" height="12" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="label_5" x="8" y="0" text="OR" style_text_font="montserrat_10" style_text_color="0x666666" />
+      </lv_obj>
+      <lv_obj name="divider_line_2" flex_grow="1" width="1" height="1" style_bg_color="0xe0e0e0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    </lv_obj>
+  </view>
+</component>

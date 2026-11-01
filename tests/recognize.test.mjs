@@ -214,8 +214,11 @@ test('describeRegistry exports palette data with no functions', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(described)), described);
 });
 
-test('the built-in registry holds only the icon placeholder until Phase 7', () => {
-  assert.deepEqual(defaultRegistry.list().map((d) => d.name), ['icon']);
+test('the built-in registry lists the icon and every Phase 7 component, with no rejects', () => {
+  assert.deepEqual(defaultRegistry.list().map((d) => d.name), [
+    'icon', 'card', 'paper', 'divider', 'chip', 'avatar', 'badge', 'alert', 'appbar', 'toolbar', 'breadcrumbs',
+  ]);
+  assert.deepEqual(defaultRegistry.rejected, []);
 });
 
 test('the optimizer keeps a recognized wrapper that would otherwise collapse', () => {

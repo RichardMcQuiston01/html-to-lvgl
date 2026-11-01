@@ -91,7 +91,7 @@ export async function startPreview(input, options) {
       });
       const fonts = built.length ? customFonts(built) : builtinFonts();
 
-      const converted = convert(tree, { name, fonts });
+      const converted = convert(tree, { name, fonts, minTouchTarget: options.minTouchTarget });
       const { diagnostics } = converted;
       let { xml, view } = converted;
       for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);

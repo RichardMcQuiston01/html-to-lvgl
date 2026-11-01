@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Material UI screen</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #fafafa; overflow: hidden; color: rgba(0,0,0,0.87); }
+  button { font-family: inherit; }
+  .MuiSvgIcon-root { width: 24px; height: 24px; fill: currentColor; flex-shrink: 0; display: inline-block; }
+
+  .MuiPaper-root { background-color: #fff; color: rgba(0,0,0,0.87); }
+  .MuiPaper-rounded { border-radius: 4px; }
+  /* Fixed MUI AppBar + Toolbar, with a spacer Toolbar under it as the MUI docs recommend */
+  .MuiAppBar-root { position: fixed; top: 0; left: 0; right: 0; width: 320px; display: flex; flex-direction: column;
+    background-color: #1976d2; color: #fff;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12); }
+  .MuiToolbar-root { display: flex; align-items: center; position: relative; padding: 0 16px; min-height: 56px; }
+  .MuiIconButton-root { width: 40px; height: 40px; padding: 8px; border: 0; border-radius: 50%; background: transparent; color: inherit;
+    display: flex; align-items: center; justify-content: center; }
+  .MuiIconButton-edgeStart { margin-left: -12px; margin-right: 8px; }
+  .MuiTypography-h6 { flex-grow: 1; font-size: 18px; font-weight: 500; line-height: 1.6; }
+  .spacer { height: 56px; }
+
+  /* Plain ARIA breadcrumbs */
+  nav[aria-label="breadcrumb"] { padding: 4px 16px; }
+  nav[aria-label="breadcrumb"] ol { list-style: none; display: flex; align-items: center; gap: 6px; }
+  nav[aria-label="breadcrumb"] li { font-size: 12px; color: rgba(0,0,0,0.6); }
+  nav[aria-label="breadcrumb"] a { color: #1976d2; text-decoration: none; }
+  nav[aria-label="breadcrumb"] [aria-current="page"] { color: rgba(0,0,0,0.87); }
+
+  .MuiPaper-elevation1 { box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12); }
+  .MuiPaper-elevation3 { box-shadow: 0px 3px 3px -2px rgba(0,0,0,0.2), 0px 3px 4px 0px rgba(0,0,0,0.14), 0px 1px 8px 0px rgba(0,0,0,0.12); }
+
+  .MuiCard-root { margin: 0 16px; overflow: hidden; }
+  .MuiCardHeader-root { display: flex; align-items: center; padding: 6px 12px; }
+  .MuiCardHeader-avatar { margin-right: 12px; }
+  .MuiCardHeader-content { flex: 1 1 auto; }
+  .MuiCardHeader-title { display: block; font-size: 14px; font-weight: 500; line-height: 1.3; }
+  .MuiCardHeader-subheader { display: block; font-size: 11px; color: rgba(0,0,0,0.6); line-height: 1.3; }
+  .MuiCardHeader-action { color: rgba(0,0,0,0.54); }
+  .MuiAvatar-root { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; font-size: 16px; line-height: 1;
+    border-radius: 50%; overflow: hidden; color: #fff; background-color: #ff5722; }
+  .MuiBadge-root { position: relative; display: inline-flex; vertical-align: middle; flex-shrink: 0; }
+  .MuiBadge-badge { display: flex; place-content: center; align-items: center; position: absolute; font-weight: 500; font-size: 11px; min-width: 18px; line-height: 1;
+    padding: 0 5px; height: 18px; border-radius: 9px; z-index: 1; background-color: #d32f2f; color: #fff;
+    top: 0; right: 0; transform: scale(1) translate(50%, -50%); transform-origin: 100% 0%; }
+  hr.MuiDivider-root { border: 0; border-style: solid; border-color: rgba(0,0,0,0.12); border-bottom-width: thin; margin: 0; }
+  .MuiCardContent-root { display: flex; gap: 6px; padding: 8px 12px; }
+  .MuiChip-root { display: inline-flex; align-items: center; height: 24px; font-size: 12px; border-radius: 12px; color: rgba(0,0,0,0.87); background-color: rgba(0,0,0,0.08); }
+  .MuiChip-label { padding: 0 10px; white-space: nowrap; }
+  .MuiChip-colorPrimary { background-color: #1976d2; color: #fff; }
+  .MuiChip-avatar { margin-left: 4px; margin-right: -4px; width: 18px; height: 18px; font-size: 10px; background-color: #9c27b0; }
+  .MuiChip-deleteIcon { width: 18px; height: 18px; margin: 0 4px 0 -4px; color: rgba(0,0,0,0.26); }
+
+  .paper { margin: 8px 16px 0; padding: 6px 12px; font-size: 12px; }
+
+  /* Plain role=alert (no MUI classes) */
+  .note { margin: 8px 16px 0; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 4px;
+    background: #fff4e5; color: #663c00; font-size: 12px; }
+  .note .MuiSvgIcon-root { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+  <header class="MuiPaper-root MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionFixed">
+    <div class="MuiToolbar-root MuiToolbar-regular">
+      <button class="MuiIconButton-root MuiIconButton-edgeStart" aria-label="menu"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" data-testid="MenuIcon"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+      <h6 class="MuiTypography-root MuiTypography-h6">Thermostat</h6>
+      <span class="MuiBadge-root"><button class="MuiIconButton-root" aria-label="notifications"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" data-testid="NotificationsIcon"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/></svg></button><span class="MuiBadge-badge MuiBadge-standard MuiBadge-anchorOriginTopRight">3</span></span>
+    </div>
+  </header>
+  <div class="MuiToolbar-root spacer"></div>
+
+  <nav aria-label="breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li aria-hidden="true">/</li>
+      <li><a href="/devices">Devices</a></li>
+      <li aria-hidden="true">/</li>
+      <li aria-current="page">Thermostat</li>
+    </ol>
+  </nav>
+
+  <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation3 MuiCard-root">
+    <div class="MuiCardHeader-root">
+      <div class="MuiCardHeader-avatar"><div class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault">LR</div></div>
+      <div class="MuiCardHeader-content"><span class="MuiCardHeader-title">Living room</span><span class="MuiCardHeader-subheader">Heating, 21.5 C</span></div>
+      <div class="MuiCardHeader-action"><span class="MuiBadge-root"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" data-testid="WifiIcon"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg><span class="MuiBadge-badge MuiBadge-dot MuiBadge-anchorOriginTopRight" style="min-width:8px;height:8px;padding:0;border-radius:4px;background-color:#2e7d32"></span></span></div>
+    </div>
+    <hr class="MuiDivider-root">
+    <div class="MuiCardContent-root">
+      <div class="MuiChip-root MuiChip-filled MuiChip-colorPrimary"><span class="MuiChip-label">Auto</span></div>
+      <div class="MuiChip-root MuiChip-filled"><div class="MuiAvatar-root MuiAvatar-circular MuiChip-avatar">E</div><span class="MuiChip-label">Eco</span></div>
+      <div class="MuiChip-root MuiChip-filled" role="button" tabindex="0"><span class="MuiChip-label">Away</span><svg class="MuiSvgIcon-root MuiChip-deleteIcon" viewBox="0 0 24 24" data-testid="CancelIcon"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2z"/></svg></div>
+    </div>
+  </div>
+
+  <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 paper">Next schedule change at 18:00</div>
+
+  <div class="note" role="alert"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" data-testid="WarningIcon"><path d="M12 5.99L19.53 19H4.47z"/></svg><span>Filter needs replacing soon</span></div>
+</body>
+</html>

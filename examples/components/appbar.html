@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App bar</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 320px; height: 240px; background: #fafafa; font-family: Roboto, Helvetica, Arial, sans-serif; color: rgba(0,0,0,0.87); }
+
+  /* Material UI AppBar (position fixed, color primary), as MUI v5 renders it */
+  .MuiAppBar-root { position: fixed; top: 0; left: 0; right: 0; width: 320px; display: flex; flex-direction: column;
+    background-color: #1976d2; color: #fff;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12); }
+  .MuiToolbar-root { display: flex; align-items: center; position: relative; padding-left: 16px; padding-right: 16px; min-height: 56px; }
+  .MuiIconButton-root { width: 40px; height: 40px; margin-left: -12px; margin-right: 16px; padding: 8px; border: 0; border-radius: 50%;
+    background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; }
+  .MuiSvgIcon-root { width: 24px; height: 24px; fill: currentColor; }
+  .MuiTypography-h6 { flex-grow: 1; margin: 0; font-size: 20px; font-weight: 500; line-height: 1.6; letter-spacing: 0.0075em; }
+  .MuiButton-root { border: 0; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 500;
+    text-transform: uppercase; padding: 6px 8px; border-radius: 4px; }
+  /* The spacer MUI docs recommend under a fixed bar: an empty Toolbar that only carries height */
+  .spacer { height: 56px; }
+
+  .content { margin: 16px; font-size: 14px; line-height: 20px; }
+
+  /* Plain HTML / ARIA version */
+  header[role="banner"] { position: relative; margin: 16px; height: 48px; padding: 0 12px; display: flex; align-items: center; gap: 12px;
+    background: #263238; color: #eceff1; border-radius: 8px; }
+  header[role="banner"] h1 { flex-grow: 1; margin: 0; font-size: 18px; font-weight: 700; }
+  header[role="banner"] button { background: #455a64; color: #fff; border: 0; border-radius: 4px; padding: 6px 10px; font-size: 13px; }
+  .note { margin: 0 16px; font-size: 12px; color: #607d8b; }
+</style>
+</head>
+<body>
+  <!-- Material UI version: the fixed app bar, then the spacer that keeps content below it -->
+  <header class="MuiPaper-root MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionFixed">
+    <div class="MuiToolbar-root MuiToolbar-gutters MuiToolbar-regular">
+      <button class="MuiIconButton-root" aria-label="menu"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+      <h6 class="MuiTypography-root MuiTypography-h6">Dashboard</h6>
+      <button class="MuiButton-root">Login</button>
+    </div>
+  </header>
+  <div class="MuiToolbar-root MuiToolbar-gutters MuiToolbar-regular spacer"></div>
+  <div class="content">Content starts below the bar.</div>
+
+  <!-- Plain HTML / ARIA version: role=banner, not fixed -->
+  <header role="banner">
+    <h1>Settings</h1>
+    <button>Save</button>
+  </header>
+  <p class="note">Plain header with role="banner".</p>
+</body>
+</html>
