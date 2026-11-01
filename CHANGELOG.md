@@ -19,6 +19,7 @@
 - Generated widget names stay unique when a numbered name collides with another name on the page (a widget called `item_2` next to two `item`s).
 - The `warnings` array that `convert()` returns leaves out the new info-level touch-target notes, so existing consumers see the same list.
 - Because the touch-target check is on by default, running the CLI on a page with a small button or link now writes a `TODO.txt` that did not exist before.
+- The donate link moved from Stripe to PayPal: the README's Buy Me a Coffee section, its QR image (`donate.png`, replacing `donate.svg`), and the `funding` entry in `package.json`, so `npm fund` and the npm page now show the PayPal link.
 
 ### Known limits
 
