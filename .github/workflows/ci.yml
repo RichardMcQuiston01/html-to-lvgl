@@ -373,6 +373,15 @@ jobs:
           # matching tests/fixtures/home.nav.json's structure.
           MICROPYPATH=/tmp/nav-py "$MP" spike/micropython/run_py_nav.py /tmp/nav-py/ui_home.py ui_home_create 2,0
 
+      - name: Drive the behavior (subject) --format py golden: toggle, set and bind
+        run: |
+          # The pinned binding's vendored LVGL (v9.3-era) has lv.subject_t and
+          # obj.bind_flag_if_*, but not lv_obj_add_subject_toggle_event /
+          # set_int_event (v9.4); the generated code uses event callbacks for
+          # those (see emit-py.mjs). This runs real clicks and checks the flags.
+          MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          MICROPYPATH=tests/golden-behavior "$MP" spike/micropython/run_py_behavior.py ui_disclosure ui_disclosure_create
+
       - name: Convert fonts with lv_font_conv and render with them (--format py)
         run: |
           L=/usr/share/fonts/truetype/liberation
