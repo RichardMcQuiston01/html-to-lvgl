@@ -78,7 +78,8 @@
  *     XML component with a per-instance subject, as in the spike.
  *
  * Diagnostics: BEHAVIOR_SUBJECT_UNDECLARED (used but never declared),
- * BEHAVIOR_SUBJECT_CONFLICT (declared twice with different initial values).
+ * BEHAVIOR_SUBJECT_CONFLICT (declared twice with different initial values),
+ * BEHAVIOR_TIMELINE_CONFLICT (a timeline name declared twice with different animations).
  *
  * 5. Animations (the Drawer slide; added by Phase 8 lane E, backward
  *    compatible: a behavior without these keys is unchanged).
@@ -163,6 +164,27 @@ import { sanitize } from './names.mjs';
  * @property {Timeline[]} [timelines]
  */
 
+/**
+ * Integer style properties an animation may drive. This is exactly the set
+ * LVGL's XML loader accepts for <animation prop=".."> (style_prop_anim_get_type
+ * in lv_xml_component.c, v9.4.0); each has an lv_obj_set_style_<prop>() in C
+ * and an obj.set_style_<prop>() in the pinned MicroPython binding (checked), so
+ * the C, C++ and Python emitters can drive it without a style-value union.
+ */
+export const TIMELINE_PROPS = Object.freeze(new Set([
+  'width', 'min_width', 'max_width', 'height', 'min_height', 'max_height', 'length', 'radius',
+  'pad_left', 'pad_right', 'pad_top', 'pad_bottom', 'pad_row', 'pad_column', 'pad_radial',
+  'margin_left', 'margin_right', 'margin_top', 'margin_bottom',
+  'bg_opa', 'bg_main_stop', 'bg_grad_stop', 'bg_image_recolor_opa',
+  'border_width', 'border_opa', 'outline_width', 'outline_opa', 'outline_pad',
+  'shadow_width', 'shadow_offset_x', 'shadow_offset_y', 'shadow_spread', 'shadow_opa',
+  'text_opa', 'text_letter_space', 'text_line_space', 'image_opa', 'image_recolor_opa',
+  'line_opa', 'line_width', 'line_dash_width', 'line_dash_gap', 'arc_opa', 'arc_width',
+  'opa', 'opa_layered', 'color_filter_opa', 'transform_width', 'transform_height',
+  'translate_x', 'translate_y', 'translate_radial', 'transform_scale_x', 'transform_scale_y',
+  'transform_rotation', 'transform_pivot_x', 'transform_pivot_y', 'recolor_opa',
+]));
+
 export const BIND_OPS = Object.freeze(['eq', 'not_eq', 'gt', 'ge', 'lt', 'le']);
 
 const EVENT_TAGS = Object.freeze({ toggle: 'subject_toggle_event', set: 'subject_set_int_event', play: 'play_timeline_event' });
@@ -223,6 +245,7 @@ export function playEvent(timeline, trigger) {
  */
 export function slideTimeline(name, prop, start, end, duration = 250) {
   if (!name) throw new Error('slideTimeline needs a timeline name');
+  if (!TIMELINE_PROPS.has(prop)) throw new Error(`slideTimeline("${name}"): "${prop}" is not an animatable integer style property`);
   for (const [label, value] of [['start', start], ['end', end], ['duration', duration]]) {
     if (!Number.isInteger(value)) throw new Error(`slideTimeline("${name}"): ${label} must be an integer, got ${value}`);
   }

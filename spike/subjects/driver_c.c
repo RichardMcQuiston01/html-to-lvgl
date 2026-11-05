@@ -5,14 +5,21 @@
  * through LVGL's real hit-testing.
  *
  * usage: driver_c [component.xml ...]
- *                 [--click=X,Y | --report=<child index of the root> |
+ *                 [--name=<alias>=<child path> | --click=X,Y | --tap=X,Y |
+ *                  --frames=N | --report=<alias or child path> | --snap=<file> |
  *                  --subject=<name> | --say=<text>] ...
  *
  * Positional XML files are library components, registered under their file
  * basename (for ui_acc_g.xml-style instances created with lv_xml_create).
  * --subject reads the value through lv_xml_get_subject, so it also proves the
  * generated code registered the subject. Generated C has no widget names, so
- * --report addresses the root's direct children by index. Steps run in order.
+ * --report addresses widgets by a path of child indexes from the root, "2" or
+ * "1.0" (the second child of the root's second child). --name=<alias>=<path>
+ * gives a path the name the XML driver (driver.c) would report, so one scenario
+ * script can drive both and assert the same "report <name>: ..." lines; the
+ * XML driver ignores --name. --tap, --frames and --say behave as in driver.c;
+ * --snap is accepted and ignored (this driver keeps no screenshots). Steps run
+ * in order.
  *
  * Compiles unchanged as C or C++ (gcc / g++).
  */
@@ -71,6 +78,24 @@ static void click_at(int x, int y)
     ptr_down = false; pump(30);
 }
 
+#define MAX_ALIASES 32
+static struct { const char * name; const char * path; } aliases[MAX_ALIASES];
+static int alias_count;
+
+/* Walk a path such as "1.0" down from the root; NULL if a child is missing. */
+static lv_obj_t * find_by_path(lv_obj_t * root, const char * path)
+{
+    lv_obj_t * o = root;
+    while(o && *path) {
+        char * end;
+        long idx = strtol(path, &end, 10);
+        if(end == path) return NULL;
+        o = lv_obj_get_child(o, (int32_t)idx);
+        path = (*end == '.') ? end + 1 : end;
+    }
+    return o;
+}
+
 static char * read_file(const char * path)
 {
     FILE * f = fopen(path, "rb");
@@ -112,6 +137,16 @@ int main(int argc, char ** argv)
         free(xml);
     }
 
+    for(int i = 1; i < argc; i++) {
+        if(strncmp(argv[i], "--name=", 7) != 0 || alias_count >= MAX_ALIASES) continue;
+        char * eq = strchr(argv[i] + 7, '=');
+        if(!eq) { fprintf(stderr, "expected --name=<alias>=<path>, got %s\n", argv[i]); return 1; }
+        *eq = '\0';
+        aliases[alias_count].name = argv[i] + 7;
+        aliases[alias_count].path = eq + 1;
+        alias_count++;
+    }
+
     lv_obj_t * root = UI_CREATE_SYMBOL(lv_screen_active());
     if(!root) { fprintf(stderr, "create failed\n"); return 1; }
     pump(30);
@@ -124,19 +159,32 @@ int main(int argc, char ** argv)
             click_at(x, y);
             printf("click %d,%d\n", x, y);
         }
-        else if(strncmp(a, "--say=", 6) == 0) printf("== %s\n", a + 6);
+        else if(strncmp(a, "--tap=", 6) == 0) {
+            /* press + release without the settle time, to catch animations mid-flight */
+            int x = 0, y = 0;
+            sscanf(a + 6, "%d,%d", &x, &y);
+            ptr_x = x; ptr_y = y;
+            ptr_down = true;  pump(4);
+            ptr_down = false; pump(1);
+            printf("tap %d,%d\n", x, y);
+        }
+        else if(strncmp(a, "--frames=", 9) == 0) pump(atoi(a + 9));
+        else if(strncmp(a, "--snap=", 7) == 0) printf("snap %s (ignored)\n", a + 7);
+        else if(strncmp(a, "--say=", 6) == 0) printf("-- %s\n", a + 6);
         else if(strncmp(a, "--subject=", 10) == 0) {
             lv_subject_t * s = lv_xml_get_subject(NULL, a + 10);
             if(s) printf("subject %s = %d\n", a + 10, (int)lv_subject_get_int(s));
             else printf("subject %s = MISSING\n", a + 10);
         }
         else if(strncmp(a, "--report=", 9) == 0) {
-            int idx = atoi(a + 9);
-            lv_obj_t * c = lv_obj_get_child(root, idx);
-            if(!c) { printf("report %d: no such child\n", idx); continue; }
+            const char * label = a + 9;
+            const char * path = label;
+            for(int k = 0; k < alias_count; k++) if(strcmp(aliases[k].name, label) == 0) path = aliases[k].path;
+            lv_obj_t * c = find_by_path(root, path);
+            if(!c) { printf("report %s: NOT FOUND\n", label); continue; }
             lv_area_t area;
             lv_obj_get_coords(c, &area);
-            printf("report %d: hidden=%d x=%d y=%d w=%d h=%d\n", idx,
+            printf("report %s: hidden=%d x=%d y=%d w=%d h=%d\n", label,
                    lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) ? 1 : 0,
                    (int)area.x1, (int)area.y1, (int)lv_area_get_width(&area), (int)lv_area_get_height(&area));
         }

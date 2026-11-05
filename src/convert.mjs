@@ -535,7 +535,7 @@ function applyBehavior(node, out, ctx) {
     const known = ctx.timelines.get(timeline.name);
     if (known && JSON.stringify(known) !== JSON.stringify(timeline)) {
       ctx.diagnostics.add({
-        code: 'BEHAVIOR_SUBJECT_CONFLICT',
+        code: 'BEHAVIOR_TIMELINE_CONFLICT',
         message: `timeline ${timeline.name} is declared twice with different animations; keeping the first`,
         fix: 'Give each timeline a unique name (derive it from the widget key, as subjectFor() does for subjects).',
         source: sourceOf(node),
@@ -712,6 +712,20 @@ function emitText(node, parent, ctx, index) {
   return el('lv_label', attrs);
 }
 
+/**
+ * Where a button's label sits. A browser centers button text unless the page
+ * says text-align: left/right (an accordion header does), and the button's
+ * padding then insets the text from that edge; honoring both keeps the label
+ * where the browser draws it. Only for <button>: an <a> defaults to start-aligned
+ * text without meaning it, so links keep centering.
+ */
+function buttonLabelPlacement(node) {
+  const { textAlign, padLeft, padRight } = node.styles;
+  if (textAlign === 'left' || textAlign === 'start') return { align: 'left_mid', ...(padLeft > 0 ? { x: padLeft } : {}) };
+  if (textAlign === 'right' || textAlign === 'end') return { align: 'right_mid', ...(padRight > 0 ? { x: -padRight } : {}) };
+  return { align: 'center' };
+}
+
 function emitButton(node, parent, ctx, index) {
   const children = node.children.map((c) => emit(c, node, ctx)).filter(Boolean);
   // Name the button before its label: see emitContainer.
@@ -720,7 +734,7 @@ function emitButton(node, parent, ctx, index) {
     const { font } = fitText(node, ctx);
     children.unshift(el('lv_label', {
       name: uid(ctx, node, 'label'),
-      align: 'center',
+      ...buttonLabelPlacement(node),
       text: node.text,
       ...textStyles(node, font),
     }));

@@ -11,12 +11,17 @@
 #   - a second click closes it and everything moves back,
 #   - items toggle independently (not exclusive), in both styles.
 #
-#   DRIVER=path/to/driver ./run-accordion.sh      (default: ./build/driver)
+# The same scenario also runs against the generated C and C++ (ui_accordion.c /
+# .cpp) with identical assertions, through driver_c.c (see drive.sh); run-c.sh
+# does that in CI.
+#
+#   DRIVER=path/to/driver ./run-accordion.sh                    XML (default ./build/driver)
+#   TARGET=c|cpp LVGL_DIR=.. LIB_DIR=.. ./run-accordion.sh      generated C / C++
 set -euo pipefail
 cd "$(dirname "$0")"
 
-DRIVER="${DRIVER:-./build/driver}"
 G=../../tests/golden-behavior
+. ./drive.sh
 OUT=out
 mkdir -p "$OUT"
 LOG=$(mktemp)
@@ -24,7 +29,8 @@ fail=0
 
 # Header hit points (x,y), from the page at rest: plain 1 header y 9..35,
 # plain 2 header y 41..67, Material UI 1 header y 100..134, Material UI 2 header y 140..174 (164..198 once item 1 is open).
-"$DRIVER" --globals=$G/accordion.globals.xml --screen=accordion $G/accordion.xml \
+# Children of the root: 0 acc (items accordion, accordion_2), 1 accordion_group (accordion_3, accordion_4)
+drive accordion --name=accordion=0.0 --name=accordion_2=0.1 --name=accordion_group=1 --name=accordion_3=1.0 --name=accordion_4=1.1 \
   --say=initial --subject=accordion_plain_p1_open --subject=accordion_plain_p2_open \
   --subject=accordion_mui1_content_open --subject=accordion_mui2_content_open \
   --report=accordion --report=accordion_2 --report=accordion_group --report=accordion_3 --report=accordion_4 \
@@ -89,9 +95,9 @@ expect "item 1 closes again" mui-1-closed 'subject accordion_mui1_content_open =
 expect "item 1 is its header again" mui-1-closed 'report accordion_3: hidden=0 x=8 y=100 w=304 h=34'
 
 for n in accordion_a_initial accordion_b_plain1_open accordion_c_mui1_open accordion_d_mui_closed; do
-  python3 bmp2png.py "$OUT/$n.bmp" "$OUT/$n.png" 2
+  if [ "$TARGET" = xml ]; then python3 bmp2png.py "$OUT/$n.bmp" "$OUT/$n.png" 2; fi
   rm -f "$OUT/$n.bmp"
 done
 rm -f "$LOG"
 if [ "$fail" -ne 0 ]; then echo "FAILED"; exit 1; fi
-echo "Accordion passes against LVGL v9.4.0"
+echo "Accordion passes against LVGL ($TARGET)"

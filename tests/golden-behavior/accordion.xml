@@ -4,7 +4,7 @@
       <lv_obj name="accordion" width="304" height="content" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_radius="4" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
         <lv_obj name="box" width="302" height="26" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_button name="plain_h1" x="0" y="0" width="302" height="26" style_bg_color="0xe7f1ff" style_border_width="0" style_radius="3" style_shadow_width="0" style_pad_all="0">
-            <lv_label name="plain_h1_2" align="center" text="Shipping details" style_text_font="montserrat_12" style_text_color="0x0c63e4" />
+            <lv_label name="plain_h1_2" align="left_mid" x="10" text="Shipping details" style_text_font="montserrat_12" style_text_color="0x0c63e4" />
             <subject_toggle_event subject="accordion_plain_p1_open" />
           </lv_button>
         </lv_obj>
@@ -16,7 +16,7 @@
       <lv_obj name="accordion_2" style_margin_top="4" width="304" height="content" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_radius="4" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
         <lv_obj name="box_2" width="302" height="26" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_button name="plain_h2" x="0" y="0" width="302" height="26" style_bg_color="0xe7f1ff" style_border_width="0" style_radius="3" style_shadow_width="0" style_pad_all="0">
-            <lv_label name="plain_h2_2" align="center" text="Return policy" style_text_font="montserrat_12" style_text_color="0x0c63e4" />
+            <lv_label name="plain_h2_2" align="left_mid" x="10" text="Return policy" style_text_font="montserrat_12" style_text_color="0x0c63e4" />
             <subject_toggle_event subject="accordion_plain_p2_open" />
           </lv_button>
         </lv_obj>
@@ -40,10 +40,8 @@
           <subject_toggle_event subject="accordion_mui1_content_open" />
         </lv_obj>
         <lv_obj name="collapse" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_obj name="collapse_wrapper" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-            <lv_obj name="accordion_details" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-              <lv_label name="accordion_details_2" align="top_left" x="12" y="2" text="Change email and password." style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
-            </lv_obj>
+          <lv_obj name="accordion_details" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="accordion_details_2" align="top_left" x="12" y="2" text="Change email and password." style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
           </lv_obj>
           <bind_flag_if_eq subject="accordion_mui1_content_open" flag="hidden" ref_value="0" />
         </lv_obj>
@@ -61,10 +59,8 @@
           <subject_toggle_event subject="accordion_mui2_content_open" />
         </lv_obj>
         <lv_obj name="collapse_2" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_obj name="collapse_wrapper_2" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-            <lv_obj name="accordion_details_3" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-              <lv_label name="accordion_details_4" align="top_left" x="12" y="2" text="Email me about new replies." style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
-            </lv_obj>
+          <lv_obj name="accordion_details_3" x="0" y="0" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="accordion_details_4" align="top_left" x="12" y="2" text="Email me about new replies." style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
           </lv_obj>
           <bind_flag_if_eq subject="accordion_mui2_content_open" flag="hidden" ref_value="0" />
         </lv_obj>

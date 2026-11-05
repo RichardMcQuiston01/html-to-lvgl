@@ -177,7 +177,20 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_column(card_header, 0, 0);
     lv_obj_set_flag(card_header, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * avatar = lv_obj_create(card_header);
+    lv_obj_t * card_header_avatar = lv_obj_create(card_header);
+    lv_obj_set_style_margin_right(card_header_avatar, 12, 0);
+    lv_obj_set_width(card_header_avatar, 36);
+    lv_obj_set_height(card_header_avatar, 36);
+    lv_obj_set_style_bg_opa(card_header_avatar, 0, 0);
+    lv_obj_set_style_border_width(card_header_avatar, 0, 0);
+    lv_obj_set_style_radius(card_header_avatar, 0, 0);
+    lv_obj_set_style_shadow_width(card_header_avatar, 0, 0);
+    lv_obj_set_style_pad_all(card_header_avatar, 0, 0);
+    lv_obj_set_flag(card_header_avatar, LV_OBJ_FLAG_SCROLLABLE, false);
+
+    lv_obj_t * avatar = lv_obj_create(card_header_avatar);
+    lv_obj_set_x(avatar, 0);
+    lv_obj_set_y(avatar, 0);
     lv_obj_set_width(avatar, 36);
     lv_obj_set_height(avatar, 36);
     lv_obj_set_style_bg_color(avatar, lv_color_hex(0xff5722), 0);
@@ -221,7 +234,23 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_text_color(card_header_subheader, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(card_header_subheader, 153, 0);
 
-    lv_obj_t * badge = lv_obj_create(card_header);
+    lv_obj_t * card_header_action = lv_obj_create(card_header);
+    lv_obj_set_width(card_header_action, 24);
+    lv_obj_set_height(card_header_action, 24);
+    lv_obj_set_style_bg_opa(card_header_action, 0, 0);
+    lv_obj_set_style_border_width(card_header_action, 0, 0);
+    lv_obj_set_style_radius(card_header_action, 0, 0);
+    lv_obj_set_style_shadow_width(card_header_action, 0, 0);
+    lv_obj_set_style_pad_all(card_header_action, 0, 0);
+    lv_obj_set_flag(card_header_action, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(card_header_action, 4, 0);
+    lv_obj_set_style_outline_opa(card_header_action, 3, 0);
+    lv_obj_set_style_outline_color(card_header_action, lv_color_hex(0xffffff), 0);
+    lv_obj_set_flag(card_header_action, LV_OBJ_FLAG_SCROLLABLE, false);
+
+    lv_obj_t * badge = lv_obj_create(card_header_action);
+    lv_obj_set_x(badge, 0);
+    lv_obj_set_y(badge, 0);
     lv_obj_set_width(badge, 24);
     lv_obj_set_height(badge, 24);
     lv_obj_set_style_bg_opa(badge, 0, 0);

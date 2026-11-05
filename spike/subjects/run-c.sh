@@ -6,6 +6,12 @@
 # lv_xml_create instances of spike/subjects/xml/ui_acc_g.xml), compiled against
 # an already-built LVGL (the validate-xml job's build/lvgl/lib).
 #
+# Phase 8 lane F adds the shipped components: ui_accordion, ui_modal, ui_drawer
+# and ui_drawer_edges in C and C++ run the SAME scenarios and assertions as the
+# XML ones (run-accordion.sh, run-components.sh with TARGET=c|cpp, via driver_c.c
+# and drive.sh), so XML, C and C++ are held to one behavior. The Drawer slide
+# there is lv_anim_timeline_t + lv_obj_add_play_timeline_event.
+#
 #   LVGL_DIR=path/to/lvgl LIB_DIR=path/to/build/lvgl/lib ./run-c.sh
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -71,5 +77,12 @@ for lang in c cpp; do
 done
 
 rm -rf "$TMP"
+# Same scenarios as the XML run, on the generated C and C++ (see header).
+export LVGL_DIR LIB_DIR
+for lang in c cpp; do
+  echo "== accordion, modal, drawer ($lang)"
+  TARGET=$lang ./run-accordion.sh | grep -E '^  (ok|FAIL)|^(Accordion passes|FAILED)' || fail=1
+  TARGET=$lang ./run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)' || fail=1
+done
 if [ "$fail" -ne 0 ]; then echo "FAILED"; exit 1; fi
 echo "Generated C and C++ behavior output passes against LVGL"

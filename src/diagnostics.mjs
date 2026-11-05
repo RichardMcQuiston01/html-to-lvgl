@@ -73,6 +73,7 @@ export const CODES = Object.freeze({
   // Behavior (subjects, events, binds)
   BEHAVIOR_SUBJECT_UNDECLARED: { severity: 'warning' },
   BEHAVIOR_SUBJECT_CONFLICT: { severity: 'warning' },
+  BEHAVIOR_TIMELINE_CONFLICT: { severity: 'warning' },
 });
 
 const SEVERITY_ORDER = Object.freeze({ error: 0, warning: 1, info: 2 });

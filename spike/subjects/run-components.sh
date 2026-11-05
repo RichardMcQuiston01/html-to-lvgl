@@ -7,12 +7,18 @@
 # (closed) state, the opener, the closers, that an open overlay blocks clicks
 # beneath it, backdrop tap to close, the slide animation for all four edges.
 #
-#   DRIVER=path/to/driver ./run-components.sh      (default: ./build/driver)
+# The same scenarios also run against the generated C and C++ (ui_modal.c,
+# ui_drawer.c, ui_drawer_edges.c and .cpp) with identical assertions, through
+# driver_c.c (see drive.sh); run-c.sh does that in CI. The Drawer slide there is
+# the lv_anim_timeline_t code emit-c.mjs writes for the same timelines.
+#
+#   DRIVER=path/to/driver ./run-components.sh                   XML (default ./build/driver)
+#   TARGET=c|cpp LVGL_DIR=.. LIB_DIR=.. ./run-components.sh     generated C / C++
 set -euo pipefail
 cd "$(dirname "$0")"
 
-DRIVER="${DRIVER:-./build/driver}"
 G=../../tests/golden-behavior
+. ./drive.sh
 OUT=out
 mkdir -p "$OUT"
 LOG=$(mktemp)
@@ -26,12 +32,13 @@ seq_check() {
   got=$(grep -E "^subject $2 " "$1" | awk '{print $4}' | paste -sd, -)
   if [ "$got" = "$3" ]; then echo "  ok    $4 ($got)"; else echo "  FAIL  $4: '$got', expected '$3'"; fail=1; fi
 }
-shot() { python3 bmp2png.py "$OUT/$1.bmp" "$OUT/$1.png" 2; rm -f "$OUT/$1.bmp"; }
+shot() { if [ "$TARGET" = xml ]; then python3 bmp2png.py "$OUT/$1.bmp" "$OUT/$1.png" 2; fi; rm -f "$OUT/$1.bmp"; }
 
 echo "Modal: plain alertdialog (open on load) and Material UI dialog (closed on load)"
 P=modal_scrim_open
 M=modal_body_div_4_open
-"$DRIVER" --globals=$G/modal.globals.xml --screen=modal $G/modal.xml \
+# Children of the root: 0 label, 1 note, 2 row, 3 scrim, 4 dialog_overlay
+drive modal --name=scrim=3 --name=dialog_overlay=4 \
   --say=initial --subject=$P --subject=$M --report=scrim --report=dialog_overlay --snap=$OUT/modal_a_plain_open.bmp \
   --click=135,78 --say=opener-under-overlay --subject=$M \
   --click=10,225 --say=backdrop-tap-on-alertdialog --subject=$P \
@@ -54,7 +61,8 @@ shot modal_a_plain_open; shot modal_b_mui_open
 echo "Drawer: left sheet (plain, ARIA) and right panel (Material UI), both closed on load"
 L=drawer_body_div_3_open
 R=drawer_body_div_4_open
-"$DRIVER" --globals=$G/drawer.globals.xml --screen=drawer $G/drawer.xml \
+# Children of the root: 0 label, 1 note, 2 row, 3 scrim, 4 nav_sheet, 5 drawer_scrim, 6 filters
+drive drawer --name=scrim=3 --name=nav_sheet=4 --name=drawer_scrim=5 --name=filters=6 \
   --say=closed --subject=$L --subject=$R --report=nav_sheet --report=filters --report=scrim --report=drawer_scrim --snap=$OUT/drawer_a_closed.bmp \
   --tap=30,78 --frames=2 --say=slide-start --report=nav_sheet \
   --frames=6 --say=slide-mid --report=nav_sheet --snap=$OUT/drawer_b_mid_slide.bmp \
@@ -80,7 +88,8 @@ for n in drawer_a_closed drawer_b_mid_slide drawer_c_left_open drawer_d_right_op
 echo "Drawer: top and bottom edges (translate_y)"
 T=drawer_edges_body_div_2_open
 B=drawer_edges_body_div_3_open
-"$DRIVER" --globals=$G/drawer-edges.globals.xml --screen=drawer-edges $G/drawer-edges.xml \
+# Children of the root: 0 label, 1 row, 2 scrim, 3 top_sheet, 4 scrim_2, 5 bottom_sheet
+drive drawer-edges --name=top_sheet=3 --name=bottom_sheet=5 \
   --say=closed --report=top_sheet --report=bottom_sheet \
   --click=40,52 --say=top-open --subject=$T --report=top_sheet --snap=$OUT/drawer_e_top_open.bmp \
   --click=290,220 --say=top-scrim-tap --subject=$T --report=top_sheet \
@@ -97,4 +106,4 @@ shot drawer_e_top_open; shot drawer_f_bottom_open
 
 rm -f "$LOG"
 if [ "$fail" -ne 0 ]; then echo "FAILED"; exit 1; fi
-echo "Generated Modal and Drawer XML pass against LVGL v9.4.0"
+echo "Generated Modal and Drawer pass against LVGL ($TARGET)"

@@ -104,7 +104,10 @@ for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.js
   writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
   console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
   // MicroPython output; CI drives it with spike/micropython/run_py_behavior.py.
-  const behaviorPy = emitPy(view, { name, symbol: `ui_${name}_create` });
+  // A screen such as drawer-edges is a valid XML name but not a C/Python
+  // identifier: the cli sanitizes it the same way (screenName).
+  const unitName = name.replace(/[^a-z0-9_]/gi, '_');
+  const behaviorPy = emitPy(view, { name: unitName, symbol: `ui_${unitName}_create` });
   writeFileSync(join(goldenBehaviorDir, `${behaviorPy.unit}.py`), behaviorPy.py);
   console.log(`updated golden-behavior/${behaviorPy.unit}.py`);
 }
@@ -119,7 +122,8 @@ for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.js
   behaviorUnits.push([name, convert(tree, { name, screenMode: true, registry: name === 'disclosure' ? demoRegistry() : undefined })]);
 }
 behaviorUnits.push(['acc_instances', convertInstances()]);
-for (const [name, { view, subjects }] of behaviorUnits) {
+for (const [screen, { view, subjects }] of behaviorUnits) {
+  const name = screen.replace(/[^a-z0-9_]/gi, '_'); // valid C identifier, as in the cli
   const opts = { name, symbol: `ui_${name}_create`, subjects };
   const c = emitC(view, opts);
   writeFileSync(join(goldenBehaviorDir, `${c.unit}.c`), c.c);

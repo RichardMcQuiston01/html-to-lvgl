@@ -172,7 +172,8 @@ jobs:
 
       # Generated C and C++ for the behavior IR: subjects, toggle/set events,
       # flag binds and lv_xml_create instances, compiled with gcc and g++ and
-      # click-driven through a virtual pointer (spike/subjects/run-c.sh).
+      # click-driven through a virtual pointer (spike/subjects/run-c.sh), which
+      # also runs the Accordion, Modal and Drawer scenarios on the C and C++.
       - name: Compile and click-drive the generated behavior C and C++
         run: |
           LVGL_DIR="$GITHUB_WORKSPACE/lvgl" LIB_DIR="$GITHUB_WORKSPACE/build/lvgl/lib" \
@@ -373,7 +374,7 @@ jobs:
           # matching tests/fixtures/home.nav.json's structure.
           MICROPYPATH=/tmp/nav-py "$MP" spike/micropython/run_py_nav.py /tmp/nav-py/ui_home.py ui_home_create 2,0
 
-      - name: Drive the behavior (subject) --format py golden: toggle, set and bind
+      - name: "Drive the behavior (subject) --format py golden: toggle, set and bind"
         run: |
           # The pinned binding's vendored LVGL (v9.3-era) has lv.subject_t and
           # obj.bind_flag_if_*, but not lv_obj_add_subject_toggle_event /
@@ -381,6 +382,18 @@ jobs:
           # those (see emit-py.mjs). This runs real clicks and checks the flags.
           MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
           MICROPYPATH=tests/golden-behavior "$MP" spike/micropython/run_py_behavior.py ui_disclosure ui_disclosure_create
+
+      # Accordion, Modal and Drawer: the SAME click scenarios and assertions as
+      # the XML and C/C++ runs (spike/subjects/run-accordion.sh and
+      # run-components.sh with TARGET=py), through a real pointer input device.
+      # The Drawer slide uses lv.anim_t because the binding has no animation
+      # timeline (see emit-py.mjs). Library XML components (ui_accordion, ...)
+      # stay unsupported in Python; these goldens are the fully expanded trees.
+      - name: Click-drive the Accordion, Modal and Drawer --format py goldens
+        run: |
+          export MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
+          TARGET=py spike/subjects/run-accordion.sh | grep -E '^  (ok|FAIL)|^(Accordion passes|FAILED)'
+          TARGET=py spike/subjects/run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)'
 
       - name: Convert fonts with lv_font_conv and render with them (--format py)
         run: |
@@ -647,3 +660,11 @@ jobs:
       # through real hit-testing and assert subjects, hidden flags and reflow.
       - name: Drive the generated subject XML (globals.xml, toggle, set, bind)
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-generic.sh
+
+      # The shipped Accordion, Modal and Drawer components (Phase 8): header
+      # clicks, openers/closers, blocked clicks under overlays, the slide.
+      - name: Drive the generated Accordion XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-accordion.sh
+
+      - name: Drive the generated Modal and Drawer XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-components.sh

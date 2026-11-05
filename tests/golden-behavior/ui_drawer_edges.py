@@ -2,8 +2,8 @@
 import lvgl as lv
 
 
-# Subject name -> lv.subject_t, filled by ui_drawer-edges_create(). Kept at module level so the
-# application can read or set the UI state: ui_drawer-edges.subjects[name].set_int(1).
+# Subject name -> lv.subject_t, filled by ui_drawer_edges_create(). Kept at module level so the
+# application can read or set the UI state: ui_drawer_edges.subjects[name].set_int(1).
 subjects = {}
 
 
@@ -23,7 +23,38 @@ def _set_subject(subject, value):
     return set_value
 
 
-def ui_drawer-edges_create(parent):
+# Timeline name -> [lv.anim_t]; module level so the animations stay alive while they run.
+timelines = {}
+
+
+def _timeline(name, steps):
+    anims = []
+    for target, prop, start, end, duration, delay in steps:
+        anim = lv.anim_t()
+        anim.init()
+        anim.set_var(target)
+        anim.set_values(start, end)
+        anim.set_duration(duration)
+        anim.set_delay(delay)
+        anim.set_custom_exec_cb(_set_prop(target, prop))
+        anims.append(anim)
+    timelines[name] = anims
+
+
+def _set_prop(target, prop):
+    setter = getattr(target, "set_style_" + prop)
+    return lambda anim, value: setter(value, 0)
+
+
+def _play_timeline(name):
+    # Stand-in for lv_obj_add_play_timeline_event (not in the pinned binding).
+    def play(e):
+        for anim in timelines[name]:
+            anim.start()
+    return play
+
+
+def ui_drawer_edges_create(parent):
     # State: one lv.subject_t per subject, shared through the module-level `subjects`.
     _subject("drawer_edges_body_div_2_open", 0)
     _subject("drawer_edges_body_div_3_open", 0)
@@ -223,4 +254,23 @@ def ui_drawer-edges_create(parent):
     label_5.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
     button_2.add_event_cb(_set_subject(subjects["drawer_edges_body_div_3_open"], 0), lv.EVENT.CLICKED, None)
 
+
+    _timeline("body_div_2_slide_in", [
+        (top_sheet, "translate_y", -126, 0, 250, 0),
+    ])
+    _timeline("body_div_2_slide_out", [
+        (top_sheet, "translate_y", 0, -126, 250, 0),
+    ])
+    _timeline("body_div_3_slide_in", [
+        (bottom_sheet, "translate_y", 126, 0, 250, 0),
+    ])
+    _timeline("body_div_3_slide_out", [
+        (bottom_sheet, "translate_y", 0, 126, 250, 0),
+    ])
+    open_top.add_event_cb(_play_timeline("body_div_2_slide_in"), lv.EVENT.CLICKED, None)
+    open_bottom.add_event_cb(_play_timeline("body_div_3_slide_in"), lv.EVENT.CLICKED, None)
+    scrim.add_event_cb(_play_timeline("body_div_2_slide_out"), lv.EVENT.CLICKED, None)
+    button.add_event_cb(_play_timeline("body_div_2_slide_out"), lv.EVENT.CLICKED, None)
+    scrim_2.add_event_cb(_play_timeline("body_div_3_slide_out"), lv.EVENT.CLICKED, None)
+    button_2.add_event_cb(_play_timeline("body_div_3_slide_out"), lv.EVENT.CLICKED, None)
     return root

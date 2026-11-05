@@ -26,7 +26,8 @@ export function optimize(tree) {
         c = c.children[0];
         removed++;
       }
-      collapse(c, managed(node));
+      // c's own layout decides whether ITS single-child wrappers are flex-placed
+      collapse(c, managed(c));
       return c;
     });
   }

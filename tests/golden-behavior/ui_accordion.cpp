@@ -109,7 +109,8 @@ lv_obj_t * ui_accordion_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(plain_h1, 0, 0);
 
     lv_obj_t * plain_h1_2 = lv_label_create(plain_h1);
-    lv_obj_set_align(plain_h1_2, LV_ALIGN_CENTER);
+    lv_obj_set_align(plain_h1_2, LV_ALIGN_LEFT_MID);
+    lv_obj_set_x(plain_h1_2, 10);
     lv_label_set_text(plain_h1_2, "Shipping details");
     lv_obj_set_style_text_font(plain_h1_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(plain_h1_2, lv_color_hex(0x0c63e4), 0);
@@ -173,7 +174,8 @@ lv_obj_t * ui_accordion_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(plain_h2, 0, 0);
 
     lv_obj_t * plain_h2_2 = lv_label_create(plain_h2);
-    lv_obj_set_align(plain_h2_2, LV_ALIGN_CENTER);
+    lv_obj_set_align(plain_h2_2, LV_ALIGN_LEFT_MID);
+    lv_obj_set_x(plain_h2_2, 10);
     lv_label_set_text(plain_h2_2, "Return policy");
     lv_obj_set_style_text_font(plain_h2_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(plain_h2_2, lv_color_hex(0x0c63e4), 0);
@@ -310,19 +312,7 @@ lv_obj_t * ui_accordion_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(collapse, 0, 0);
     lv_obj_set_flag(collapse, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * collapse_wrapper = lv_obj_create(collapse);
-    lv_obj_set_x(collapse_wrapper, 0);
-    lv_obj_set_y(collapse_wrapper, 0);
-    lv_obj_set_width(collapse_wrapper, 304);
-    lv_obj_set_height(collapse_wrapper, 24);
-    lv_obj_set_style_bg_opa(collapse_wrapper, 0, 0);
-    lv_obj_set_style_border_width(collapse_wrapper, 0, 0);
-    lv_obj_set_style_radius(collapse_wrapper, 0, 0);
-    lv_obj_set_style_shadow_width(collapse_wrapper, 0, 0);
-    lv_obj_set_style_pad_all(collapse_wrapper, 0, 0);
-    lv_obj_set_flag(collapse_wrapper, LV_OBJ_FLAG_SCROLLABLE, false);
-
-    lv_obj_t * accordion_details = lv_obj_create(collapse_wrapper);
+    lv_obj_t * accordion_details = lv_obj_create(collapse);
     lv_obj_set_x(accordion_details, 0);
     lv_obj_set_y(accordion_details, 0);
     lv_obj_set_width(accordion_details, 304);
@@ -442,19 +432,7 @@ lv_obj_t * ui_accordion_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(collapse_2, 0, 0);
     lv_obj_set_flag(collapse_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * collapse_wrapper_2 = lv_obj_create(collapse_2);
-    lv_obj_set_x(collapse_wrapper_2, 0);
-    lv_obj_set_y(collapse_wrapper_2, 0);
-    lv_obj_set_width(collapse_wrapper_2, 304);
-    lv_obj_set_height(collapse_wrapper_2, 24);
-    lv_obj_set_style_bg_opa(collapse_wrapper_2, 0, 0);
-    lv_obj_set_style_border_width(collapse_wrapper_2, 0, 0);
-    lv_obj_set_style_radius(collapse_wrapper_2, 0, 0);
-    lv_obj_set_style_shadow_width(collapse_wrapper_2, 0, 0);
-    lv_obj_set_style_pad_all(collapse_wrapper_2, 0, 0);
-    lv_obj_set_flag(collapse_wrapper_2, LV_OBJ_FLAG_SCROLLABLE, false);
-
-    lv_obj_t * accordion_details_3 = lv_obj_create(collapse_wrapper_2);
+    lv_obj_t * accordion_details_3 = lv_obj_create(collapse_2);
     lv_obj_set_x(accordion_details_3, 0);
     lv_obj_set_y(accordion_details_3, 0);
     lv_obj_set_width(accordion_details_3, 304);

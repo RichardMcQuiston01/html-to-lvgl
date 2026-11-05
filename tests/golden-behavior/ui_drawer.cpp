@@ -23,6 +23,16 @@ static void init_subjects(void)
         lv_subject_set_int(&subject_drawer_body_div_4_open, 0);
     }
 }
+/* A timeline is owned by the screen: free it with the root widget. */
+static void timeline_delete_cb(lv_event_t * e)
+{
+    lv_anim_timeline_delete((lv_anim_timeline_t *)lv_event_get_user_data(e));
+}
+
+static void timeline_set_translate_x(void * var, int32_t value)
+{
+    lv_obj_set_style_translate_x((lv_obj_t *)var, value, 0);
+}
 
 lv_obj_t * ui_drawer_create(lv_obj_t * parent)
 {
@@ -272,5 +282,56 @@ lv_obj_t * ui_drawer_create(lv_obj_t * parent)
     lv_obj_set_style_text_align(button_2, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_add_subject_set_int_event(button, &subject_drawer_body_div_4_open, LV_EVENT_CLICKED, 0);
 
+
+    lv_anim_timeline_t * timeline_body_div_3_slide_in = lv_anim_timeline_create();
+    {
+        lv_anim_t tl_anim;
+        lv_anim_init(&tl_anim);
+        lv_anim_set_var(&tl_anim, nav_sheet);
+        lv_anim_set_values(&tl_anim, -216, 0);
+        lv_anim_set_duration(&tl_anim, 250);
+        lv_anim_set_exec_cb(&tl_anim, timeline_set_translate_x);
+        lv_anim_timeline_add(timeline_body_div_3_slide_in, 0, &tl_anim);
+    }
+    lv_obj_add_event_cb(root, timeline_delete_cb, LV_EVENT_DELETE, timeline_body_div_3_slide_in);
+    lv_anim_timeline_t * timeline_body_div_3_slide_out = lv_anim_timeline_create();
+    {
+        lv_anim_t tl_anim;
+        lv_anim_init(&tl_anim);
+        lv_anim_set_var(&tl_anim, nav_sheet);
+        lv_anim_set_values(&tl_anim, 0, -216);
+        lv_anim_set_duration(&tl_anim, 250);
+        lv_anim_set_exec_cb(&tl_anim, timeline_set_translate_x);
+        lv_anim_timeline_add(timeline_body_div_3_slide_out, 0, &tl_anim);
+    }
+    lv_obj_add_event_cb(root, timeline_delete_cb, LV_EVENT_DELETE, timeline_body_div_3_slide_out);
+    lv_anim_timeline_t * timeline_body_div_4_slide_in = lv_anim_timeline_create();
+    {
+        lv_anim_t tl_anim;
+        lv_anim_init(&tl_anim);
+        lv_anim_set_var(&tl_anim, filters);
+        lv_anim_set_values(&tl_anim, 241, 0);
+        lv_anim_set_duration(&tl_anim, 250);
+        lv_anim_set_exec_cb(&tl_anim, timeline_set_translate_x);
+        lv_anim_timeline_add(timeline_body_div_4_slide_in, 0, &tl_anim);
+    }
+    lv_obj_add_event_cb(root, timeline_delete_cb, LV_EVENT_DELETE, timeline_body_div_4_slide_in);
+    lv_anim_timeline_t * timeline_body_div_4_slide_out = lv_anim_timeline_create();
+    {
+        lv_anim_t tl_anim;
+        lv_anim_init(&tl_anim);
+        lv_anim_set_var(&tl_anim, filters);
+        lv_anim_set_values(&tl_anim, 0, 241);
+        lv_anim_set_duration(&tl_anim, 250);
+        lv_anim_set_exec_cb(&tl_anim, timeline_set_translate_x);
+        lv_anim_timeline_add(timeline_body_div_4_slide_out, 0, &tl_anim);
+    }
+    lv_obj_add_event_cb(root, timeline_delete_cb, LV_EVENT_DELETE, timeline_body_div_4_slide_out);
+    lv_obj_add_play_timeline_event(open_plain, LV_EVENT_CLICKED, timeline_body_div_3_slide_in, 0, false);
+    lv_obj_add_play_timeline_event(open_mui, LV_EVENT_CLICKED, timeline_body_div_4_slide_in, 0, false);
+    lv_obj_add_play_timeline_event(scrim, LV_EVENT_CLICKED, timeline_body_div_3_slide_out, 0, false);
+    lv_obj_add_play_timeline_event(close, LV_EVENT_CLICKED, timeline_body_div_3_slide_out, 0, false);
+    lv_obj_add_play_timeline_event(drawer_scrim, LV_EVENT_CLICKED, timeline_body_div_4_slide_out, 0, false);
+    lv_obj_add_play_timeline_event(button, LV_EVENT_CLICKED, timeline_body_div_4_slide_out, 0, false);
     return root;
 }
