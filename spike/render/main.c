@@ -121,6 +121,52 @@ static lv_obj_t * find_by_name(lv_obj_t * parent, const char * name)
     return NULL;
 }
 
+/* LVGL's built-in heap (LV_MEM_SIZE in lv_conf.h) is fixed. When it runs
+ * out, lv_malloc() logs this line and returns NULL, and the caller then
+ * dereferences it: a bare segfault. Exiting here, before that happens, tells
+ * the user what to change. Only this message is acted on; LVGL's other log
+ * output is dropped to keep the harness quiet. */
+static char last_error[256];
+
+static void log_cb(lv_log_level_t level, const char * buf)
+{
+    if(level >= LV_LOG_LEVEL_ERROR) {
+        strncpy(last_error, buf, sizeof(last_error) - 1);
+    }
+    if(strstr(buf, "couldn't allocate memory") == NULL) return;
+    fprintf(stderr,
+            "error: LVGL ran out of memory (LV_MEM_SIZE is %d bytes): %s\n"
+            "       The page has more widgets, styles or text than the harness heap holds.\n"
+            "       Raise LV_MEM_SIZE in spike/render/lv_conf.h and rebuild, or split the page.\n",
+            (int)LV_MEM_SIZE, buf);
+    exit(2);
+}
+
+/* A failed load or create can also be a quiet out-of-memory (LVGL paths that
+ * return NULL without logging). Report the heap level so the cause is clear. */
+static void print_heap_hint(void)
+{
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    if(mon.used_pct >= 60 || mon.free_biggest_size < 1024) {
+        fprintf(stderr,
+                "       The LVGL heap is %d%% used (LV_MEM_SIZE is %d bytes), so this is probably out of memory.\n"
+                "       Raise LV_MEM_SIZE in spike/render/lv_conf.h and rebuild, or split the page.\n",
+                (int)mon.used_pct, (int)LV_MEM_SIZE);
+    }
+}
+
+/* Called by LV_ASSERT_HANDLER: a failed allocation assert reaches here when
+ * the heap ran out in a path that did not log first. */
+void harness_assert_failed(void)
+{
+    fprintf(stderr,
+            "error: LVGL assertion failed (most often the heap is full: LV_MEM_SIZE is %d bytes): %s\n"
+            "       Raise LV_MEM_SIZE in spike/render/lv_conf.h and rebuild, or split the page.\n",
+            (int)LV_MEM_SIZE, last_error[0] ? last_error : "no details logged");
+    exit(2);
+}
+
 int main(int argc, char ** argv)
 {
     if(argc < 3) {
@@ -144,6 +190,7 @@ int main(int argc, char ** argv)
         return 1;
     }
 
+    lv_log_register_print_cb(log_cb);
     lv_init();
 
     lv_display_t * disp = lv_display_create(HOR_RES, VER_RES);
@@ -204,6 +251,7 @@ int main(int argc, char ** argv)
         component_name_from_path(argv[i], comp_name, sizeof(comp_name));
         if(lv_xml_register_component_from_data(comp_name, comp_xml) != LV_RESULT_OK) {
             fprintf(stderr, "failed to register XML component %s from %s\n", comp_name, argv[i]);
+            print_heap_hint();
             return 1;
         }
         free(comp_xml);
@@ -215,6 +263,7 @@ int main(int argc, char ** argv)
     component_name_from_path(argv[1], page_name, sizeof(page_name));
     if(lv_xml_register_component_from_data(page_name, xml) != LV_RESULT_OK) {
         fprintf(stderr, "failed to register XML component from %s\n", argv[1]);
+        print_heap_hint();
         return 1;
     }
     const bool screen_root = is_screen_root(xml);
@@ -232,6 +281,7 @@ int main(int argc, char ** argv)
     }
     if(page == NULL) {
         fprintf(stderr, "failed to instantiate XML component\n");
+        print_heap_hint();
         return 1;
     }
 

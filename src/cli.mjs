@@ -11,7 +11,7 @@
  * --debug also writes the extracted UI tree JSON.
  */
 import { parseArgs } from 'node:util';
-import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
@@ -44,8 +44,15 @@ const { values: opts, positionals } = parseArgs({
     overrides: { type: 'string' },
     'min-touch-target': { type: 'string', default: '30' },
     help: { type: 'boolean', short: 'h', default: false },
+    version: { type: 'boolean', short: 'v', default: false },
   },
 });
+
+if (opts.version) {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  console.log(pkg.version);
+  process.exit(0);
+}
 
 if (opts.help || positionals.length === 0) {
   console.error(
@@ -55,7 +62,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
     '                 [--overrides <file.lvgl.json>]\n' +
-    '                 [--min-touch-target <px>]\n' +
+    '                 [--min-touch-target <px>] [--version]\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +

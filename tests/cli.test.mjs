@@ -48,3 +48,11 @@ test('data-lv-component on plain HTML is componentized, not just for .jsx/.tsx i
   const page = readFileSync(join(outDir, 'annotations.xml'), 'utf8');
   assert.match(page, /<pump_row /);
 });
+
+test('--version prints the package.json version and exits 0', () => {
+  const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'));
+  for (const flag of ['--version', '-v']) {
+    const out = execFileSync('node', [cli, flag], { encoding: 'utf8' });
+    assert.equal(out.trim(), pkg.version);
+  }
+});

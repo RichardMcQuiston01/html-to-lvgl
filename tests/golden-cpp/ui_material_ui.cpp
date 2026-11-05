@@ -190,30 +190,30 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_text_color(avatar_2, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_align(avatar_2, LV_TEXT_ALIGN_CENTER, 0);
 
-    lv_obj_t * muicardheader_content = lv_obj_create(card_header);
-    lv_obj_set_flex_grow(muicardheader_content, 1);
-    lv_obj_set_width(muicardheader_content, 192);
-    lv_obj_set_height(muicardheader_content, 32);
-    lv_obj_set_style_bg_opa(muicardheader_content, 0, 0);
-    lv_obj_set_style_border_width(muicardheader_content, 0, 0);
-    lv_obj_set_style_radius(muicardheader_content, 0, 0);
-    lv_obj_set_style_shadow_width(muicardheader_content, 0, 0);
-    lv_obj_set_style_pad_all(muicardheader_content, 0, 0);
-    lv_obj_set_flag(muicardheader_content, LV_OBJ_FLAG_SCROLLABLE, false);
+    lv_obj_t * card_header_content = lv_obj_create(card_header);
+    lv_obj_set_flex_grow(card_header_content, 1);
+    lv_obj_set_width(card_header_content, 192);
+    lv_obj_set_height(card_header_content, 32);
+    lv_obj_set_style_bg_opa(card_header_content, 0, 0);
+    lv_obj_set_style_border_width(card_header_content, 0, 0);
+    lv_obj_set_style_radius(card_header_content, 0, 0);
+    lv_obj_set_style_shadow_width(card_header_content, 0, 0);
+    lv_obj_set_style_pad_all(card_header_content, 0, 0);
+    lv_obj_set_flag(card_header_content, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muicardheader_title = lv_label_create(muicardheader_content);
-    lv_obj_set_x(muicardheader_title, 0);
-    lv_obj_set_y(muicardheader_title, 0);
-    lv_label_set_text(muicardheader_title, "Living room");
-    lv_obj_set_style_text_font(muicardheader_title, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(muicardheader_title, lv_color_hex(0x000000), 0);
+    lv_obj_t * card_header_title = lv_label_create(card_header_content);
+    lv_obj_set_x(card_header_title, 0);
+    lv_obj_set_y(card_header_title, 0);
+    lv_label_set_text(card_header_title, "Living room");
+    lv_obj_set_style_text_font(card_header_title, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(card_header_title, lv_color_hex(0x000000), 0);
 
-    lv_obj_t * muicardheader_subheader = lv_label_create(muicardheader_content);
-    lv_obj_set_x(muicardheader_subheader, 0);
-    lv_obj_set_y(muicardheader_subheader, 18);
-    lv_label_set_text(muicardheader_subheader, "Heating, 21.5 C");
-    lv_obj_set_style_text_font(muicardheader_subheader, &lv_font_montserrat_10, 0);
-    lv_obj_set_style_text_color(muicardheader_subheader, lv_color_hex(0x000000), 0);
+    lv_obj_t * card_header_subheader = lv_label_create(card_header_content);
+    lv_obj_set_x(card_header_subheader, 0);
+    lv_obj_set_y(card_header_subheader, 18);
+    lv_label_set_text(card_header_subheader, "Heating, 21.5 C");
+    lv_obj_set_style_text_font(card_header_subheader, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_color(card_header_subheader, lv_color_hex(0x000000), 0);
 
     lv_obj_t * badge = lv_obj_create(card_header);
     lv_obj_set_width(badge, 24);
@@ -481,17 +481,17 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_column(toolbar_2, 0, 0);
     lv_obj_set_flag(toolbar_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muiiconbutton_root = lv_button_create(toolbar_2);
-    lv_obj_set_style_margin_right(muiiconbutton_root, 8, 0);
-    lv_obj_set_width(muiiconbutton_root, 40);
-    lv_obj_set_height(muiiconbutton_root, 40);
-    lv_obj_set_style_bg_color(muiiconbutton_root, lv_color_hex(0x1976d2), 0);
-    lv_obj_set_style_border_width(muiiconbutton_root, 0, 0);
-    lv_obj_set_style_radius(muiiconbutton_root, 20, 0);
-    lv_obj_set_style_shadow_width(muiiconbutton_root, 0, 0);
-    lv_obj_set_style_pad_all(muiiconbutton_root, 0, 0);
+    lv_obj_t * menu = lv_button_create(toolbar_2);
+    lv_obj_set_style_margin_right(menu, 8, 0);
+    lv_obj_set_width(menu, 40);
+    lv_obj_set_height(menu, 40);
+    lv_obj_set_style_bg_color(menu, lv_color_hex(0x1976d2), 0);
+    lv_obj_set_style_border_width(menu, 0, 0);
+    lv_obj_set_style_radius(menu, 20, 0);
+    lv_obj_set_style_shadow_width(menu, 0, 0);
+    lv_obj_set_style_pad_all(menu, 0, 0);
 
-    lv_obj_t * icon_menu = lv_obj_create(muiiconbutton_root);
+    lv_obj_t * icon_menu = lv_obj_create(menu);
     lv_obj_set_width(icon_menu, 24);
     lv_obj_set_height(icon_menu, 24);
     lv_obj_set_style_bg_opa(icon_menu, 0, 0);
@@ -524,16 +524,16 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_column(badge_2, 0, 0);
     lv_obj_set_flag(badge_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muiiconbutton_root_2 = lv_button_create(badge_2);
-    lv_obj_set_width(muiiconbutton_root_2, 40);
-    lv_obj_set_height(muiiconbutton_root_2, 40);
-    lv_obj_set_style_bg_color(muiiconbutton_root_2, lv_color_hex(0x1976d2), 0);
-    lv_obj_set_style_border_width(muiiconbutton_root_2, 0, 0);
-    lv_obj_set_style_radius(muiiconbutton_root_2, 20, 0);
-    lv_obj_set_style_shadow_width(muiiconbutton_root_2, 0, 0);
-    lv_obj_set_style_pad_all(muiiconbutton_root_2, 0, 0);
+    lv_obj_t * notifications = lv_button_create(badge_2);
+    lv_obj_set_width(notifications, 40);
+    lv_obj_set_height(notifications, 40);
+    lv_obj_set_style_bg_color(notifications, lv_color_hex(0x1976d2), 0);
+    lv_obj_set_style_border_width(notifications, 0, 0);
+    lv_obj_set_style_radius(notifications, 20, 0);
+    lv_obj_set_style_shadow_width(notifications, 0, 0);
+    lv_obj_set_style_pad_all(notifications, 0, 0);
 
-    lv_obj_t * icon_notifications = lv_obj_create(muiiconbutton_root_2);
+    lv_obj_t * icon_notifications = lv_obj_create(notifications);
     lv_obj_set_width(icon_notifications, 24);
     lv_obj_set_height(icon_notifications, 24);
     lv_obj_set_style_bg_opa(icon_notifications, 0, 0);
