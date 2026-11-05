@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  h3 { font-size: 12px; font-weight: 400; }
+
+  /* Plain HTML + ARIA disclosure (Bootstrap-like): a button with aria-expanded
+     controls a region. Items sit in an ordinary block container. */
+  .acc-item { background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 4px; }
+  .acc-item:last-child { margin-bottom: 0; }
+  .acc-button { display: block; width: 100%; text-align: left; background: #e7f1ff; color: #0c63e4; border: none; border-radius: 3px; padding: 0 10px; height: 26px; font-size: 12px; font-weight: 500; }
+  .acc-panel { padding: 6px 10px; font-size: 11px; color: #495057; }
+  .acc-panel[hidden] { display: none; }
+
+  /* Material UI style (real class names, roles and structure; hand-written CSS) */
+  .MuiPaper-root { background-color: #ffffff; color: rgba(0,0,0,0.87); border-radius: 4px; }
+  .MuiPaper-elevation1 { box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12); }
+  .MuiAccordion-root { margin-bottom: 6px; }
+  .MuiAccordion-root:last-child { margin-bottom: 0; }
+  .MuiAccordionSummary-root { display: flex; align-items: center; justify-content: space-between; min-height: 34px; padding: 0 12px; }
+  .MuiAccordionSummary-content { font-size: 13px; }
+  .MuiAccordionSummary-expandIconWrapper { display: flex; color: rgba(0,0,0,0.54); }
+  .MuiSvgIcon-root { width: 18px; height: 18px; fill: currentColor; }
+  .MuiCollapse-root { height: auto; overflow: hidden; }
+  .MuiCollapse-hidden { height: 0; visibility: hidden; }
+  .MuiAccordionDetails-root { padding: 2px 12px 10px; font-size: 11px; color: rgba(0,0,0,0.6); }
+</style>
+</head>
+<body>
+  <div class="acc">
+    <div class="acc-item">
+      <h3><button class="acc-button" id="plain-h1" aria-expanded="false" aria-controls="plain-p1">Shipping details</button></h3>
+      <div class="acc-panel" id="plain-p1" role="region" aria-labelledby="plain-h1" hidden>Ships in two business days.</div>
+    </div>
+    <div class="acc-item">
+      <h3><button class="acc-button" id="plain-h2" aria-expanded="true" aria-controls="plain-p2">Return policy</button></h3>
+      <div class="acc-panel" id="plain-p2" role="region" aria-labelledby="plain-h2">Free returns within 30 days.</div>
+    </div>
+  </div>
+
+  <div class="MuiAccordion-group">
+    <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded">
+      <div class="MuiButtonBase-root MuiAccordionSummary-root" role="button" tabindex="0" aria-expanded="false" aria-controls="mui1-content" id="mui1-header">
+        <div class="MuiAccordionSummary-content"><p>Account settings</p></div>
+        <div class="MuiAccordionSummary-expandIconWrapper"><svg class="MuiSvgIcon-root" focusable="false" viewBox="0 0 24 24" aria-hidden="true" data-testid="ExpandMoreIcon"><path d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"></path></svg></div>
+      </div>
+      <div class="MuiCollapse-root MuiCollapse-vertical MuiCollapse-hidden">
+        <div class="MuiCollapse-wrapper"><div class="MuiCollapse-wrapperInner">
+          <div role="region" aria-labelledby="mui1-header" id="mui1-content" class="MuiAccordion-region">
+            <div class="MuiAccordionDetails-root">Change email and password.</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded">
+      <div class="MuiButtonBase-root MuiAccordionSummary-root Mui-expanded" role="button" tabindex="0" aria-expanded="true" aria-controls="mui2-content" id="mui2-header">
+        <div class="MuiAccordionSummary-content"><p>Notifications</p></div>
+        <div class="MuiAccordionSummary-expandIconWrapper"><svg class="MuiSvgIcon-root" focusable="false" viewBox="0 0 24 24" aria-hidden="true" data-testid="ExpandMoreIcon"><path d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"></path></svg></div>
+      </div>
+      <div class="MuiCollapse-root MuiCollapse-vertical">
+        <div class="MuiCollapse-wrapper"><div class="MuiCollapse-wrapperInner">
+          <div role="region" aria-labelledby="mui2-header" id="mui2-content" class="MuiAccordion-region">
+            <div class="MuiAccordionDetails-root">Email me about new replies.</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

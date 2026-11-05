@@ -95,7 +95,10 @@ mkdirSync(goldenBehaviorDir, { recursive: true });
 for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
   const name = file.replace(/\.json$/, '');
   const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
-  const { xml, globalsXml } = convert(tree, { name, screenMode: true, registry: demoRegistry() });
+  // `disclosure` uses the test-only demo components; every other behavior
+  // fixture (accordion, ...) is converted by the shipped component definitions.
+  const registry = name === 'disclosure' ? demoRegistry() : undefined;
+  const { xml, globalsXml } = convert(tree, { name, screenMode: true, registry });
   writeFileSync(join(goldenBehaviorDir, `${name}.xml`), xml);
   writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
   console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
