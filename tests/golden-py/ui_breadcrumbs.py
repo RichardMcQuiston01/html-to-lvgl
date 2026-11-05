@@ -206,6 +206,7 @@ def ui_create(parent):
     muibreadcrumbs_separator_2.set_text("/")
     muibreadcrumbs_separator_2.set_style_text_font(lv.font_montserrat_16, 0)
     muibreadcrumbs_separator_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    muibreadcrumbs_separator_2.set_style_text_opa(153, 0)
 
     muibreadcrumbs_li_2 = lv.obj(muibreadcrumbs_ol)
     muibreadcrumbs_li_2.set_width(59)
@@ -240,6 +241,7 @@ def ui_create(parent):
     muibreadcrumbs_separator_4.set_text("/")
     muibreadcrumbs_separator_4.set_style_text_font(lv.font_montserrat_16, 0)
     muibreadcrumbs_separator_4.set_style_text_color(lv.color_hex(0x000000), 0)
+    muibreadcrumbs_separator_4.set_style_text_opa(153, 0)
 
     muibreadcrumbs_li_3 = lv.obj(muibreadcrumbs_ol)
     muibreadcrumbs_li_3.set_width(60)
@@ -257,6 +259,7 @@ def ui_create(parent):
     muitypography_root_3.set_text("Network")
     muitypography_root_3.set_style_text_font(lv.font_montserrat_14, 0)
     muitypography_root_3.set_style_text_color(lv.color_hex(0x000000), 0)
+    muitypography_root_3.set_style_text_opa(222, 0)
 
     label_6 = lv.label(root)
     label_6.set_text("NOT BREADCRUMBS")

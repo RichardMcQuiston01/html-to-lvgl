@@ -14,6 +14,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_flag(root, LV_OBJ_FLAG_SCROLLABLE, false);
     lv_obj_set_style_text_font(root, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(root, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(root, 222, 0);
 
     lv_obj_t * toolbar = lv_obj_create(root);
     lv_obj_set_x(toolbar, 0);
@@ -33,6 +34,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(content, "Content starts below the bar.");
     lv_obj_set_style_text_font(content, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(content, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(content, 222, 0);
 
     lv_obj_t * appbar = lv_obj_create(root);
     lv_obj_set_x(appbar, 16);
@@ -124,6 +126,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_flag(toolbar_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
     lv_obj_t * muiiconbutton_root = lv_button_create(toolbar_2);
+    lv_obj_set_style_margin_left(muiiconbutton_root, -12, 0);
     lv_obj_set_style_margin_right(muiiconbutton_root, 16, 0);
     lv_obj_set_width(muiiconbutton_root, 40);
     lv_obj_set_height(muiiconbutton_root, 40);

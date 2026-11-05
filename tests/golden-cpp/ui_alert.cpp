@@ -205,6 +205,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * alert_action = lv_obj_create(alert_4);
     lv_obj_set_style_margin_left(alert_action, 7, 0);
+    lv_obj_set_style_margin_right(alert_action, -8, 0);
     lv_obj_set_width(alert_action, 78);
     lv_obj_set_height(alert_action, 38);
     lv_obj_set_style_bg_opa(alert_action, 0, 0);

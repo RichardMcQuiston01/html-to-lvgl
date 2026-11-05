@@ -205,6 +205,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(muibreadcrumbs_separator_2, "/");
     lv_obj_set_style_text_font(muibreadcrumbs_separator_2, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(muibreadcrumbs_separator_2, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(muibreadcrumbs_separator_2, 153, 0);
 
     lv_obj_t * muibreadcrumbs_li_2 = lv_obj_create(muibreadcrumbs_ol);
     lv_obj_set_width(muibreadcrumbs_li_2, 59);
@@ -239,6 +240,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(muibreadcrumbs_separator_4, "/");
     lv_obj_set_style_text_font(muibreadcrumbs_separator_4, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(muibreadcrumbs_separator_4, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(muibreadcrumbs_separator_4, 153, 0);
 
     lv_obj_t * muibreadcrumbs_li_3 = lv_obj_create(muibreadcrumbs_ol);
     lv_obj_set_width(muibreadcrumbs_li_3, 60);
@@ -256,6 +258,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(muitypography_root_3, "Network");
     lv_obj_set_style_text_font(muitypography_root_3, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(muitypography_root_3, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(muitypography_root_3, 222, 0);
 
     lv_obj_t * label_6 = lv_label_create(root);
     lv_label_set_text(label_6, "NOT BREADCRUMBS");

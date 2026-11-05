@@ -57,6 +57,7 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   checkTouchTargets(recognizedTree, { diagnostics, minSize: minTouchTarget });
   const { tree, removed } = optimize(recognizedTree);
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
+  markOverhangAndClip(tree);
 
   const rootAttrs = {
     width: tree.w,
@@ -175,7 +176,7 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
     if (isGrid(parent)) Object.assign(attrs, gridCell(node, parent, gridIndex));
     if (node.layout.flexGrow > 0) attrs.flex_grow = Math.round(node.layout.flexGrow);
     for (const [css, lv] of [['marginLeft', 'style_margin_left'], ['marginRight', 'style_margin_right'], ['marginTop', 'style_margin_top'], ['marginBottom', 'style_margin_bottom']]) {
-      if (node.layout[css] > 0) attrs[lv] = node.layout[css];
+      if ((node.layout[css] || 0) !== 0) attrs[lv] = node.layout[css]; // negative margins pull the box over its neighbor
     }
   }
   if (isPinnedBar(node)) attrs.floating = 'true';
@@ -184,6 +185,88 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
     attrs.height = node.h;
   }
   return attrs;
+}
+
+/**
+ * Smallest overhang (px) worth acting on. Chromium reports rounded geometry,
+ * so a child can poke out by one pixel purely from rounding.
+ */
+const OVERHANG_TOLERANCE = 1;
+
+/** Opacity of the invisible outline that gives a box an extended-draw size. LVGL counts it when above LV_OPA_MIN (2). */
+const EXT_DRAW_OPA = 3;
+
+/**
+ * Work out, bottom up, which boxes must let children draw outside them, and
+ * which rounded boxes clip an image to their corners. Writes
+ * `styles.overflowVisible`, `styles.extDraw` (px the drawing reaches beyond
+ * the box) and `styles.clipCorner` on the nodes.
+ *
+ * LVGL clips a child to its parent unless the parent has the
+ * `overflow_visible` flag, and then only up to the parent's extended-draw size
+ * (an outline or shadow with opacity above 2). Every ancestor the child
+ * leaves has to allow it, so each box reports how far everything below it
+ * reaches and the parent combines those extents. A box the browser itself
+ * clips (overflow hidden/auto) stops the extent: what it hides stays hidden.
+ *
+ * @param {object} node
+ * @param {number[]} [surface]  Opaque color behind the node.
+ * @returns {{left: number, top: number, right: number, bottom: number}}  Drawn extent in page px.
+ */
+function markOverhangAndClip(node, surface = [255, 255, 255]) {
+  const s = node.styles;
+  // The nearest opaque background behind this box, used to hide the outline.
+  const behind = s.bgColor && s.bgColor[3] === 255 ? s.bgColor : surface;
+  const box = { left: node.x, top: node.y, right: node.x + node.w, bottom: node.y + node.h };
+  const extent = { ...box };
+  for (const child of node.children) {
+    if (child.hidden) continue;
+    const c = markOverhangAndClip(child, behind);
+    extent.left = Math.min(extent.left, c.left);
+    extent.top = Math.min(extent.top, c.top);
+    extent.right = Math.max(extent.right, c.right);
+    extent.bottom = Math.max(extent.bottom, c.bottom);
+  }
+  const clipsInBrowser = s.overflowHidden === true || s.scrollable === true;
+  const reach = Math.max(box.left - extent.left, box.top - extent.top, extent.right - box.right, extent.bottom - box.bottom);
+  if (!clipsInBrowser && reach > OVERHANG_TOLERANCE) {
+    s.overflowVisible = true;
+    s.extDraw = Math.max(s.extDraw ?? 0, reach);
+    s.extDrawColor = surface;
+  } else if (s.overflowVisible) {
+    s.extDraw = Math.max(s.extDraw ?? 0, 1); // a component asked for it with no measurable reach
+    s.extDrawColor ??= surface;
+  }
+  // Rounded corners crop a photo only when the browser crops it too.
+  if (!s.clipCorner && s.overflowHidden === true && s.radius > 0 && hasImageBelow(node)) s.clipCorner = true;
+  return clipsInBrowser ? box : extent;
+}
+
+/** @param {object} node */
+const hasImageBelow = (node) => node.children.some((c) => !c.hidden && (c.tag === 'img' || hasImageBelow(c)));
+
+/**
+ * The one border LVGL can draw for a box: a single width and color, on all
+ * sides or on one. Returns null for no border. The extractor puts a lone
+ * left, right or top edge in borderWidth/borderColor and names it in
+ * borderSide; otherwise borderWidth is the frame and borderBottom* a bottom rule.
+ * @param {object} s  node.styles
+ * @returns {{width: number, color: number[], side: 'full' | 'top' | 'bottom' | 'left' | 'right'} | null}
+ */
+function borderOf(s) {
+  if (s.borderWidth > 0 && s.borderColor) return { width: s.borderWidth, color: s.borderColor, side: s.borderSide ?? 'full' };
+  if (s.borderBottomWidth > 0 && s.borderBottomColor) return { width: s.borderBottomWidth, color: s.borderBottomColor, side: 'bottom' };
+  return null;
+}
+
+/** CSS text-transform applied to label text (the browser applies it to innerText only). */
+export function applyTextTransform(text, transform) {
+  if (!text) return text;
+  if (transform === 'uppercase') return text.toUpperCase();
+  if (transform === 'lowercase') return text.toLowerCase();
+  // capitalize: first letter of each word, skipping punctuation in front of it
+  if (transform === 'capitalize') return text.replace(/(^|\s)([^\p{L}\p{N}\s]*)(\p{L})/gu, (_, gap, punct, letter) => gap + punct + letter.toUpperCase());
+  return text;
 }
 
 /** Shared visual styles for boxes (containers, buttons, inputs). */
@@ -196,13 +279,12 @@ function boxStyles(node, ctx, { transparentDefault = true, pad = null } = {}) {
   } else if (transparentDefault) {
     attrs.style_bg_opa = '0';
   }
-  if (s.borderWidth > 0 && s.borderColor) {
-    attrs.style_border_width = s.borderWidth;
-    attrs.style_border_color = hex(s.borderColor);
-  } else if (s.borderBottomWidth > 0 && s.borderBottomColor) {
-    attrs.style_border_width = s.borderBottomWidth;
-    attrs.style_border_color = hex(s.borderBottomColor);
-    attrs.style_border_side = 'bottom';
+  const border = borderOf(s);
+  if (border) {
+    attrs.style_border_width = border.width;
+    attrs.style_border_color = hex(border.color);
+    if (border.color[3] < 255) attrs.style_border_opa = border.color[3];
+    if (border.side !== 'full') attrs.style_border_side = border.side;
   } else {
     attrs.style_border_width = 0;
   }
@@ -237,6 +319,16 @@ function boxStyles(node, ctx, { transparentDefault = true, pad = null } = {}) {
     attrs.style_pad_all = 0;
   }
   if (s.opacity < 1) attrs.style_opa = Math.round(s.opacity * 255);
+  if (s.clipCorner) attrs.style_clip_corner = 'true';
+  if (s.overflowVisible) {
+    // Children may draw outside this box, as far as the extended-draw size
+    // reaches; a near-transparent outline supplies that size.
+    attrs.overflow_visible = 'true';
+    attrs.style_outline_width = s.extDraw ?? 1;
+    attrs.style_outline_opa = EXT_DRAW_OPA;
+    // Same color as what is behind the box, so the outline is not visible at all.
+    attrs.style_outline_color = hex(s.extDrawColor ?? [0, 0, 0]);
+  }
   if (s.pressed) {
     if (s.pressed.bgColor) attrs['style_bg_color:pressed'] = hex(s.pressed.bgColor);
     if (s.pressed.color) attrs['style_text_color:pressed'] = hex(s.pressed.color);
@@ -294,7 +386,10 @@ function containerLayout(node, ctx) {
 function textStyles(node, font) {
   const s = node.styles;
   const attrs = { style_text_font: font.name };
-  if (s.color) attrs.style_text_color = hex(s.color);
+  if (s.color) {
+    attrs.style_text_color = hex(s.color);
+    if (s.color[3] < 255) attrs.style_text_opa = s.color[3];
+  }
   if (s.textAlign === 'center') attrs.style_text_align = 'center';
   else if (s.textAlign === 'right') attrs.style_text_align = 'right';
   return attrs;
@@ -342,6 +437,9 @@ function emit(node, parent, ctx, index = 0) {
     return null;
   }
 
+  // The browser applies text-transform when it renders; the extracted text is raw.
+  const transform = node.styles.textTransform;
+  if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
   const out = emitByTag(node, parent, ctx, index);
   // Carry component boundaries (React fiber walk or data-lv-component)
   // through to the element tree for the componentizer.
@@ -440,24 +538,42 @@ function emitText(node, parent, ctx, index) {
   const managed = isManaged(parent) && !outOfFlow(node);
   const { font, width } = fitText(node, ctx, { managed });
 
-  if (s.bgColor || (s.borderWidth > 0 && s.borderColor)) {
-    // Decorated text block (title bar, badge): box + vertically centered label,
-    // the way browsers center line boxes.
-    const align = s.textAlign === 'center' ? 'center' : 'left_mid';
+  const padded = s.padLeft > 0 || s.padRight > 0 || s.padTop > 0 || s.padBottom > 0;
+  if (s.bgColor || borderOf(s) || padded) {
+    // Decorated or padded text block (title bar, badge, card body): a box that
+    // owns the decoration and padding, plus a label placed inside it. A bare
+    // label has no padding of its own, so the text would slide to the edge.
+    // Two lines of text need about 2.4 font heights, and the text must be about
+    // as wide as the box or the browser would not have wrapped it. A tall box
+    // with a short title (a 32px header bar) is one line. Width alone is
+    // unreliable because the browser's font is not the LVGL one, hence 0.8.
+    const contentWidth = Math.max(1, node.w - s.padLeft - s.padRight);
+    const multiline = node.h - s.padTop - s.padBottom >= s.fontSize * 2.2 && font.measure(node.text) > contentWidth * 0.8;
+    // Named before the label, so an author's name lands on the box (see emitContainer).
+    const boxName = uid(ctx, node, 'box');
+    const labelName = uid(ctx, node, 'label');
+    /** @type {Record<string, string | number>} */
+    let where;
+    if (multiline) {
+      // Keep the content width so LVGL wraps where the browser did.
+      where = { align: 'top_left', ...(s.padLeft ? { x: s.padLeft } : {}), ...(s.padTop ? { y: s.padTop } : {}), width: contentWidth };
+    } else {
+      // Single line: vertical centering matches the browser's line box, unless the padding is lopsided.
+      const even = s.padTop === s.padBottom;
+      const center = s.textAlign === 'center';
+      where = {
+        align: center ? (even ? 'center' : 'top_mid') : even ? 'left_mid' : 'top_left',
+        ...(!center && s.padLeft ? { x: s.padLeft } : {}),
+        ...(!even ? { y: s.padTop } : {}),
+      };
+    }
+    const label = { name: labelName, ...where, text: node.text, ...textStyles(node, font) };
     return el('lv_obj', {
-      name: uid(ctx, node, 'box'),
+      name: boxName,
       ...placement(node, parent, { gridIndex: index }),
       ...boxStyles(node, ctx, { pad: 0 }),
       scrollable: 'false',
-    }, [
-      el('lv_label', {
-        name: uid(ctx, node, 'label'),
-        align,
-        ...(align === 'left_mid' && s.padLeft ? { x: s.padLeft } : {}),
-        text: node.text,
-        ...textStyles(node, font),
-      }),
-    ]);
+    }, [el('lv_label', label)]);
   }
 
   const attrs = {
@@ -486,7 +602,7 @@ function emitButton(node, parent, ctx, index) {
   return el('lv_button', {
     name,
     ...placement(node, parent, { gridIndex: index }),
-    ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
+    ...boxStyles(node, ctx, { pad: 0 }),
   }, children);
 }
 
@@ -526,7 +642,7 @@ function emitLink(node, parent, ctx, index, screen) {
   return el('lv_button', {
     name,
     ...placement(node, parent, { gridIndex: index }),
-    ...boxStyles(node, ctx, { transparentDefault: false, pad: 0 }),
+    ...boxStyles(node, ctx, { pad: 0 }),
   }, children);
 }
 

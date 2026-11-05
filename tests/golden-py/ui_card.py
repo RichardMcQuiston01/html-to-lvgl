@@ -99,6 +99,7 @@ def ui_create(parent):
     muicardheader_title.set_text("Elevated")
     muicardheader_title.set_style_text_font(lv.font_montserrat_12, 0)
     muicardheader_title.set_style_text_color(lv.color_hex(0x000000), 0)
+    muicardheader_title.set_style_text_opa(222, 0)
 
     card_body = lv.obj(card_2)
     card_body.set_width(147)
@@ -201,6 +202,7 @@ def ui_create(parent):
     muicardheader_title_2.set_text("Outlined")
     muicardheader_title_2.set_style_text_font(lv.font_montserrat_12, 0)
     muicardheader_title_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    muicardheader_title_2.set_style_text_opa(222, 0)
 
     card_body_2 = lv.obj(card_3)
     card_body_2.set_width(147)
@@ -271,5 +273,6 @@ def ui_create(parent):
     paper_2.set_text("A plain Paper surface")
     paper_2.set_style_text_font(lv.font_montserrat_12, 0)
     paper_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    paper_2.set_style_text_opa(222, 0)
 
     return root
