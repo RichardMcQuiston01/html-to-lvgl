@@ -1,0 +1,55 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="Library" style_text_font="montserrat_18" style_text_color="0x212529" />
+    <lv_label name="note" text="Page content sits under the dialogs." style_text_font="montserrat_12" style_text_color="0x6c757d" />
+    <lv_obj name="row" width="296" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_button name="open_plain" width="85" height="30" style_bg_color="0x0d6efd" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="open_plain_2" align="center" text="Delete item" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        <subject_set_int_event subject="modal_scrim_open" value="1" />
+      </lv_button>
+      <lv_button name="open_mui" width="66" height="30" style_bg_color="0x1976d2" style_border_width="0" style_radius="4" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="5" style_shadow_offset_y="1" style_pad_all="0">
+        <lv_label name="open_mui_2" align="center" text="TERMS" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        <subject_set_int_event subject="modal_body_div_4_open" value="1" />
+      </lv_button>
+    </lv_obj>
+    <lv_obj name="scrim" x="-12" y="-12" ignore_layout="true" floating="true" width="320" height="240" style_bg_color="0x000000" style_bg_opa="128" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="confirm" x="38" y="69" width="244" height="103" style_bg_color="0xffffff" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="14" style_pad_bottom="12" flex_flow="column" style_pad_row="6" style_pad_column="6" scrollable="false">
+        <lv_label name="confirm_title" text="Delete this item?" style_text_font="montserrat_14" style_text_color="0x212529" />
+        <lv_label name="confirm_text" text="This cannot be undone." style_text_font="montserrat_12" style_text_color="0x495057" />
+        <lv_obj name="actions" style_margin_top="8" width="212" height="26" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="end" style_pad_row="8" style_pad_column="8" scrollable="false">
+          <lv_button name="btn_cancel" width="61" height="26" style_bg_color="0xe9ecef" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+            <lv_label name="btn_cancel_2" align="center" text="Cancel" style_text_font="montserrat_12" style_text_color="0x212529" style_text_align="center" />
+            <subject_set_int_event subject="modal_scrim_open" value="0" />
+          </lv_button>
+          <lv_button name="btn_danger" width="59" height="26" style_bg_color="0xdc3545" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+            <lv_label name="btn_danger_2" align="center" text="Delete" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+            <subject_set_int_event subject="modal_scrim_open" value="0" />
+          </lv_button>
+        </lv_obj>
+      </lv_obj>
+      <bind_flag_if_eq subject="modal_scrim_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+    <lv_obj name="dialog_overlay" x="-12" y="-12" ignore_layout="true" floating="true" width="320" height="240" style_bg_color="0x000000" style_bg_opa="128" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="paper" x="32" y="60" width="256" height="120" style_bg_color="0xffffff" style_border_width="0" style_radius="4" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="46" style_shadow_offset_y="9" style_shadow_spread="8" style_pad_all="0" scrollable="false">
+        <lv_obj name="mui_title" x="0" y="0" width="256" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="mui_title_2" align="top_left" x="20" y="14" text="Terms of service" style_text_font="montserrat_16" style_text_color="0x000000" style_text_opa="222" />
+        </lv_obj>
+        <lv_obj name="mui_text" x="0" y="38" width="256" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="mui_text_2" align="top_left" x="20" y="4" width="216" text="Let apps collect anonymous usage data to improve the product." style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="153" />
+        </lv_obj>
+        <lv_obj name="dialog_actions" x="0" y="78" width="256" height="42" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="8" style_pad_right="8" style_pad_top="8" style_pad_bottom="8" flex_flow="row" style_flex_main_place="end" style_pad_row="8" style_pad_column="8" scrollable="false">
+          <lv_button name="button" width="78" height="26" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+            <lv_label name="button_2" align="center" text="DISAGREE" style_text_font="montserrat_12" style_text_color="0x1976d2" style_text_align="center" />
+            <subject_set_int_event subject="modal_body_div_4_open" value="0" />
+          </lv_button>
+          <lv_button name="button_3" width="58" height="26" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+            <lv_label name="button_4" align="center" text="AGREE" style_text_font="montserrat_12" style_text_color="0x1976d2" style_text_align="center" />
+            <subject_set_int_event subject="modal_body_div_4_open" value="0" />
+          </lv_button>
+        </lv_obj>
+      </lv_obj>
+      <subject_set_int_event subject="modal_body_div_4_open" value="0" />
+      <bind_flag_if_eq subject="modal_body_div_4_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+  </view>
+</screen>

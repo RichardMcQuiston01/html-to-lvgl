@@ -157,6 +157,7 @@ export function emitPy(view, opts = {}) {
 
   function emitBehavior(v, behavior) {
     for (const event of behavior.events ?? []) {
+      if (event.kind === 'play') continue; // TODO(phase8-f): timeline output
       const trigger = event.trigger ? `lv.EVENT.${event.trigger.toUpperCase()}` : 'lv.EVENT.CLICKED';
       if (event.kind === 'toggle') {
         usesToggle = true;

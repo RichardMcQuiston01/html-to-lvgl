@@ -10,6 +10,8 @@ import appbar from './appbar.mjs';
 import toolbar from './toolbar.mjs';
 import breadcrumbs from './breadcrumbs.mjs';
 import accordion from './accordion.mjs';
+import modal from './modal.mjs';
+import drawer from './drawer.mjs';
 
 /**
  * The component definitions that ship with html2lvgl, in the order they are
@@ -33,4 +35,6 @@ export const builtinComponents = [
   toolbar,
   breadcrumbs,
   accordion,
+  modal,
+  drawer,
 ];

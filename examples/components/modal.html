@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Modal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  h1 { font-size: 18px; font-weight: 500; color: #212529; }
+  p.note { font-size: 12px; color: #6c757d; }
+  .row { display: flex; gap: 8px; }
+  button { border: none; font-size: 12px; cursor: pointer; }
+
+  /* Plain HTML / ARIA: a full-screen scrim holding role=dialog. Open on load. */
+  .open-plain { background: #0d6efd; color: #ffffff; padding: 8px 12px; border-radius: 4px; }
+  .scrim { position: fixed; top: 0; left: 0; width: 320px; height: 240px; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+  .dialog { width: 244px; background: #ffffff; border-radius: 8px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .dialog h2 { font-size: 15px; font-weight: 500; color: #212529; }
+  .dialog p { font-size: 12px; color: #495057; }
+  .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .btn-cancel { background: #e9ecef; color: #212529; padding: 6px 12px; border-radius: 4px; }
+  .btn-danger { background: #dc3545; color: #ffffff; padding: 6px 12px; border-radius: 4px; }
+
+  /* Material UI style: Dialog = Modal root + Backdrop + container + Paper (closed on load). */
+  .MuiButton-root { background: none; color: #1976d2; font-weight: 500; text-transform: uppercase; padding: 6px 8px; border-radius: 4px; }
+  .MuiButton-contained { background: #1976d2; color: #ffffff; padding: 6px 12px; box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12); }
+  .MuiDialog-root { position: fixed; top: 0; left: 0; width: 320px; height: 240px; }
+  .MuiBackdrop-root { position: fixed; top: 0; left: 0; width: 320px; height: 240px; background-color: rgba(0,0,0,0.5); }
+  .MuiDialog-container { position: fixed; top: 0; left: 0; width: 320px; height: 240px; display: flex; align-items: center; justify-content: center; }
+  .MuiPaper-root { background-color: #ffffff; color: rgba(0,0,0,0.87); border-radius: 4px; }
+  .MuiDialog-paper { width: 256px; box-shadow: 0px 11px 15px -7px rgba(0,0,0,0.2), 0px 24px 38px 3px rgba(0,0,0,0.14), 0px 9px 46px 8px rgba(0,0,0,0.12); }
+  .MuiDialogTitle-root { font-size: 16px; font-weight: 500; padding: 14px 20px 6px; }
+  .MuiDialogContent-root { font-size: 12px; color: rgba(0,0,0,0.6); padding: 4px 20px 8px; }
+  .MuiDialogActions-root { display: flex; justify-content: flex-end; gap: 8px; padding: 8px; }
+</style>
+</head>
+<body>
+  <h1>Library</h1>
+  <p class="note">Page content sits under the dialogs.</p>
+  <div class="row">
+    <button class="open-plain" id="open-plain" aria-haspopup="dialog" aria-controls="confirm">Delete item</button>
+    <button class="MuiButton-root MuiButton-contained" id="open-mui" aria-haspopup="dialog" aria-controls="mui-dialog">Terms</button>
+  </div>
+
+  <div class="scrim" id="scrim">
+    <div class="dialog" id="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+      <h2 id="confirm-title">Delete this item?</h2>
+      <p id="confirm-text">This cannot be undone.</p>
+      <div class="actions">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="MuiDialog-root MuiModal-root" role="presentation" hidden>
+    <div class="MuiBackdrop-root" aria-hidden="true"></div>
+    <div class="MuiDialog-container" role="presentation">
+      <div class="MuiPaper-root MuiDialog-paper MuiPaper-elevation24" id="mui-dialog" role="dialog" aria-modal="true" aria-labelledby="mui-title" aria-describedby="mui-text">
+        <h2 class="MuiDialogTitle-root" id="mui-title">Terms of service</h2>
+        <div class="MuiDialogContent-root" id="mui-text">Let apps collect anonymous usage data to improve the product.</div>
+        <div class="MuiDialogActions-root">
+          <button class="MuiButton-root">Disagree</button>
+          <button class="MuiButton-root">Agree</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

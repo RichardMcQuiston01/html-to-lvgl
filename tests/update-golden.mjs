@@ -87,8 +87,8 @@ for (const file of fixtureFiles) {
   console.log(`updated golden-py/${pyUnit}.py`);
 }
 
-// Behavior fixtures: converted with the test-only disclosure components
-// (tests/helpers/disclosure-demo.mjs) as <screen>s. Each writes <name>.xml and
+// Behavior fixtures: converted as <screen>s (the disclosure one with the test-only
+// components of tests/helpers/disclosure-demo.mjs, the rest with the real ones). Each writes <name>.xml and
 // <name>.globals.xml; spike/subjects/run-generic.sh drives them in real LVGL.
 const behaviorFixtureDir = join(here, 'fixtures-behavior');
 const goldenBehaviorDir = join(here, 'golden-behavior');

@@ -153,6 +153,7 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
   })(view);
   (function collectReferenced(node) {
     for (const ref of [...(node.meta?.behavior?.events ?? []), ...(node.meta?.behavior?.binds ?? [])]) {
+      if (ref.kind === 'play') continue; // timeline events carry no subject
       if (!subjects.has(ref.subject)) subjects.set(ref.subject, 0);
     }
     node.children.forEach(collectReferenced);
@@ -162,6 +163,7 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
 
   function emitBehavior(node, v) {
     for (const e of node.meta?.behavior?.events ?? []) {
+      if (e.kind === 'play') continue; // TODO(phase8-f): timeline output
       const trigger = `LV_EVENT_${(e.trigger ?? 'clicked').toUpperCase()}`;
       lines.push(e.kind === 'set'
         ? `    lv_obj_add_subject_set_int_event(${v}, &${subjectVar(e.subject)}, ${trigger}, ${e.value});`
