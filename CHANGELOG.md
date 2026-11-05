@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Added
+
+- `html2lvgl --version` (`-v`) prints the package version.
+
+### Changed
+
+- **Children can draw outside their parent.** A box that a child overhangs gets `overflow_visible` and an invisible outline for the extended-draw size, so badges are no longer clipped. C, C++ and Python now write the `overflow_visible` flag.
+- A rounded `overflow: hidden` box that holds an image gets `style_clip_corner`, so photo avatars have round corners.
+- `rgba()` alpha on borders and text becomes `style_border_opa` and `style_text_opa`.
+- A `<button>` or link with no background is transparent instead of LVGL's default blue.
+- A padded text-only block keeps its padding, negative margins are kept, and `text-transform` is applied to the label text.
+- A border drawn on one side only (left, right or top) becomes `style_border_side`. LVGL takes one side per object, so a border on two or more different sides still collapses to one.
+- Links that become plain labels (single-page output, or an href that is not a sibling screen) are no longer reported as `TOUCH_TARGET_SMALL`.
+- Unrecognized Material UI parts and `css-<hash>` classes get readable widget names (`icon_button`, `card_header_title`) instead of `muiiconbutton_root`. Generated names in existing Material UI output change.
+- The render harness prints an error naming `LV_MEM_SIZE` when LVGL runs out of memory, instead of hanging.
+
+### Known limits
+
+- An empty spacer toolbar still costs an object, because removing it is not provably layout-safe.
+- The icon recognizer places an icon outline at the top-left of its button without an offset.
+
 ## [0.5.0] - 2026-10-31
 
 `src/` gained new capabilities (ten recognized components, pinned app bars, touch-target notes), so this is a minor bump. One default changes what the CLI writes: a page with a small button or link now produces a `TODO.txt`; see the note under Changed, and pass `--min-touch-target 0` to turn it off.
