@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-03
+
+### Changed
+
+- README donate QR image is now 180 px wide instead of filling the page.
+
 ## [0.5.0] - 2026-10-31
 
 `src/` gained new capabilities (ten recognized components, pinned app bars, touch-target notes), so this is a minor bump. One default changes what the CLI writes: a page with a small button or link now produces a `TODO.txt`; see the note under Changed, and pass `--min-touch-target 0` to turn it off.
