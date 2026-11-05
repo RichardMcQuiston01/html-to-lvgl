@@ -125,18 +125,18 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_column(toolbar_2, 0, 0);
     lv_obj_set_flag(toolbar_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muiiconbutton_root = lv_button_create(toolbar_2);
-    lv_obj_set_style_margin_left(muiiconbutton_root, -12, 0);
-    lv_obj_set_style_margin_right(muiiconbutton_root, 16, 0);
-    lv_obj_set_width(muiiconbutton_root, 40);
-    lv_obj_set_height(muiiconbutton_root, 40);
-    lv_obj_set_style_bg_color(muiiconbutton_root, lv_color_hex(0x1976d2), 0);
-    lv_obj_set_style_border_width(muiiconbutton_root, 0, 0);
-    lv_obj_set_style_radius(muiiconbutton_root, 20, 0);
-    lv_obj_set_style_shadow_width(muiiconbutton_root, 0, 0);
-    lv_obj_set_style_pad_all(muiiconbutton_root, 0, 0);
+    lv_obj_t * menu = lv_button_create(toolbar_2);
+    lv_obj_set_style_margin_left(menu, -12, 0);
+    lv_obj_set_style_margin_right(menu, 16, 0);
+    lv_obj_set_width(menu, 40);
+    lv_obj_set_height(menu, 40);
+    lv_obj_set_style_bg_color(menu, lv_color_hex(0x1976d2), 0);
+    lv_obj_set_style_border_width(menu, 0, 0);
+    lv_obj_set_style_radius(menu, 20, 0);
+    lv_obj_set_style_shadow_width(menu, 0, 0);
+    lv_obj_set_style_pad_all(menu, 0, 0);
 
-    lv_obj_t * icon_icon = lv_obj_create(muiiconbutton_root);
+    lv_obj_t * icon_icon = lv_obj_create(menu);
     lv_obj_set_width(icon_icon, 24);
     lv_obj_set_height(icon_icon, 24);
     lv_obj_set_style_bg_opa(icon_icon, 0, 0);
@@ -153,21 +153,21 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_text_font(appbar_title_2, &lv_font_montserrat_20, 0);
     lv_obj_set_style_text_color(appbar_title_2, lv_color_hex(0xffffff), 0);
 
-    lv_obj_t * muibutton_root = lv_button_create(toolbar_2);
-    lv_obj_set_width(muibutton_root, 60);
-    lv_obj_set_height(muibutton_root, 28);
-    lv_obj_set_style_bg_color(muibutton_root, lv_color_hex(0x1976d2), 0);
-    lv_obj_set_style_border_width(muibutton_root, 0, 0);
-    lv_obj_set_style_radius(muibutton_root, 4, 0);
-    lv_obj_set_style_shadow_width(muibutton_root, 0, 0);
-    lv_obj_set_style_pad_all(muibutton_root, 0, 0);
+    lv_obj_t * button_2 = lv_button_create(toolbar_2);
+    lv_obj_set_width(button_2, 60);
+    lv_obj_set_height(button_2, 28);
+    lv_obj_set_style_bg_color(button_2, lv_color_hex(0x1976d2), 0);
+    lv_obj_set_style_border_width(button_2, 0, 0);
+    lv_obj_set_style_radius(button_2, 4, 0);
+    lv_obj_set_style_shadow_width(button_2, 0, 0);
+    lv_obj_set_style_pad_all(button_2, 0, 0);
 
-    lv_obj_t * muibutton_root_2 = lv_label_create(muibutton_root);
-    lv_obj_set_align(muibutton_root_2, LV_ALIGN_CENTER);
-    lv_label_set_text(muibutton_root_2, "Login");
-    lv_obj_set_style_text_font(muibutton_root_2, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(muibutton_root_2, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_text_align(muibutton_root_2, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_t * button_3 = lv_label_create(button_2);
+    lv_obj_set_align(button_3, LV_ALIGN_CENTER);
+    lv_label_set_text(button_3, "Login");
+    lv_obj_set_style_text_font(button_3, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(button_3, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_align(button_3, LV_TEXT_ALIGN_CENTER, 0);
 
     return root;
 }

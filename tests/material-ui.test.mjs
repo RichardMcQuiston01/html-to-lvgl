@@ -89,8 +89,7 @@ test('the diagnostics are exactly the expected set', () => {
     'ICON_PLACEHOLDER icon_notifications', // app bar action, under a badge
     'ICON_PLACEHOLDER icon_warning', // alert icon
     'ICON_PLACEHOLDER icon_wifi', // card header action, under a badge
-    'TOUCH_TARGET_SMALL', // breadcrumb link "Home" (32x14)
-    'TOUCH_TARGET_SMALL', // breadcrumb link "Devices" (43x14)
+    // The breadcrumb links became plain labels (single page), so they are not reported.
     'TOUCH_TARGET_SMALL', // the "Away" chip, a role=button 67x24
   ].sort());
   // Every icon placeholder's widget exists under that exact name in the XML.
@@ -108,8 +107,8 @@ test('TODO.txt lists every icon placeholder by its emitted name', () => {
 });
 
 test('the transparent icon buttons in the bar take the bar color, not LVGL blue', () => {
-  assert.match(result.xml, /name="muiiconbutton_root"[^>]* style_bg_color="0x1976d2"/);
-  assert.match(result.xml, /name="muiiconbutton_root_2"[^>]* style_bg_color="0x1976d2"/);
+  assert.match(result.xml, /name="menu"[^>]* style_bg_color="0x1976d2"/);
+  assert.match(result.xml, /name="notifications"[^>]* style_bg_color="0x1976d2"/);
 });
 
 // ---- Regression tests for cross-component fixes -------------------------------------------

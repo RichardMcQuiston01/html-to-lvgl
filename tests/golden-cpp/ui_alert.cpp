@@ -221,22 +221,22 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_column(alert_action, 0, 0);
     lv_obj_set_flag(alert_action, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muibutton_root = lv_button_create(alert_action);
-    lv_obj_set_width(muibutton_root, 62);
-    lv_obj_set_height(muibutton_root, 23);
-    lv_obj_set_style_bg_color(muibutton_root, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_bg_opa(muibutton_root, 0, 0);
-    lv_obj_set_style_border_width(muibutton_root, 0, 0);
-    lv_obj_set_style_radius(muibutton_root, 0, 0);
-    lv_obj_set_style_shadow_width(muibutton_root, 0, 0);
-    lv_obj_set_style_pad_all(muibutton_root, 0, 0);
+    lv_obj_t * button = lv_button_create(alert_action);
+    lv_obj_set_width(button, 62);
+    lv_obj_set_height(button, 23);
+    lv_obj_set_style_bg_color(button, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(button, 0, 0);
+    lv_obj_set_style_border_width(button, 0, 0);
+    lv_obj_set_style_radius(button, 0, 0);
+    lv_obj_set_style_shadow_width(button, 0, 0);
+    lv_obj_set_style_pad_all(button, 0, 0);
 
-    lv_obj_t * muibutton_root_2 = lv_label_create(muibutton_root);
-    lv_obj_set_align(muibutton_root_2, LV_ALIGN_CENTER);
-    lv_label_set_text(muibutton_root_2, "Update");
-    lv_obj_set_style_text_font(muibutton_root_2, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(muibutton_root_2, lv_color_hex(0x014361), 0);
-    lv_obj_set_style_text_align(muibutton_root_2, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_t * button_2 = lv_label_create(button);
+    lv_obj_set_align(button_2, LV_ALIGN_CENTER);
+    lv_label_set_text(button_2, "Update");
+    lv_obj_set_style_text_font(button_2, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(button_2, lv_color_hex(0x014361), 0);
+    lv_obj_set_style_text_align(button_2, LV_TEXT_ALIGN_CENTER, 0);
 
     return root;
 }

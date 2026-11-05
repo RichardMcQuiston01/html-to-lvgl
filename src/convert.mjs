@@ -24,7 +24,7 @@ import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
-import { sanitize } from './names.mjs';
+import { sanitize, ownName } from './names.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -54,7 +54,11 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   // before the optimizer collapses wrappers or the emitter maps tags.
   const { tree: recognizedTree } = recognize(structuredClone(input), { registry, diagnostics });
   // Info-only and read-only: reports pressables under minTouchTarget px (0 = off).
-  checkTouchTargets(recognizedTree, { diagnostics, minSize: minTouchTarget });
+  checkTouchTargets(recognizedTree, {
+    diagnostics,
+    minSize: minTouchTarget,
+    isLinkLive: (n) => Boolean(screens && resolveScreen(n.link || (n.tag === 'a' ? n.attrs?.href : null), screens)),
+  });
   const { tree, removed } = optimize(recognizedTree);
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
   markOverhangAndClip(tree);
@@ -77,7 +81,7 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
 /* ---------------------------------------------------------------- helpers */
 
 function uid(ctx, node, fallback) {
-  const base = sanitize(node.lvName || node.id || node.className || fallback || node.tag);
+  const base = ownName(node) ?? sanitize(fallback || node.tag);
   // A numbered name can collide with a base another node already used (a
   // widget called "icon_menu_2" next to two "icon_menu"), so keep counting
   // until the final name is unused, and record it so later bases see it too.

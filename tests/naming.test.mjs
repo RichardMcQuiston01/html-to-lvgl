@@ -82,3 +82,17 @@ test('a name that collides with another node\'s numbered name is still unique', 
   const names = namesOf(xml, 'lv_obj');
   assert.equal(new Set(names).size, names.length, names.join(','));
 });
+
+test('Material UI and generated classes give readable names', async () => {
+  const { readableClassName, ownName } = await import('../src/names.mjs');
+  assert.equal(readableClassName('MuiIconButton-root'), 'icon_button');
+  assert.equal(readableClassName('MuiCardHeader-title'), 'card_header_title');
+  assert.equal(readableClassName('css-1x2y3z'), null);
+  assert.equal(ownName({ className: 'MuiIconButton-root', aria: { label: 'Open menu' } }), 'open_menu');
+  assert.equal(ownName({ className: 'css-1abc' }), null);
+  assert.equal(ownName({ className: 'MuiIconButton-root' }), 'icon_button');
+  assert.equal(ownName({ className: 'hero', id: 'main' }), 'main');
+  assert.equal(ownName({ className: 'hero-banner' }), 'hero_banner');
+  const { xml } = convert(page(node('div', { className: 'css-9zz', w: 50, h: 20, children: [node('p', { text: 'x', w: 10, h: 10 })] })));
+  assert.ok(!/css_9zz/.test(xml));
+});

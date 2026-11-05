@@ -25,9 +25,9 @@
         <lv_obj name="avatar" width="36" height="36" style_bg_color="0xff5722" style_border_width="0" style_radius="32767" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_label name="avatar_2" align="center" text="LR" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
         </lv_obj>
-        <lv_obj name="muicardheader_content" flex_grow="1" width="192" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="muicardheader_title" x="0" y="0" text="Living room" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
-          <lv_label name="muicardheader_subheader" x="0" y="18" text="Heating, 21.5 C" style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
+        <lv_obj name="card_header_content" flex_grow="1" width="192" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="card_header_title" x="0" y="0" text="Living room" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
+          <lv_label name="card_header_subheader" x="0" y="18" text="Heating, 21.5 C" style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
         </lv_obj>
         <lv_obj name="badge" width="24" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" overflow_visible="true" style_outline_width="4" style_outline_opa="3" style_outline_color="0xffffff" scrollable="false">
           <lv_obj name="icon_wifi" x="0" y="0" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x000000" style_border_opa="138" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
@@ -62,12 +62,12 @@
     </lv_obj>
     <lv_obj name="appbar" x="0" y="0" floating="true" width="320" height="56" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="10" style_shadow_offset_y="1" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
       <lv_obj name="toolbar_2" width="320" height="56" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
-        <lv_button name="muiiconbutton_root" style_margin_left="-12" style_margin_right="8" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
+        <lv_button name="menu" style_margin_left="-12" style_margin_right="8" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
           <lv_obj name="icon_menu" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0xffffff" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
         </lv_button>
         <lv_label name="appbar_title" flex_grow="1" text="Thermostat" style_text_font="montserrat_18" style_text_color="0xffffff" />
         <lv_obj name="badge_2" width="40" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="9" style_outline_opa="3" style_outline_color="0x1976d2" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
-          <lv_button name="muiiconbutton_root_2" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
+          <lv_button name="notifications" width="40" height="40" style_bg_color="0x1976d2" style_border_width="0" style_radius="20" style_shadow_width="0" style_pad_all="0">
             <lv_obj name="icon_notifications" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0xffffff" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
           </lv_button>
           <lv_obj name="badge_count" x="31" y="-9" ignore_layout="true" width="18" height="18" style_bg_color="0xd32f2f" style_border_width="0" style_radius="9" style_shadow_width="0" style_pad_all="0" scrollable="false">

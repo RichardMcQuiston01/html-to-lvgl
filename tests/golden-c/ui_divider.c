@@ -265,17 +265,17 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(divider_line, 0, 0);
     lv_obj_set_flag(divider_line, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muidivider_wrapper = lv_obj_create(divider_7);
-    lv_obj_set_width(muidivider_wrapper, 33);
-    lv_obj_set_height(muidivider_wrapper, 12);
-    lv_obj_set_style_bg_opa(muidivider_wrapper, 0, 0);
-    lv_obj_set_style_border_width(muidivider_wrapper, 0, 0);
-    lv_obj_set_style_radius(muidivider_wrapper, 0, 0);
-    lv_obj_set_style_shadow_width(muidivider_wrapper, 0, 0);
-    lv_obj_set_style_pad_all(muidivider_wrapper, 0, 0);
-    lv_obj_set_flag(muidivider_wrapper, LV_OBJ_FLAG_SCROLLABLE, false);
+    lv_obj_t * divider_wrapper = lv_obj_create(divider_7);
+    lv_obj_set_width(divider_wrapper, 33);
+    lv_obj_set_height(divider_wrapper, 12);
+    lv_obj_set_style_bg_opa(divider_wrapper, 0, 0);
+    lv_obj_set_style_border_width(divider_wrapper, 0, 0);
+    lv_obj_set_style_radius(divider_wrapper, 0, 0);
+    lv_obj_set_style_shadow_width(divider_wrapper, 0, 0);
+    lv_obj_set_style_pad_all(divider_wrapper, 0, 0);
+    lv_obj_set_flag(divider_wrapper, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * label_5 = lv_label_create(muidivider_wrapper);
+    lv_obj_t * label_5 = lv_label_create(divider_wrapper);
     lv_obj_set_x(label_5, 8);
     lv_obj_set_y(label_5, 0);
     lv_label_set_text(label_5, "OR");
