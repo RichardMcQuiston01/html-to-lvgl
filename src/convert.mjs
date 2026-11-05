@@ -189,7 +189,9 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
   if (isPinnedBar(node)) attrs.floating = 'true';
   if (size) {
     attrs.width = node.w;
-    attrs.height = node.h;
+    // A component sets layout.heightContent on a box whose height must follow its
+    // children (an accordion item), or siblings would not reflow when a child hides.
+    attrs.height = node.layout?.heightContent ? 'content' : node.h;
   }
   return attrs;
 }

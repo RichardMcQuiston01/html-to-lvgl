@@ -1,0 +1,8 @@
+<globals>
+  <subjects>
+    <int name="accordion_plain_p1_open" value="0"/>
+    <int name="accordion_plain_p2_open" value="1"/>
+    <int name="accordion_mui1_content_open" value="0"/>
+    <int name="accordion_mui2_content_open" value="1"/>
+  </subjects>
+</globals>

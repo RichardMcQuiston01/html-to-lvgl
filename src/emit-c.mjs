@@ -229,8 +229,8 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
 
     if (key === 'x') return lines.push(`    lv_obj_set_x(${v}, ${value});`);
     if (key === 'y') return lines.push(`    lv_obj_set_y(${v}, ${value});`);
-    if (key === 'width') return lines.push(`    lv_obj_set_width(${v}, ${value});`);
-    if (key === 'height') return lines.push(`    lv_obj_set_height(${v}, ${value});`);
+    if (key === 'width') return lines.push(`    lv_obj_set_width(${v}, ${value === 'content' ? 'LV_SIZE_CONTENT' : value});`);
+    if (key === 'height') return lines.push(`    lv_obj_set_height(${v}, ${value === 'content' ? 'LV_SIZE_CONTENT' : value});`);
     if (key === 'align') return lines.push(`    lv_obj_set_align(${v}, ${ENUMS.align(value)});`);
     if (key === 'flex_flow') return lines.push(`    lv_obj_set_flex_flow(${v}, ${ENUMS.flex_flow(value)});`);
     if (key === 'flex_grow') return lines.push(`    lv_obj_set_flex_grow(${v}, ${value});`);

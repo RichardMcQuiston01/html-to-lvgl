@@ -229,8 +229,8 @@ export function emitPy(view, opts = {}) {
 
     if (key === 'x') return lines.push(`    ${v}.set_x(${value})`);
     if (key === 'y') return lines.push(`    ${v}.set_y(${value})`);
-    if (key === 'width') return lines.push(`    ${v}.set_width(${value})`);
-    if (key === 'height') return lines.push(`    ${v}.set_height(${value})`);
+    if (key === 'width') return lines.push(`    ${v}.set_width(${value === 'content' ? 'lv.SIZE_CONTENT' : value})`);
+    if (key === 'height') return lines.push(`    ${v}.set_height(${value === 'content' ? 'lv.SIZE_CONTENT' : value})`);
     if (key === 'align') return lines.push(`    ${v}.set_align(${ENUMS.align(value)})`);
     if (key === 'flex_flow') return lines.push(`    ${v}.set_flex_flow(${ENUMS.flex_flow(value)})`);
     if (key === 'flex_grow') return lines.push(`    ${v}.set_flex_grow(${value})`);
