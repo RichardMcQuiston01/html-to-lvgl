@@ -354,13 +354,13 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
   // Each screen needs its own entry point; a single page keeps ui_create.
   const symbol = screenMode ? `ui_${name}_create` : 'ui_create';
   if (formats.has('c')) {
-    const { c, h, unit } = emitC(view, { name, symbol, lvInclude: opts['lv-include'] });
+    const { c, h, unit } = emitC(view, { name, symbol, lvInclude: opts['lv-include'], subjects: converted.subjects });
     writeFileSync(join(opts.output, `${unit}.c`), c);
     writeFileSync(join(opts.output, `${unit}.h`), h);
     written.push(join(opts.output, `${unit}.c`), join(opts.output, `${unit}.h`));
   }
   if (formats.has('cpp')) {
-    const { c, h, unit } = emitCpp(view, { name, symbol, lvInclude: opts['lv-include'] });
+    const { c, h, unit } = emitCpp(view, { name, symbol, lvInclude: opts['lv-include'], subjects: converted.subjects });
     writeFileSync(join(opts.output, `${unit}.cpp`), c);
     writeFileSync(join(opts.output, `${unit}.hpp`), h);
     written.push(join(opts.output, `${unit}.cpp`), join(opts.output, `${unit}.hpp`));

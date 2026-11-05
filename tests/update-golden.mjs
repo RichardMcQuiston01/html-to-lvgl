@@ -15,6 +15,7 @@ import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
 import { demoRegistry } from './helpers/disclosure-demo.mjs';
+import { convertInstances } from './helpers/xml-instance-demo.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, 'fixtures');
@@ -99,4 +100,25 @@ for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.js
   writeFileSync(join(goldenBehaviorDir, `${name}.xml`), xml);
   writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
   console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
+}
+
+// C and C++ for the behavior goldens (Phase 8 lane B): same trees as above,
+// emitted with the screen entry point convention (ui_<screen>_create).
+// spike/subjects/run-c.sh compiles and click-drives them in CI.
+const behaviorUnits = [];
+for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
+  const name = file.replace(/\.json$/, '');
+  const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
+  behaviorUnits.push([name, convert(tree, { name, screenMode: true, registry: demoRegistry() })]);
+}
+behaviorUnits.push(['acc_instances', convertInstances()]);
+for (const [name, { view, subjects }] of behaviorUnits) {
+  const opts = { name, symbol: `ui_${name}_create`, subjects };
+  const c = emitC(view, opts);
+  writeFileSync(join(goldenBehaviorDir, `${c.unit}.c`), c.c);
+  writeFileSync(join(goldenBehaviorDir, `${c.unit}.h`), c.h);
+  const cpp = emitCpp(view, opts);
+  writeFileSync(join(goldenBehaviorDir, `${cpp.unit}.cpp`), cpp.c);
+  writeFileSync(join(goldenBehaviorDir, `${cpp.unit}.hpp`), cpp.h);
+  console.log(`updated golden-behavior/${c.unit}.c/.h and .cpp/.hpp`);
 }

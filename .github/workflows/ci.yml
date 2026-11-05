@@ -170,6 +170,14 @@ jobs:
             build/lvgl/lib/liblvgl.a build/lvgl/lib/liblvgl_thorvg.a -lm -lpthread
           /tmp/render_cpp_nav /tmp/out.bmp
 
+      # Generated C and C++ for the behavior IR: subjects, toggle/set events,
+      # flag binds and lv_xml_create instances, compiled with gcc and g++ and
+      # click-driven through a virtual pointer (spike/subjects/run-c.sh).
+      - name: Compile and click-drive the generated behavior C and C++
+        run: |
+          LVGL_DIR="$GITHUB_WORKSPACE/lvgl" LIB_DIR="$GITHUB_WORKSPACE/build/lvgl/lib" \
+            spike/subjects/run-c.sh
+
       - name: Convert with custom fonts as C++ and link against the C-compiled font files
         run: |
           # Proves the C++/C linkage trap fix: a C-compiled lv_font_conv font

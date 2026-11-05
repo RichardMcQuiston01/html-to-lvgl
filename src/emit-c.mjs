@@ -32,8 +32,27 @@
  *     confirmed by reproducing the resulting "undefined reference" link
  *     failure during development. Keep font/image .c files compiled as C;
  *     this declaration is what lets C++ code call into them correctly.
+ *
+ * Behavior (src/behavior.mjs, LVGL 9.4 observer API; names checked against
+ * lvgl/src/others/observer/lv_observer.h and xml/lv_xml.h of v9.4.0):
+ *   - Each subject is a file-scope `static lv_subject_t subject_<name>`, set
+ *     up by a generated init_subjects(): lv_subject_init_int on the first
+ *     create call, a reset to the initial value on later ones.
+ *   - The same block registers it with lv_xml_register_subject(NULL, name, ..)
+ *     inside `#if LV_USE_XML`, so a library XML component created with
+ *     lv_xml_create can resolve a `subject` prop by name.
+ *   - meta.behavior events become lv_obj_add_subject_toggle_event /
+ *     lv_obj_add_subject_set_int_event and binds become lv_obj_bind_flag_if_<op>;
+ *     all exist in 9.4, so no substitute was needed. The XML child elements
+ *     convert() also writes for them are skipped via isBehaviorElement().
+ *   - An xmlComponent instance (any tag not starting with lv_) becomes
+ *     lv_xml_create(parent, "<tag>", attrs) with a static NULL-terminated
+ *     name/value list; the application registers the component's XML first.
+ *   Subjects come from opts.subjects (convert()'s final list) plus every
+ *   element's meta.behavior.subjects.
  */
 import { FONT_SIZES } from './fonts.mjs';
+import { isBehaviorElement } from './behavior.mjs';
 
 // The *exact* set of built-in font names — not a "starts with montserrat_"
 // guess, which a custom family literally named "Montserrat" would also
@@ -66,6 +85,10 @@ const C_RESERVED = new Set([
   'void', 'volatile', 'while', 'parent', 'root',
 ]);
 
+/** A view element that stands for a library XML component (see convert.mjs emitLibraryComponent). */
+const isXmlComponent = (node) => node.tag !== 'view' && !node.tag.startsWith('lv_') && !isBehaviorElement(node)
+  && !['screen_create_event', 'screen_load_event'].includes(node.tag);
+
 export function emitC(view, opts = {}) {
   return emit(view, { ...opts, lang: 'c' });
 }
@@ -75,7 +98,7 @@ export function emitCpp(view, opts = {}) {
   return emit(view, { ...opts, lang: 'cpp' });
 }
 
-function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h', lang = 'c' } = {}) {
+function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h', lang = 'c', subjects: declared = [] } = {}) {
   const cpp = lang === 'cpp';
   const headerExt = cpp ? 'hpp' : 'h';
   // extern declarations for symbols DEFINED elsewhere (always-C font/image
@@ -116,7 +139,52 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
     return v;
   }
 
+  // Behavior: every subject of the page, declared once. Declared ones keep
+  // their initial value; one only referenced (already a convert() diagnostic)
+  // starts at 0 so the unit still compiles.
+  const subjects = new Map(declared.map((s) => [s.name, s.initial]));
+  let usesXmlComponent = false;
+  // Declarations first: a trigger often comes before the panel that declares
+  // its subject, and must not claim the default 0 for it.
+  (function collectDeclared(node) {
+    for (const s of node.meta?.behavior?.subjects ?? []) if (!subjects.has(s.name)) subjects.set(s.name, s.initial);
+    if (isXmlComponent(node)) usesXmlComponent = true;
+    node.children.forEach(collectDeclared);
+  })(view);
+  (function collectReferenced(node) {
+    for (const ref of [...(node.meta?.behavior?.events ?? []), ...(node.meta?.behavior?.binds ?? [])]) {
+      if (!subjects.has(ref.subject)) subjects.set(ref.subject, 0);
+    }
+    node.children.forEach(collectReferenced);
+  })(view);
+  const subjectVar = (subject) => `subject_${subject.replace(/[^a-z0-9_]/gi, '_')}`;
+  let xmlAttrCount = 0;
+
+  function emitBehavior(node, v) {
+    for (const e of node.meta?.behavior?.events ?? []) {
+      const trigger = `LV_EVENT_${(e.trigger ?? 'clicked').toUpperCase()}`;
+      lines.push(e.kind === 'set'
+        ? `    lv_obj_add_subject_set_int_event(${v}, &${subjectVar(e.subject)}, ${trigger}, ${e.value});`
+        : `    lv_obj_add_subject_toggle_event(${v}, &${subjectVar(e.subject)}, ${trigger});`);
+    }
+    for (const b of node.meta?.behavior?.binds ?? []) {
+      lines.push(`    lv_obj_bind_flag_if_${b.op}(${v}, &${subjectVar(b.subject)}, LV_OBJ_FLAG_${b.flag.toUpperCase()}, ${b.ref});`);
+    }
+  }
+
+  /** A library XML component instance: attributes go in a static name/value list. */
+  function emitXmlComponent(node, parentVar) {
+    const v = widgetVar(node);
+    const arr = `xml_attrs_${++xmlAttrCount}`;
+    const pairs = Object.entries(node.attrs).filter(([, val]) => val !== null && val !== undefined && val !== '')
+      .flatMap(([k, val]) => [cstr(k), cstr(val)]);
+    statics.push(`static const char * ${arr}[] = {${[...pairs, 'NULL'].join(', ')}};`);
+    lines.push('');
+    lines.push(`    lv_obj_t * ${v} = (lv_obj_t *)lv_xml_create(${parentVar}, ${cstr(node.tag)}, ${arr});`);
+  }
+
   function emitNode(node, parentVar) {
+    if (isXmlComponent(node)) return emitXmlComponent(node, parentVar);
     const v = node.tag === 'view' ? 'root' : widgetVar(node);
     const createFn = { view: 'lv_obj_create' }[node.tag] ?? `${node.tag.replace(/-.*/, '')}_create`;
 
@@ -140,7 +208,8 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
       emitAttr(node, v, key, String(raw));
     }
-    for (const child of node.children) emitNode(child, v);
+    for (const child of node.children) if (!isBehaviorElement(child)) emitNode(child, v);
+    emitBehavior(node, v);
     if (node.tag === 'view') lines.push('');
   }
 
@@ -205,6 +274,30 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
   }
 
   emitNode(view, 'parent');
+
+  if (subjects.size) {
+    const each = (fn) => [...subjects].map(([n, initial]) => fn(subjectVar(n), n, initial)).join('\n');
+    statics.push(`${each((id) => `static lv_subject_t ${id};`)}
+static bool subjects_ready;
+
+/* Subjects outlive the widgets bound to them: set them up once, and start
+ * every later create call from the initial state again. */
+static void init_subjects(void)
+{
+    if(!subjects_ready) {
+${each((id, n, initial) => `        lv_subject_init_int(&${id}, ${initial});`)}
+#if LV_USE_XML
+${each((id, n) => `        lv_xml_register_subject(NULL, ${cstr(n)}, &${id});`)}
+#endif
+        subjects_ready = true;
+    }
+    else {
+${each((id, n, initial) => `        lv_subject_set_int(&${id}, ${initial});`)}
+    }
+}`);
+    lines.unshift('', '    init_subjects();');
+  }
+  if (usesXmlComponent) statics.unshift('#if !LV_USE_XML\n#error "this UI instantiates library XML components: enable LV_USE_XML in lv_conf.h"\n#endif\n');
 
   const guard = `${unit.toUpperCase()}_${headerExt.toUpperCase()}`;
   // emitC's own function declaration stays plain-C but is wrapped so this
