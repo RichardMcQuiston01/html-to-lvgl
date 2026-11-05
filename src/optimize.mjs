@@ -40,6 +40,7 @@ export function optimize(tree) {
       !node.widget &&    // data-lv-widget forces a mapping in convert.mjs
       !node.lvName &&    // an explicit name must reach uid()
       !node.link &&      // data-lv-link must reach convert.mjs's nav-link check
+      !node.behavior && !node.xmlComponent && // interaction must reach the emitter
       !node.recognized && // a recognized component must reach the emitter as itself
       node.children.length === 1 &&
       !s.bgColor && !s.gradient && !s.shadow && !s.pressed &&

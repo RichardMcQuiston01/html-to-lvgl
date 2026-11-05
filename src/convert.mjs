@@ -25,6 +25,7 @@ import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
+import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -60,7 +61,7 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
     isLinkLive: (n) => Boolean(screens && resolveScreen(n.link || (n.tag === 'a' ? n.attrs?.href : null), screens)),
   });
   const { tree, removed } = optimize(recognizedTree);
-  const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts };
+  const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts, page: name, subjects: new Map(), usedSubjects: new Map() };
   markOverhangAndClip(tree);
 
   const rootAttrs = {
@@ -75,7 +76,9 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
   const wrapper = screenMode ? 'screen' : 'component';
   const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
-  return { xml, view, warnings: diagnostics.list().filter((d) => d.code !== 'TOUCH_TARGET_SMALL').map((d) => d.message), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
+  const subjects = [...ctx.subjects.values()];
+  reportUndeclaredSubjects(ctx);
+  return { xml, view, subjects, globalsXml: globalsXml(subjects), warnings: diagnostics.list().filter((d) => d.code !== 'TOUCH_TARGET_SMALL').map((d) => d.message), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -444,11 +447,66 @@ function emit(node, parent, ctx, index = 0) {
   // The browser applies text-transform when it renders; the extracted text is raw.
   const transform = node.styles.textTransform;
   if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
-  const out = emitByTag(node, parent, ctx, index);
+  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index) : emitByTag(node, parent, ctx, index);
+  if (out && hasBehavior(node)) applyBehavior(node, out, ctx);
   // Carry component boundaries (React fiber walk or data-lv-component)
   // through to the element tree for the componentizer.
   if (out && node.component) out.meta = { component: node.component };
   return out;
+}
+
+/**
+ * Behavior (src/behavior.mjs): register the node's subjects, append its event
+ * and bind elements, and keep the final-named behavior on `meta.behavior` for
+ * the C/C++/MicroPython emitters. A library component instance gets only the
+ * subject registration: its own XML holds the events and binds.
+ */
+function applyBehavior(node, out, ctx) {
+  if (!node.behavior) return;
+  const behavior = qualifyBehavior(node.behavior, ctx.page);
+  for (const decl of behavior.subjects) {
+    const known = ctx.subjects.get(decl.name);
+    if (known && known.initial !== decl.initial) {
+      ctx.diagnostics.add({
+        code: 'BEHAVIOR_SUBJECT_CONFLICT',
+        message: `subject ${decl.name} is declared twice with different initial values (${known.initial} and ${decl.initial}); keeping ${known.initial}`,
+        fix: 'Declare each subject once, or give the two widgets different data-lv-name values so their subjects differ.',
+        source: sourceOf(node),
+      });
+    } else if (!known) ctx.subjects.set(decl.name, decl);
+  }
+  for (const ref of [...behavior.events, ...behavior.binds]) {
+    if (!ctx.usedSubjects.has(ref.subject)) ctx.usedSubjects.set(ref.subject, node);
+  }
+  if (node.xmlComponent) return;
+  out.children.push(...behaviorElements(behavior));
+  out.meta = { ...out.meta, behavior };
+}
+
+/** Every subject used by an event or bind must be declared somewhere on the page. */
+function reportUndeclaredSubjects(ctx) {
+  for (const [name, node] of ctx.usedSubjects) {
+    if (ctx.subjects.has(name)) continue;
+    ctx.diagnostics.add({
+      code: 'BEHAVIOR_SUBJECT_UNDECLARED',
+      message: `subject ${name} is used but never declared, so globals.xml will not define it`,
+      fix: 'Declare the subject with declareSubject() in the same component definition that attaches the event or bind.',
+      source: sourceOf(node),
+    });
+  }
+}
+
+/**
+ * A node that stands for an instance of a library XML component
+ * (node.xmlComponent, see src/behavior.mjs). Its children are not emitted.
+ */
+function emitLibraryComponent(node, parent, ctx, index) {
+  const { tag, props } = node.xmlComponent;
+  const attrs = {};
+  for (const [key, value] of Object.entries(props)) {
+    attrs[key] = value !== null && typeof value === 'object' && 'subject' in value ? `${sanitize(ctx.page)}_${value.subject}` : value;
+  }
+  return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs });
 }
 
 function emitByTag(node, parent, ctx, index) {

@@ -22,6 +22,7 @@ import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { render } from './emit-xml.mjs';
+import { globalsXml } from './behavior.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
@@ -263,7 +264,20 @@ async function buildAll() {
   const diagnostics = createDiagnostics();
   for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
 
-  for (const page of pages) diagnostics.merge(await emitPage(page, fonts));
+  // Subjects declared by every page's interactive components. Names carry the
+  // page name, so one globals.xml serves a multi-screen run.
+  const subjects = [];
+  for (const page of pages) diagnostics.merge(await emitPage(page, fonts, subjects));
+  const globals = formats.has('xml') ? globalsXml(subjects) : null;
+  const globalsPath = join(opts.output, 'globals.xml');
+  if (!globals) {
+    // Only a file this tool would have written: leave a hand-written one alone
+    // unless it is ours (starts with the generated <globals><subjects> shape).
+    if (formats.has('xml') && existsSync(globalsPath) && /^<globals>\n  <subjects>\n    <int /.test(readFileSync(globalsPath, 'utf8'))) rmSync(globalsPath);
+  } else {
+    writeFileSync(globalsPath, globals);
+    console.log(`wrote ${globalsPath} (register it as the "globals" component before creating screens)`);
+  }
 
   writeDiagnostics(diagnostics.list());
 }
@@ -287,9 +301,10 @@ function writeDiagnostics(entries) {
   for (const line of formatSummary(entries, { todoPath })) console.warn(line);
 }
 
-async function emitPage({ input, name, tree }, fonts) {
+async function emitPage({ input, name, tree }, fonts, subjects = []) {
   const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget });
   const { diagnostics, assets, collapsed } = converted;
+  subjects.push(...converted.subjects);
   let { xml, view } = converted;
   const written = [];
 

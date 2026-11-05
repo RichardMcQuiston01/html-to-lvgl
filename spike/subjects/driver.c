@@ -41,6 +41,14 @@ static void pointer_read_cb(lv_indev_t * indev, lv_indev_data_t * data)
     data->state = ptr_down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
+/* Referenced by LV_ASSERT_HANDLER in ../render/lv_conf.h, which this driver
+ * shares with the render harness. Without a definition the link fails. */
+void harness_assert_failed(void)
+{
+    fprintf(stderr, "error: LVGL assertion failed (most often the heap is full)\n");
+    exit(2);
+}
+
 static char * read_file(const char * path)
 {
     FILE * f = fopen(path, "rb");

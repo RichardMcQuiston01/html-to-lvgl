@@ -1,0 +1,7 @@
+<globals>
+  <subjects>
+    <int name="disclosure_p1_open" value="0"/>
+    <int name="disclosure_p2_open" value="1"/>
+    <int name="disclosure_dlg_open" value="0"/>
+  </subjects>
+</globals>

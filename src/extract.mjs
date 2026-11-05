@@ -275,22 +275,80 @@ export function buildTree() {
   const MAX_HIDDEN_NODES = 2000;
   let hiddenCount = 0;
 
+  // Disclosure targets. A collapsed panel or a closed dialog is `display:none`
+  // (or zero-height), so the browser reports it with no size, yet the Accordion
+  // / Modal / Drawer components need the size it has when OPEN. For a hidden
+  // subtree whose root (or a descendant) is named by some `aria-controls`, or
+  // that is a dialog, the extractor shows it for the duration of its walk,
+  // reads the real geometry, then puts the page back exactly as it was. The
+  // nodes stay `hidden: true` (that is their initial state) and gain
+  // `revealed: true`, which tells the font planner and recognize() that their
+  // text and size are meaningful.
+  const controlledIds = new Set();
+  for (const el of document.querySelectorAll('[aria-controls]')) {
+    for (const id of el.getAttribute('aria-controls').split(/\s+/)) if (id) controlledIds.add(id);
+  }
+  function isDisclosureTarget(el) {
+    if (el.id && controlledIds.has(el.id)) return true;
+    const role = el.getAttribute('role');
+    if (role === 'dialog' || role === 'alertdialog') return true;
+    for (const id of controlledIds) {
+      if (el.querySelector('#' + CSS.escape(id))) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Make a hidden element take its natural open-state box. Returns a function
+   * that undoes every change. Only the element itself is changed: an ancestor
+   * that is hidden makes the element a non-root of its hidden subtree, so it
+   * is never revealed here.
+   */
+  function revealForMeasure(el) {
+    const savedStyle = el.getAttribute('style');
+    const hadHidden = el.hasAttribute('hidden');
+    const show = (prop, value) => el.style.setProperty(prop, value, 'important');
+    if (hadHidden) el.removeAttribute('hidden');
+    if (getComputedStyle(el).display === 'none') show('display', 'block');
+    if (getComputedStyle(el).visibility === 'hidden') show('visibility', 'visible');
+    const box = el.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) {
+      // A collapse that animates height/max-height down to 0 (Material UI Collapse).
+      show('height', 'auto');
+      show('max-height', 'none');
+      show('overflow', 'visible');
+    }
+    return () => {
+      if (savedStyle === null) el.removeAttribute('style');
+      else el.setAttribute('style', savedStyle);
+      if (hadHidden) el.setAttribute('hidden', '');
+    };
+  }
+
   /**
    * @param {Element} el
    * @param {number} hiddenDepth  0 when visible; else 1 for a hidden root,
    *                              2 for its children, and so on.
+   * @param {boolean} revealed    True inside a subtree being measured open.
    */
-  function walk(el, hiddenDepth = 0) {
+  function walk(el, hiddenDepth = 0, revealed = false) {
     if (SKIP.has(el.tagName)) return null;
     if (el.hasAttribute('data-lv-ignore')) return null; // author opt-out
-    const cs = getComputedStyle(el);
-    const r = el.getBoundingClientRect();
+    let cs = getComputedStyle(el);
+    let r = el.getBoundingClientRect();
     const hidden =
       hiddenDepth > 0 || cs.display === 'none' || cs.visibility === 'hidden' || r.width <= 0 || r.height <= 0;
+    let undoReveal = null;
     if (hidden) {
       if (hiddenDepth === 0) hiddenDepth = 1;
       if (hiddenDepth - 1 > MAX_HIDDEN_DEPTH || hiddenCount >= MAX_HIDDEN_NODES) return null;
       hiddenCount += 1;
+      if (hiddenDepth === 1 && isDisclosureTarget(el)) {
+        undoReveal = revealForMeasure(el);
+        revealed = true;
+        cs = getComputedStyle(el);
+        r = el.getBoundingClientRect();
+      }
     }
 
     const node = {
@@ -312,6 +370,8 @@ export function buildTree() {
       classes: typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [],
       testId: el.getAttribute('data-testid') || null,
       hidden,
+      // Measured open although initially hidden (see isDisclosureTarget).
+      ...(revealed && hidden ? { revealed: true } : {}),
       x: Math.round(r.x),
       y: Math.round(r.y),
       w: Math.round(r.width),
@@ -400,13 +460,15 @@ export function buildTree() {
       const firstRow = rows[0]?.querySelectorAll('th, td') ?? [];
       node.attrs.columnWidths = [...firstRow].map((c) => Math.round(c.getBoundingClientRect().width));
       node.children = []; // handled as a single lv_table; don't recurse
+      if (undoReveal) undoReveal();
       return node;
     }
 
     for (const child of el.children) {
-      const c = walk(child, hidden ? hiddenDepth + 1 : 0);
+      const c = walk(child, hidden ? hiddenDepth + 1 : 0, revealed);
       if (c) node.children.push(c);
     }
+    if (undoReveal) undoReveal();
     return node;
   }
 

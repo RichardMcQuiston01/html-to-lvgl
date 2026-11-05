@@ -14,6 +14,7 @@ import { componentize } from '../src/componentize.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
+import { demoRegistry } from './helpers/disclosure-demo.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, 'fixtures');
@@ -83,4 +84,19 @@ for (const file of fixtureFiles) {
   const { py, unit: pyUnit } = emitPy(view, { name: cName, symbol });
   writeFileSync(join(goldenPyDir, `${pyUnit}.py`), py);
   console.log(`updated golden-py/${pyUnit}.py`);
+}
+
+// Behavior fixtures: converted with the test-only disclosure components
+// (tests/helpers/disclosure-demo.mjs) as <screen>s. Each writes <name>.xml and
+// <name>.globals.xml; spike/subjects/run-generic.sh drives them in real LVGL.
+const behaviorFixtureDir = join(here, 'fixtures-behavior');
+const goldenBehaviorDir = join(here, 'golden-behavior');
+mkdirSync(goldenBehaviorDir, { recursive: true });
+for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
+  const name = file.replace(/\.json$/, '');
+  const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
+  const { xml, globalsXml } = convert(tree, { name, screenMode: true, registry: demoRegistry() });
+  writeFileSync(join(goldenBehaviorDir, `${name}.xml`), xml);
+  writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
+  console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
 }

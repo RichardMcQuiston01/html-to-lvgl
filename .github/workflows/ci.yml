@@ -624,3 +624,9 @@ jobs:
       # widget geometry, flags and subject values (see spike/subjects/README.md)
       - name: Run the subject-pattern scenarios
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run.sh
+
+      # The converter's own output, not hand-written XML: tests/golden-behavior
+      # is made from a generic fixture by the Phase 8 behavior IR. Clicks go
+      # through real hit-testing and assert subjects, hidden flags and reflow.
+      - name: Drive the generated subject XML (globals.xml, toggle, set, bind)
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-generic.sh
