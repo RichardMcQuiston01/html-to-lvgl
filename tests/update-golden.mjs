@@ -95,8 +95,12 @@ mkdirSync(goldenBehaviorDir, { recursive: true });
 for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
   const name = file.replace(/\.json$/, '');
   const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
-  const { xml, globalsXml } = convert(tree, { name, screenMode: true, registry: demoRegistry() });
+  const { xml, globalsXml, view } = convert(tree, { name, screenMode: true, registry: demoRegistry() });
   writeFileSync(join(goldenBehaviorDir, `${name}.xml`), xml);
   writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
   console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
+  // MicroPython output; CI drives it with spike/micropython/run_py_behavior.py.
+  const behaviorPy = emitPy(view, { name, symbol: `ui_${name}_create` });
+  writeFileSync(join(goldenBehaviorDir, `${behaviorPy.unit}.py`), behaviorPy.py);
+  console.log(`updated golden-behavior/${behaviorPy.unit}.py`);
 }
