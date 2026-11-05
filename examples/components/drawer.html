@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Drawer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  h1 { font-size: 18px; font-weight: 500; color: #212529; }
+  p.note { font-size: 12px; color: #6c757d; }
+  .row { display: flex; gap: 8px; }
+  button { border: none; font-size: 12px; cursor: pointer; }
+
+  /* Plain HTML / ARIA: a left side sheet, role=dialog, closed on load. */
+  .open-plain { background: #0d6efd; color: #ffffff; padding: 8px 12px; border-radius: 4px; }
+  .scrim { position: fixed; top: 0; left: 0; width: 320px; height: 240px; background: rgba(0,0,0,0.5); }
+  .sheet { position: fixed; top: 0; left: 0; width: 200px; height: 240px; background: #ffffff; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 4px 0 12px rgba(0,0,0,0.25); }
+  .sheet h2 { font-size: 16px; font-weight: 500; color: #212529; }
+  .sheet a { font-size: 13px; color: #495057; }
+  .sheet .close { margin-top: auto; background: #e9ecef; color: #212529; padding: 8px 12px; border-radius: 4px; }
+
+  /* Material UI style: Drawer (temporary, anchor right), closed on load. */
+  .MuiButton-root { background: none; color: #1976d2; font-weight: 500; text-transform: uppercase; padding: 6px 8px; border-radius: 4px; }
+  .MuiButton-contained { background: #1976d2; color: #ffffff; padding: 8px 12px; box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12); }
+  .MuiDrawer-root { position: fixed; top: 0; left: 0; width: 320px; height: 240px; }
+  .MuiBackdrop-root { position: fixed; top: 0; left: 0; width: 320px; height: 240px; background-color: rgba(0,0,0,0.5); }
+  .MuiPaper-root { background-color: #ffffff; color: rgba(0,0,0,0.87); }
+  .MuiDrawer-paper { position: fixed; top: 0; right: 0; width: 200px; height: 240px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0px 8px 10px -5px rgba(0,0,0,0.2), 0px 16px 24px 2px rgba(0,0,0,0.14), 0px 6px 30px 5px rgba(0,0,0,0.12); }
+  .MuiTypography-h6 { font-size: 16px; font-weight: 500; }
+  .MuiListItem-root { font-size: 13px; color: rgba(0,0,0,0.87); }
+  .MuiDrawer-paper .MuiButton-root { margin-top: auto; }
+</style>
+</head>
+<body>
+  <h1>Inbox</h1>
+  <p class="note">Open a drawer from either edge.</p>
+  <div class="row">
+    <button class="open-plain" id="open-plain" aria-haspopup="dialog" aria-controls="nav-sheet">Menu</button>
+    <button class="MuiButton-root MuiButton-contained" id="open-mui" aria-haspopup="dialog" aria-controls="filters">Filters</button>
+  </div>
+
+  <div class="scrim" hidden>
+    <div class="sheet" id="nav-sheet" role="dialog" aria-modal="true" aria-label="Navigation">
+      <h2>Navigation</h2>
+      <a>Inbox</a>
+      <a>Starred</a>
+      <a>Drafts</a>
+      <button class="close">Close</button>
+    </div>
+  </div>
+
+  <div class="MuiDrawer-root MuiDrawer-modal MuiModal-root" role="presentation" hidden>
+    <div class="MuiBackdrop-root" aria-hidden="true"></div>
+    <div class="MuiPaper-root MuiDrawer-paper MuiDrawer-paperAnchorRight MuiPaper-elevation16" id="filters" role="dialog" aria-modal="true" aria-label="Filters">
+      <h6 class="MuiTypography-h6">Filters</h6>
+      <div class="MuiListItem-root">Unread</div>
+      <div class="MuiListItem-root">Attachments</div>
+      <div class="MuiListItem-root">Last 7 days</div>
+      <button class="MuiButton-root">Apply</button>
+    </div>
+  </div>
+</body>
+</html>

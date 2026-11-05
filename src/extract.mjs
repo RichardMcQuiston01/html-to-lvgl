@@ -292,6 +292,9 @@ export function buildTree() {
     if (el.id && controlledIds.has(el.id)) return true;
     const role = el.getAttribute('role');
     if (role === 'dialog' || role === 'alertdialog') return true;
+    // A dialog wrapper (Material UI's Dialog/Drawer root, a portal scrim): the
+    // dialog inside it is not a hidden-subtree root itself, so reveal the wrapper.
+    if (el.querySelector('[role="dialog"], [role="alertdialog"]')) return true;
     for (const id of controlledIds) {
       if (el.querySelector('#' + CSS.escape(id))) return true;
     }

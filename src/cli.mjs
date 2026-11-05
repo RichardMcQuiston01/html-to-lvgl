@@ -15,13 +15,12 @@ import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSyn
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
-import { convert } from './convert.mjs';
+import { convert, pageXml as renderPageXml } from './convert.mjs';
 import { withoutHidden } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
 import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
-import { render } from './emit-xml.mjs';
 import { globalsXml } from './behavior.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
@@ -315,8 +314,7 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
   const applied = applySidecar(view, { path: sidecar, explicit: Boolean(opts.overrides), diagnostics });
   if (applied.applied) {
     view = applied.view;
-    const wrapper = screenMode ? 'screen' : 'component';
-    xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
+    xml = renderPageXml(view, { screenMode, animations: converted.animations });
   }
 
   if (formats.has('xml')) {
@@ -327,8 +325,7 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
     // runs unconditionally rather than only for reactMode input.
     const { view: pageView, components } = componentize(view, { diagnostics });
     if (components.size) {
-      const wrapper = screenMode ? 'screen' : 'component';
-      pageXml = `<${wrapper}>\n${render(pageView, 1)}\n</${wrapper}>\n`;
+      pageXml = renderPageXml(pageView, { screenMode, animations: converted.animations });
       // Both write to <name>.xml; writing the page after its components
       // would silently overwrite a same-named component's definition.
       // Common in practice: name derives from the filename, cname from the

@@ -80,9 +80,42 @@
  * Diagnostics: BEHAVIOR_SUBJECT_UNDECLARED (used but never declared),
  * BEHAVIOR_SUBJECT_CONFLICT (declared twice with different initial values).
  *
+ * 5. Animations (the Drawer slide; added by Phase 8 lane E, backward
+ *    compatible: a behavior without these keys is unchanged).
+ *
+ *      withBehavior(panel, {
+ *        timelines: [slideTimeline('d1_in', 'translate_x', -200, 0, 250),
+ *                    slideTimeline('d1_out', 'translate_x', 0, -200, 250)],
+ *      })
+ *      withBehavior(opener, { events: [setEvent(open, 1), playEvent('d1_in')] })
+ *
+ *    node.behavior.timelines: { name, animations: { prop, start, end, duration,
+ *    delay?, target? }[] }[]. A timeline belongs to the SCREEN (LVGL scope),
+ *    so `name` must be unique on the page; derive it from a node key like a
+ *    subject, e.g. `${subjectFor(node, 'in')}`. `prop` is any integer style
+ *    property (translate_x, translate_y, opa, ...). `target` is omitted =
+ *    the widget that declares the timeline; convert() fills in its final
+ *    emitted widget name (the animation target is found BY NAME at run time).
+ *    node.behavior.events gains { kind: 'play', timeline, trigger? }: play that
+ *    timeline from the screen (target="self"), in document order with any set
+ *    event on the same widget.
+ *
+ *    convert() emits, as the first child of <screen>/<component> (before
+ *    <view>):
+ *      <animations>
+ *        <timeline name="d1_in">
+ *          <animation prop="translate_x" target="drawer" start="-200" end="0" duration="250"/>
+ *        </timeline>
+ *      </animations>
+ *    and on the widget:  <play_timeline_event target="self" timeline="d1_in"/>
+ *    The convert() result gains `timelines`: [{ name, animations: [{ prop,
+ *    target, start, end, duration, delay? }] }] (final names), and
+ *    `meta.behavior.timelines` carries the same on the declaring widget, for
+ *    the C/C++/MicroPython emitters (lv_anim_timeline_create + lv_anim_timeline_add
+ *    and lv_obj_add_play_timeline_event, or hand-built equivalents).
+ *
  * Not covered yet (extend here, not in components): increment events,
- * bind_state_if_*, string/float subjects, play_timeline_event / <animations>
- * (the Drawer slide, lane E).
+ * bind_state_if_*, string/float subjects, include_timeline.
  *
  * This module is pure: no browser, no file system.
  */
@@ -98,9 +131,10 @@ import { sanitize } from './names.mjs';
  * @property {number} initial
  *
  * @typedef {object} BehaviorEvent
- * @property {'toggle' | 'set'} kind
- * @property {string} subject
+ * @property {'toggle' | 'set' | 'play'} kind
+ * @property {string} [subject]    toggle/set: the int subject (absent for play).
  * @property {number} [value]      set: the integer to store.
+ * @property {string} [timeline]   play: the name of a timeline declared in behavior.timelines.
  * @property {string} [trigger]    LVGL event name; omitted = clicked.
  *
  * @typedef {object} BehaviorBind
@@ -110,15 +144,28 @@ import { sanitize } from './names.mjs';
  * @property {'eq' | 'not_eq' | 'gt' | 'ge' | 'lt' | 'le'} op
  * @property {number} ref
  *
+ * @typedef {object} TimelineAnimation
+ * @property {string} prop        An integer style property name: translate_x, opa, ...
+ * @property {number} start
+ * @property {number} end
+ * @property {number} duration    Milliseconds.
+ * @property {number} [delay]
+ * @property {string} [target]    Widget name; omitted = the declaring widget (convert() fills it in).
+ *
+ * @typedef {object} Timeline
+ * @property {string} name
+ * @property {TimelineAnimation[]} animations
+ *
  * @typedef {object} Behavior
  * @property {SubjectDecl[]} [subjects]
  * @property {BehaviorEvent[]} [events]
  * @property {BehaviorBind[]} [binds]
+ * @property {Timeline[]} [timelines]
  */
 
 export const BIND_OPS = Object.freeze(['eq', 'not_eq', 'gt', 'ge', 'lt', 'le']);
 
-const EVENT_TAGS = Object.freeze({ toggle: 'subject_toggle_event', set: 'subject_set_int_event' });
+const EVENT_TAGS = Object.freeze({ toggle: 'subject_toggle_event', set: 'subject_set_int_event', play: 'play_timeline_event' });
 
 /** Tags convert() emits for behavior, for emitters that need to skip them. */
 export const BEHAVIOR_TAGS = Object.freeze(new Set([
@@ -163,6 +210,25 @@ export function setEvent(subject, value, trigger) {
   return { kind: 'set', subject, value, ...(trigger ? { trigger } : {}) };
 }
 
+/** @returns {BehaviorEvent} Play a timeline declared in behavior.timelines. */
+export function playEvent(timeline, trigger) {
+  if (!timeline) throw new Error('playEvent needs a timeline name');
+  return { kind: 'play', timeline, ...(trigger ? { trigger } : {}) };
+}
+
+/**
+ * A one-animation timeline that moves an integer style property from `start`
+ * to `end` on the widget that declares it (the Drawer slide).
+ * @returns {Timeline}
+ */
+export function slideTimeline(name, prop, start, end, duration = 250) {
+  if (!name) throw new Error('slideTimeline needs a timeline name');
+  for (const [label, value] of [['start', start], ['end', end], ['duration', duration]]) {
+    if (!Number.isInteger(value)) throw new Error(`slideTimeline("${name}"): ${label} must be an integer, got ${value}`);
+  }
+  return { name, animations: [{ prop, start, end, duration }] };
+}
+
 /** @returns {BehaviorBind} Set an object flag while `subject <op> ref`. */
 export function bindFlag(subject, flag, op, ref) {
   if (!BIND_OPS.includes(op)) throw new Error(`bindFlag: op must be one of ${BIND_OPS.join(', ')}, got "${op}"`);
@@ -182,7 +248,7 @@ export const hiddenWhen = (subject, op, ref) => bindFlag(subject, 'hidden', op, 
  */
 export function withBehavior(node, patch) {
   const merged = { ...(node.behavior ?? {}) };
-  for (const key of /** @type {const} */ (['subjects', 'events', 'binds'])) {
+  for (const key of /** @type {const} */ (['subjects', 'events', 'binds', 'timelines'])) {
     if (!patch[key]?.length) continue;
     const list = [...(merged[key] ?? [])];
     for (const entry of patch[key]) {
@@ -215,8 +281,11 @@ export function qualifyBehavior(behavior, page) {
   const q = (name) => `${sanitize(page)}_${name}`;
   return {
     subjects: (behavior.subjects ?? []).map((s) => ({ ...s, name: q(s.name) })),
-    events: (behavior.events ?? []).map((e) => ({ ...e, subject: q(e.subject) })),
+    events: (behavior.events ?? []).map((e) => (e.subject === undefined ? { ...e } : { ...e, subject: q(e.subject) })),
     binds: (behavior.binds ?? []).map((b) => ({ ...b, subject: q(b.subject) })),
+    // Timelines are scoped to the screen, so their names are not prefixed.
+    // Animation targets are resolved to widget names by convert().
+    timelines: (behavior.timelines ?? []).map((t) => ({ ...t, animations: t.animations.map((a) => ({ ...a })) })),
   };
 }
 
@@ -225,13 +294,22 @@ export function qualifyBehavior(behavior, page) {
  * @param {Required<Behavior>} b
  */
 export function behaviorElements(b) {
-  const events = b.events.map((e) => el(EVENT_TAGS[e.kind], {
-    subject: e.subject,
-    ...(e.kind === 'set' ? { value: e.value } : {}),
-    trigger: e.trigger,
-  }));
+  const events = b.events.map((e) => el(EVENT_TAGS[e.kind], e.kind === 'play'
+    ? { target: 'self', timeline: e.timeline, trigger: e.trigger }
+    : { subject: e.subject, ...(e.kind === 'set' ? { value: e.value } : {}), trigger: e.trigger }));
   const binds = b.binds.map((x) => el(`bind_flag_if_${x.op}`, { subject: x.subject, flag: x.flag, ref_value: x.ref }));
   return [...events, ...binds];
+}
+
+/**
+ * The `<animations>` element for a screen's timelines, or null when empty.
+ * @param {Timeline[]} timelines  Animation targets already resolved to names.
+ */
+export function animationsElement(timelines) {
+  if (!timelines.length) return null;
+  return el('animations', {}, timelines.map((t) => el('timeline', { name: t.name }, t.animations.map((a) => el('animation', {
+    prop: a.prop, target: a.target, start: a.start, end: a.end, duration: a.duration, delay: a.delay,
+  })))));
 }
 
 /**

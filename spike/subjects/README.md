@@ -235,3 +235,14 @@ coordinator to consider (not edited here):
    reflow siblings when the body hides (a fixed height pins the layout).
 5. **Drawer panel must not be bound to hidden** if a slide-out animation is
    wanted (park it with `style_translate_x`). Add to the Drawer notes.
+
+## Generated Modal and Drawer (Phase 8 lane E)
+
+`run-components.sh` drives the converter's own output for the Modal and Drawer
+components (`tests/golden-behavior/{modal,drawer,drawer-edges}.xml` with their
+`.globals.xml`), made from `examples/components/{modal,drawer,drawer-edges}.html`.
+It checks, in real LVGL 9.4.0 with click-driven input: initial state (open and
+closed on load), opener, close buttons, an open overlay blocking clicks beneath
+it, backdrop tap to close (not for an `alertdialog`), and the slide animation
+for the left, right, top and bottom edges. Run it like the others:
+`DRIVER=path/to/driver spike/subjects/run-components.sh`.

@@ -25,7 +25,7 @@ import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
-import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml } from './behavior.mjs';
+import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml, animationsElement } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
@@ -61,7 +61,8 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
     isLinkLive: (n) => Boolean(screens && resolveScreen(n.link || (n.tag === 'a' ? n.attrs?.href : null), screens)),
   });
   const { tree, removed } = optimize(recognizedTree);
-  const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts, page: name, subjects: new Map(), usedSubjects: new Map() };
+  const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts, page: name, subjects: new Map(), usedSubjects: new Map(), timelines: new Map() };
+  hoistOverlays(tree);
   markOverhangAndClip(tree);
 
   const rootAttrs = {
@@ -74,11 +75,26 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   };
   pinBarsOnTop(tree);
   const view = el('view', rootAttrs, tree.children.map((c) => emit(c, tree, ctx)).filter(Boolean));
-  const wrapper = screenMode ? 'screen' : 'component';
-  const xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
+  const timelines = [...ctx.timelines.values()];
+  const animations = animationsElement(timelines);
+  const xml = pageXml(view, { screenMode, animations });
   const subjects = [...ctx.subjects.values()];
   reportUndeclaredSubjects(ctx);
-  return { xml, view, subjects, globalsXml: globalsXml(subjects), warnings: diagnostics.list().filter((d) => d.code !== 'TOUCH_TARGET_SMALL').map((d) => d.message), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
+  return { xml, view, animations, timelines, subjects, globalsXml: globalsXml(subjects), warnings: diagnostics.list().filter((d) => d.code !== 'TOUCH_TARGET_SMALL').map((d) => d.message), diagnostics, assets: ctx.assets, name, collapsed: ctx.collapsed };
+}
+
+/**
+ * The page document: `<screen>` or `<component>` around the optional
+ * `<animations>` block (timelines, see src/behavior.mjs) and the `<view>`.
+ * Anything that re-renders a changed view must go through here, or the
+ * timelines are lost.
+ * @param {{ tag: string }} view
+ * @param {{ screenMode?: boolean, animations?: { tag: string } | null }} [options]
+ */
+export function pageXml(view, { screenMode = false, animations = null } = {}) {
+  const wrapper = screenMode ? 'screen' : 'component';
+  const parts = [animations ? render(animations, 1) : null, render(view, 1)].filter(Boolean);
+  return `<${wrapper}>\n${parts.join('\n')}\n</${wrapper}>\n`;
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -136,8 +152,36 @@ const isPinnedBar = (node) =>
 function pinBarsOnTop(node) {
   for (const child of node.children) pinBarsOnTop(child);
   if (node.children.some(isPinnedBar)) {
-    node.children = [...node.children.filter((c) => !isPinnedBar(c)), ...node.children.filter(isPinnedBar)];
+    // Overlays (modal, drawer) stay above the bars: they dim everything.
+    const rest = node.children.filter((c) => !isPinnedBar(c) && !c.overlay);
+    node.children = [...rest, ...node.children.filter(isPinnedBar), ...node.children.filter((c) => c.overlay && !isPinnedBar(c))];
   }
+}
+
+/**
+ * Move every overlay (a node a component marked `overlay: true`, such as a
+ * Modal's backdrop or a Drawer's panel) to the end of the screen's children,
+ * after its `overlayBefore` companions (a Drawer's scrim). LVGL draws later
+ * siblings over earlier ones and an overlay is sized to the whole screen, so
+ * it must be a direct, last child of the screen root, whatever box the
+ * dialog sat in on the page (browsers portal it to the body for the same
+ * reason). Overlays nested in overlays are lifted too, in document order.
+ * @param {object} root
+ */
+function hoistOverlays(root) {
+  const lifted = [];
+  const pending = [root];
+  while (pending.length) {
+    const node = pending.shift();
+    node.children = node.children.filter((child) => {
+      if (!child.overlay) return true;
+      lifted.push(...(child.overlayBefore ?? []), child);
+      pending.push(child);
+      return false;
+    });
+    pending.push(...node.children);
+  }
+  root.children.push(...lifted);
 }
 
 /**
@@ -186,7 +230,11 @@ function placement(node, parent, { size = true, gridIndex = 0 } = {}) {
       if ((node.layout[css] || 0) !== 0) attrs[lv] = node.layout[css]; // negative margins pull the box over its neighbor
     }
   }
-  if (isPinnedBar(node)) attrs.floating = 'true';
+  if (isPinnedBar(node) || node.overlay) attrs.floating = 'true';
+  // A component parked the node off-screen for a slide-in (Drawer); see
+  // `styleTranslate` in src/components/overlay.mjs.
+  if (node.styleTranslate?.x) attrs.style_translate_x = node.styleTranslate.x;
+  if (node.styleTranslate?.y) attrs.style_translate_y = node.styleTranslate.y;
   if (size) {
     attrs.width = node.w;
     attrs.height = node.h;
@@ -476,7 +524,21 @@ function applyBehavior(node, out, ctx) {
     } else if (!known) ctx.subjects.set(decl.name, decl);
   }
   for (const ref of [...behavior.events, ...behavior.binds]) {
-    if (!ctx.usedSubjects.has(ref.subject)) ctx.usedSubjects.set(ref.subject, node);
+    if (ref.subject !== undefined && !ctx.usedSubjects.has(ref.subject)) ctx.usedSubjects.set(ref.subject, node);
+  }
+  // A timeline's animations default to the widget that declares them, found
+  // by its final emitted name at run time.
+  for (const timeline of behavior.timelines) {
+    for (const animation of timeline.animations) animation.target ??= out.attrs.name;
+    const known = ctx.timelines.get(timeline.name);
+    if (known && JSON.stringify(known) !== JSON.stringify(timeline)) {
+      ctx.diagnostics.add({
+        code: 'BEHAVIOR_SUBJECT_CONFLICT',
+        message: `timeline ${timeline.name} is declared twice with different animations; keeping the first`,
+        fix: 'Give each timeline a unique name (derive it from the widget key, as subjectFor() does for subjects).',
+        source: sourceOf(node),
+      });
+    } else if (!known) ctx.timelines.set(timeline.name, timeline);
   }
   if (node.xmlComponent) return;
   out.children.push(...behaviorElements(behavior));
