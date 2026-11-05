@@ -1,0 +1,6 @@
+<globals>
+  <subjects>
+    <int name="modal_scrim_open" value="1"/>
+    <int name="modal_body_div_4_open" value="0"/>
+  </subjects>
+</globals>

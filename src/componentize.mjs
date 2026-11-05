@@ -28,7 +28,7 @@ const PLACEMENT_ATTRS = new Set([
 ]);
 
 /** Attribute keys whose per-instance differences may become string props. */
-const PROPPABLE_ATTRS = new Set(['text', 'value', 'placeholder_text', 'options', 'src', 'checked', 'selected']);
+const PROPPABLE_ATTRS = new Set(['text', 'value', 'placeholder_text', 'options', 'src', 'checked', 'selected', 'subject']);
 
 /**
  * Color attributes can be props too: $prop substitution happens before value
@@ -105,7 +105,17 @@ export function componentize(view, { diagnostics: shared = null } = {}) {
         if (new Set(values).size <= 1) continue;
         if (PROPPABLE_ATTRS.has(key) || PROPPABLE_COLOR_ATTRS.has(key) || isInstanceEl) {
           const type = PROPPABLE_COLOR_ATTRS.has(key) ? 'color' : 'string';
-          props.push({ prop: propName(els[0], key, props), path, key, values, type });
+          // A subject name (src/behavior.mjs) is one per-instance value used
+          // by several tags (toggle event and bind): share a single prop, so
+          // the component takes `subject="x_open"` once, not once per tag.
+          if (key === 'subject') {
+            const same = props.find((p) => p.key === 'subject' && p.values.every((v, i) => v === values[i]));
+            if (same) {
+              same.uses.push({ path, key });
+              continue;
+            }
+          }
+          props.push({ prop: propName(els[0], key, props), path, key, values, type, uses: [{ path, key }] });
         } else {
           bail = { key };
         }
@@ -125,7 +135,7 @@ export function componentize(view, { diagnostics: shared = null } = {}) {
     const def = structuredClone(instances[0]);
     delete def.meta;
     for (const p of props) {
-      getAt(def, p.path).attrs[p.key] = `$${p.prop}`;
+      for (const use of p.uses) getAt(def, use.path).attrs[use.key] = `$${p.prop}`;
     }
     const viewAttrs = { ...(def.tag !== 'lv_obj' ? { extends: def.tag } : {}) };
     for (const [k, v] of Object.entries(def.attrs)) {
@@ -186,6 +196,11 @@ function getAt(node, path) {
 }
 
 function propName(node, key, existing) {
+  if (key === 'subject') {
+    let name = 'subject';
+    for (let n = 2; existing.some((p) => p.prop === name); n++) name = `subject_${n}`;
+    return name;
+  }
   let base = (node.attrs.name || key).replace(/_\d+$/, '');
   if (key !== 'text') base = `${base}_${key}`;
   let name = base;

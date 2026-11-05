@@ -14,6 +14,8 @@ import { componentize } from '../src/componentize.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
+import { demoRegistry } from './helpers/disclosure-demo.mjs';
+import { convertInstances } from './helpers/xml-instance-demo.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, 'fixtures');
@@ -83,4 +85,51 @@ for (const file of fixtureFiles) {
   const { py, unit: pyUnit } = emitPy(view, { name: cName, symbol });
   writeFileSync(join(goldenPyDir, `${pyUnit}.py`), py);
   console.log(`updated golden-py/${pyUnit}.py`);
+}
+
+// Behavior fixtures: converted as <screen>s (the disclosure one with the test-only
+// components of tests/helpers/disclosure-demo.mjs, the rest with the real ones). Each writes <name>.xml and
+// <name>.globals.xml; spike/subjects/run-generic.sh drives them in real LVGL.
+const behaviorFixtureDir = join(here, 'fixtures-behavior');
+const goldenBehaviorDir = join(here, 'golden-behavior');
+mkdirSync(goldenBehaviorDir, { recursive: true });
+for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
+  const name = file.replace(/\.json$/, '');
+  const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
+  // `disclosure` uses the test-only demo components; every other behavior
+  // fixture (accordion, ...) is converted by the shipped component definitions.
+  const registry = name === 'disclosure' ? demoRegistry() : undefined;
+  const { xml, globalsXml, view } = convert(tree, { name, screenMode: true, registry });
+  writeFileSync(join(goldenBehaviorDir, `${name}.xml`), xml);
+  writeFileSync(join(goldenBehaviorDir, `${name}.globals.xml`), globalsXml);
+  console.log(`updated golden-behavior/${name}.xml and ${name}.globals.xml`);
+  // MicroPython output; CI drives it with spike/micropython/run_py_behavior.py.
+  // A screen such as drawer-edges is a valid XML name but not a C/Python
+  // identifier: the cli sanitizes it the same way (screenName).
+  const unitName = name.replace(/[^a-z0-9_]/gi, '_');
+  const behaviorPy = emitPy(view, { name: unitName, symbol: `ui_${unitName}_create` });
+  writeFileSync(join(goldenBehaviorDir, `${behaviorPy.unit}.py`), behaviorPy.py);
+  console.log(`updated golden-behavior/${behaviorPy.unit}.py`);
+}
+
+// C and C++ for the behavior goldens (Phase 8 lane B): same trees as above,
+// emitted with the screen entry point convention (ui_<screen>_create).
+// spike/subjects/run-c.sh compiles and click-drives them in CI.
+const behaviorUnits = [];
+for (const file of readdirSync(behaviorFixtureDir).filter((f) => f.endsWith('.json'))) {
+  const name = file.replace(/\.json$/, '');
+  const tree = JSON.parse(readFileSync(join(behaviorFixtureDir, file), 'utf8'));
+  behaviorUnits.push([name, convert(tree, { name, screenMode: true, registry: name === 'disclosure' ? demoRegistry() : undefined })]);
+}
+behaviorUnits.push(['acc_instances', convertInstances()]);
+for (const [screen, { view, subjects }] of behaviorUnits) {
+  const name = screen.replace(/[^a-z0-9_]/gi, '_'); // valid C identifier, as in the cli
+  const opts = { name, symbol: `ui_${name}_create`, subjects };
+  const c = emitC(view, opts);
+  writeFileSync(join(goldenBehaviorDir, `${c.unit}.c`), c.c);
+  writeFileSync(join(goldenBehaviorDir, `${c.unit}.h`), c.h);
+  const cpp = emitCpp(view, opts);
+  writeFileSync(join(goldenBehaviorDir, `${cpp.unit}.cpp`), cpp.c);
+  writeFileSync(join(goldenBehaviorDir, `${cpp.unit}.hpp`), cpp.h);
+  console.log(`updated golden-behavior/${c.unit}.c/.h and .cpp/.hpp`);
 }

@@ -1,0 +1,35 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_button name="h1" width="320" height="32" style_bg_color="0x3c5aa0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+      <lv_label name="h1_2" align="center" text="Section 1" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
+      <subject_toggle_event subject="disclosure_p1_open" />
+    </lv_button>
+    <lv_obj name="p1" width="320" height="60" style_bg_color="0xe1e6f0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="label" x="8" y="8" text="Body one" style_text_font="montserrat_16" style_text_color="0x000000" />
+      <bind_flag_if_eq subject="disclosure_p1_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+    <lv_button name="h2" width="320" height="32" style_bg_color="0x3c5aa0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+      <lv_label name="h2_2" align="center" text="Section 2" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
+      <subject_toggle_event subject="disclosure_p2_open" />
+    </lv_button>
+    <lv_obj name="p2" width="320" height="60" style_bg_color="0xe1e6f0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_label name="label_2" x="8" y="8" text="Body two" style_text_font="montserrat_16" style_text_color="0x000000" />
+      <bind_flag_if_eq subject="disclosure_p2_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+    <lv_label name="footer" text="Footer text" style_text_font="montserrat_16" style_text_color="0x000000" />
+    <lv_button name="openbtn" width="320" height="32" style_bg_color="0x3c5aa0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+      <lv_label name="openbtn_2" align="center" text="Open dialog" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
+      <subject_set_int_event subject="disclosure_dlg_open" value="1" />
+    </lv_button>
+    <lv_obj name="dlg" x="0" y="0" ignore_layout="true" width="320" height="240" style_bg_color="0x000000" style_bg_opa="128" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="dlgbox" x="40" y="60" width="240" height="120" style_bg_color="0xffffff" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="label_3" x="12" y="12" text="Are you sure?" style_text_font="montserrat_16" style_text_color="0x000000" />
+        <lv_button name="closebtn" x="20" y="70" width="200" height="32" style_bg_color="0x3c5aa0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+          <lv_label name="closebtn_2" align="center" text="Close" style_text_font="montserrat_16" style_text_color="0xffffff" style_text_align="center" />
+          <subject_set_int_event subject="disclosure_dlg_open" value="0" />
+        </lv_button>
+      </lv_obj>
+      <bind_flag_if_eq subject="disclosure_dlg_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+  </view>
+</screen>

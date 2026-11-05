@@ -171,3 +171,16 @@ test('convert() adds the diagnostic, keeps warnings and output unchanged', () =>
   assert.match(todo, /Fix: Make the element at least 30x30 px/);
   assert.equal(convert(tree, { name: 'page', minTouchTarget: 20 }).diagnostics.list().length, 0);
 });
+
+test('a link that becomes a plain label is not reported; a navigating one is', () => {
+  const link = (href) => node('a', { x: 0, y: 0, w: 20, h: 12, text: 'Home', attrs: { href }, key: '#l' });
+  const count = (r) => r.diagnostics.list().filter((d) => d.code === 'TOUCH_TARGET_SMALL').length;
+  // Single page: no screens, the link is a label.
+  assert.equal(count(convert(pageTree(link('other.html')), { name: 'page' })), 0);
+  // Several pages but an external or unknown href is still a label.
+  assert.equal(count(convert(pageTree(link('https://x.test/')), { name: 'a', screens: new Set(['a', 'b']) })), 0);
+  // An href that resolves to a sibling screen navigates, so it is pressable and too small.
+  assert.equal(count(convert(pageTree(link('b.html')), { name: 'a', screens: new Set(['a', 'b']) })), 1);
+  // A real button is unaffected.
+  assert.equal(count(convert(pageTree(node('button', { w: 20, h: 12, text: 'OK' })), { name: 'page' })), 1);
+});

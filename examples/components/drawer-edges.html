@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Drawer edges</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  h1 { font-size: 18px; font-weight: 500; color: #212529; }
+  .row { display: flex; gap: 8px; }
+  button { border: none; font-size: 12px; cursor: pointer; background: #0d6efd; color: #ffffff; padding: 8px 12px; border-radius: 4px; }
+  .scrim { position: fixed; top: 0; left: 0; width: 320px; height: 240px; background: rgba(0,0,0,0.5); }
+  /* Top sheet and bottom sheet: full width, docked to the top or bottom edge. */
+  .top { position: fixed; top: 0; left: 0; width: 320px; height: 110px; background: #ffffff; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+  .bottom { position: fixed; bottom: 0; left: 0; width: 320px; height: 110px; background: #ffffff; padding: 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.25); }
+  .top h2, .bottom h2 { font-size: 16px; font-weight: 500; color: #212529; }
+  .top button, .bottom button { margin-top: 12px; background: #e9ecef; color: #212529; }
+</style>
+</head>
+<body>
+  <h1>Edges</h1>
+  <div class="row">
+    <button id="open-top" aria-controls="top-sheet" aria-haspopup="dialog">Top</button>
+    <button id="open-bottom" aria-controls="bottom-sheet" aria-haspopup="dialog">Bottom</button>
+  </div>
+  <div class="scrim" hidden>
+    <div class="top" id="top-sheet" role="dialog" aria-modal="true" aria-label="Top sheet"><h2>Top sheet</h2><button>Close</button></div>
+  </div>
+  <div class="scrim" hidden>
+    <div class="bottom" id="bottom-sheet" role="dialog" aria-modal="true" aria-label="Bottom sheet"><h2>Bottom sheet</h2><button>Close</button></div>
+  </div>
+</body>
+</html>

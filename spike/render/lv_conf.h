@@ -13,6 +13,19 @@
  * segfault and no message. This is a harness limit, not a converter one. */
 #define LV_MEM_SIZE (512 * 1024)
 
+/* Logging is on only so the harness can catch out-of-memory (see log_cb). */
+#define LV_USE_LOG 1
+#define LV_LOG_LEVEL LV_LOG_LEVEL_INFO
+#define LV_LOG_PRINTF 0
+
+/* LVGL's default assert handler spins forever, which looks like a hang.
+ * harness_assert_failed() (main.c, main_c.c) reports and exits instead. */
+#define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
+#define LV_ASSERT_HANDLER harness_assert_failed();
+#ifndef __ASSEMBLER__
+void harness_assert_failed(void);
+#endif
+
 /* The whole point of the spike: load UIs from XML at runtime */
 #define LV_USE_XML 1
 #define LV_USE_OBJ_NAME 1

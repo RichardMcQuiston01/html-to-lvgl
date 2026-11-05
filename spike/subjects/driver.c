@@ -6,7 +6,7 @@
  * hit-testing (z-order, floating, clickable, hidden). That is what the modal
  * "blocks clicks beneath" question needs.
  *
- * usage: driver --globals=globals.xml --screen=<name> [component.xml ...]
+ * usage: driver --globals=globals.xml --screen=<name> [--font=name=path.bin ...] [component.xml ...]
  *               [--click=X,Y | --snap=out.bmp | --report=<widget-name> |
  *                --subject=<name> | --say=<text>] ...
  *
@@ -39,6 +39,14 @@ static void pointer_read_cb(lv_indev_t * indev, lv_indev_data_t * data)
     data->point.x = ptr_x;
     data->point.y = ptr_y;
     data->state = ptr_down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
+
+/* Referenced by LV_ASSERT_HANDLER in ../render/lv_conf.h, which this driver
+ * shares with the render harness. Without a definition the link fails. */
+void harness_assert_failed(void)
+{
+    fprintf(stderr, "error: LVGL assertion failed (most often the heap is full)\n");
+    exit(2);
 }
 
 static char * read_file(const char * path)
@@ -160,6 +168,22 @@ int main(int argc, char ** argv)
     lv_xml_init();
     lv_xml_register_font(NULL, "montserrat_12", &lv_font_montserrat_12);
     lv_xml_register_font(NULL, "montserrat_14", &lv_font_montserrat_14);
+
+    /* Converted fonts from disk, as in spike/render: --font=<name>=<path.bin>.
+     * Lets the driver run pages that html2lvgl converted with a real font. */
+    for(int i = 1; i < argc; i++) {
+        if(strncmp(argv[i], "--font=", 7) != 0) continue;
+        char spec[512];
+        lv_strlcpy(spec, argv[i] + 7, sizeof(spec));
+        char * eq = strchr(spec, '=');
+        if(eq == NULL) { fprintf(stderr, "expected --font=<name>=<path.bin>, got `%s`\n", argv[i] + 7); return 1; }
+        *eq = '\0';
+        char fs_path[512];
+        snprintf(fs_path, sizeof(fs_path), "A:%s", eq + 1);
+        lv_font_t * font = lv_binfont_create(fs_path);
+        if(font == NULL) { fprintf(stderr, "cannot load font `%s` from %s\n", spec, eq + 1); return 1; }
+        lv_xml_register_font(NULL, spec, font);
+    }
 
     if(globals_path) {
         char * g = read_file(globals_path);

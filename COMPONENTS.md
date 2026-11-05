@@ -161,8 +161,8 @@ Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, a
 | Dialog, Snackbar, Menu | `lv_msgbox` or a top-layer container | Portals need a special case. |
 | Bottom navigation | `lv_tabview` at the bottom, or a button row | |
 | Date picker | `lv_calendar` | |
-| Accordion | Header button and body container | Composite. See [The Disclosure Primitive](#the-disclosure-primitive). |
-| Drawer | Floating edge-anchored panel and a scrim | Slides in with an `<animations>` timeline. Opened by the app bar's menu button. |
+| Accordion | Header button and body container | **Done (Phase 8).** Composite. See [The Disclosure Primitive](#the-disclosure-primitive). |
+| Drawer | Floating edge-anchored panel and a scrim | **Done (Phase 8).** Slides in with an `<animations>` timeline. Opened by the app bar's menu button. |
 | Stepper, Pagination, Speed dial | Composites | Later. |
 | Data grid, Autocomplete, Tree view | Out of scope | Needs its own design. |
 

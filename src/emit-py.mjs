@@ -56,15 +56,43 @@
  * import at import time and so the cost is only paid on an actual
  * navigation. This was verified against the real binding with two on-disk
  * modules and a real simulated click (not just a syntax check).
+ *
+ * Behavior (src/behavior.mjs, Phase 8): view elements carry `meta.behavior`
+ * (final, page-qualified names); the `subject_*_event` / `bind_flag_if_*`
+ * child elements are skipped (isBehaviorElement) and rendered from it.
+ * Checked against the PINNED binding (lv_micropython 44aa2b15, vendored
+ * LVGL v9.3-era), which exposes `lv.subject_t()` with `.init_int()/.get_int()/
+ * .set_int()` and `obj.bind_flag_if_{eq,not_eq,gt,ge,lt,le}(subject, flag,
+ * ref)`, but NOT `lv_obj_add_subject_toggle_event` /
+ * `lv_obj_add_subject_set_int_event` (LVGL v9.4 additions; absent from
+ * `dir(lv.obj)`). That gap is closed with ordinary event callbacks that do
+ * exactly what the v9.4 helpers do (toggle: `set_int(not get_int())`; set:
+ * `set_int(value)`), so the generated code behaves the same on the pinned
+ * binding and on a newer one, and the callbacks are marked in the output.
+ * The subjects live in a module-level dict `subjects` (name -> lv.subject_t)
+ * so application code can read or drive the state; ui_create() creates them
+ * first (a bind may reference a subject whose owner comes later in the tree)
+ * and resets them to their initial value if the screen is created again.
+ * Timelines (Drawer slide): the pinned binding has no lv.anim_timeline_t and no
+ * obj.add_play_timeline_event, so a timeline is a list of `lv.anim_t` built
+ * with `set_custom_exec_cb(<Python callable>)` that a click handler starts
+ * together. (`set_exec_cb` with a closure raises "Cannot convert 'closure' to
+ * pointer"; a collected lv.anim_t crashes when it ticks, hence the module-level
+ * `timelines` dict.) Starting a timeline again restarts a running one on the
+ * same widget, like the LVGL timeline does.
+ * Library XML components (`xmlComponent`, e.g. ui_accordion) have no
+ * imperative equivalent: they are replaced by a comment, never by code that
+ * would fail to run.
  */
 import { FONT_SIZES } from './fonts.mjs';
+import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 
 // The *exact* set of built-in font names — see emit-c.mjs's identical guard
 // for why this can't be a "starts with montserrat_" guess.
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
-const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING' };
+const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
 
 // Enum group names verified against a real generated binding (see module
 // doc comment) rather than assumed from the C macro spelling.
@@ -89,7 +117,7 @@ const PY_RESERVED = new Set([
   'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally',
   'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal',
   'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
-  'parent', 'root', 'lv', 'e', 'fonts', 'images',
+  'parent', 'root', 'lv', 'e', 'fonts', 'images', 'subjects', 'timelines',
 ]);
 
 export function emitPy(view, opts = {}) {
@@ -125,8 +153,52 @@ export function emitPy(view, opts = {}) {
     return v;
   }
 
+  // Subjects first: a bind or event may name a subject declared further down.
+  const subjectDecls = new Map();
+  (function collectSubjects(node) {
+    for (const decl of node.meta?.behavior?.subjects ?? []) subjectDecls.set(decl.name, decl);
+    for (const child of node.children) collectSubjects(child);
+  })(view);
+  // Timelines: see emitTimelines().
+  const timelines = new Map(); // name -> timeline
+  const playEvents = []; // { widget var, event }
+  const varByName = new Map(); // widget name -> Python variable
+  (function collectTimelines(node) {
+    for (const t of node.meta?.behavior?.timelines ?? []) if (!timelines.has(t.name)) timelines.set(t.name, t);
+    for (const child of node.children) collectTimelines(child);
+  })(view);
+  let usesToggle = false;
+  let usesSet = false;
+
+  function emitBehavior(v, behavior) {
+    for (const event of behavior.events ?? []) {
+      if (event.kind === 'play') {
+        playEvents.push({ v, event });
+        continue;
+      }
+      const trigger = event.trigger ? `lv.EVENT.${event.trigger.toUpperCase()}` : 'lv.EVENT.CLICKED';
+      if (event.kind === 'toggle') {
+        usesToggle = true;
+        lines.push(`    ${v}.add_event_cb(_toggle_subject(subjects[${pystr(event.subject)}]), ${trigger}, None)`);
+      } else {
+        usesSet = true;
+        lines.push(`    ${v}.add_event_cb(_set_subject(subjects[${pystr(event.subject)}], ${event.value}), ${trigger}, None)`);
+      }
+    }
+    for (const bind of behavior.binds ?? []) {
+      lines.push(`    ${v}.bind_flag_if_${bind.op}(subjects[${pystr(bind.subject)}], lv.obj.FLAG.${bind.flag.toUpperCase()}, ${bind.ref})`);
+    }
+  }
+
   function emitNode(node, parentVar) {
+    if (isBehaviorElement(node)) return; // rendered from the parent's meta.behavior
+    if (node.tag !== 'view' && !node.tag.startsWith('lv_') && !/^screen_(create|load)_event$/.test(node.tag)) {
+      lines.push('');
+      lines.push(`    # unsupported: <${node.tag}> is a library XML component with no MicroPython equivalent; use --format xml for it`);
+      return;
+    }
     const v = node.tag === 'view' ? 'root' : widgetVar(node);
+    if (node.attrs.name) varByName.set(node.attrs.name, v);
     const ctor = node.tag === 'view' ? 'lv.obj' : `lv.${node.tag.replace(/^lv_/, '').replace(/-.*/, '')}`;
 
     if (node.tag === 'lv_table-column') {
@@ -158,7 +230,37 @@ export function emitPy(view, opts = {}) {
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) emitNode(child, v);
+    if (node.meta?.behavior) emitBehavior(v, node.meta.behavior);
     if (node.tag === 'view') lines.push('');
+  }
+
+  /**
+   * Timelines come after the whole tree: a trigger often precedes the panel
+   * its animation moves, and the animation holds the widget itself.
+   */
+  function emitTimelines() {
+    if (!timelines.size && !playEvents.length) return;
+    lines.push('');
+    for (const [name, timeline] of timelines) {
+      const steps = [];
+      for (const a of timeline.animations) {
+        const target = varByName.get(a.target);
+        if (!target || !TIMELINE_PROPS.has(a.prop)) {
+          lines.push(`    # timeline ${name}: skipped an animation of ${a.prop} on ${a.target} (${target ? 'not an animatable property' : 'no such widget'})`);
+          continue;
+        }
+        steps.push(`        (${target}, ${pystr(a.prop)}, ${a.start}, ${a.end}, ${a.duration}, ${a.delay ?? 0}),`);
+      }
+      lines.push(`    _timeline(${pystr(name)}, [`, ...steps, '    ])');
+    }
+    for (const { v, event } of playEvents) {
+      if (!timelines.has(event.timeline)) {
+        lines.push(`    # play event: no timeline named ${event.timeline} on this page`);
+        continue;
+      }
+      const trigger = event.trigger ? `lv.EVENT.${event.trigger.toUpperCase()}` : 'lv.EVENT.CLICKED';
+      lines.push(`    ${v}.add_event_cb(_play_timeline(${pystr(event.timeline)}), ${trigger}, None)`);
+    }
   }
 
   function emitAttr(node, v, key, value) {
@@ -176,8 +278,8 @@ export function emitPy(view, opts = {}) {
 
     if (key === 'x') return lines.push(`    ${v}.set_x(${value})`);
     if (key === 'y') return lines.push(`    ${v}.set_y(${value})`);
-    if (key === 'width') return lines.push(`    ${v}.set_width(${value})`);
-    if (key === 'height') return lines.push(`    ${v}.set_height(${value})`);
+    if (key === 'width') return lines.push(`    ${v}.set_width(${value === 'content' ? 'lv.SIZE_CONTENT' : value})`);
+    if (key === 'height') return lines.push(`    ${v}.set_height(${value === 'content' ? 'lv.SIZE_CONTENT' : value})`);
     if (key === 'align') return lines.push(`    ${v}.set_align(${ENUMS.align(value)})`);
     if (key === 'flex_flow') return lines.push(`    ${v}.set_flex_flow(${ENUMS.flex_flow(value)})`);
     if (key === 'flex_grow') return lines.push(`    ${v}.set_flex_grow(${value})`);
@@ -216,11 +318,83 @@ export function emitPy(view, opts = {}) {
   }
 
   emitNode(view, 'parent');
+  emitTimelines();
 
   const params = ['parent'];
   if (usesFonts) params.push('fonts=None');
   if (usesImages) params.push('images=None');
   const prologue = [];
+  if (subjectDecls.size) {
+    prologue.push('    # State: one lv.subject_t per subject, shared through the module-level `subjects`.');
+    for (const decl of subjectDecls.values()) prologue.push(`    _subject(${pystr(decl.name)}, ${decl.initial})`);
+  }
+  const behaviorHelpers = [];
+  if (subjectDecls.size) {
+    behaviorHelpers.push(`# Subject name -> lv.subject_t, filled by ${symbol}(). Kept at module level so the
+# application can read or set the UI state: ${unit}.subjects[name].set_int(1).
+subjects = {}
+
+
+def _subject(name, initial):
+    subject = subjects.get(name)
+    if subject is None:
+        subject = subjects[name] = lv.subject_t()
+        subject.init_int(initial)
+    else:
+        subject.set_int(initial)  # screen created again: back to the initial state`);
+  }
+  // The pinned binding lacks lv_obj_add_subject_{toggle,set_int}_event (LVGL
+  // v9.4), so these closures stand in for them — see the module doc comment.
+  if (usesToggle) {
+    behaviorHelpers.push(`def _toggle_subject(subject):
+    # Stand-in for lv_obj_add_subject_toggle_event (not in the pinned binding).
+    def toggle(e):
+        subject.set_int(0 if subject.get_int() else 1)
+    return toggle`);
+  }
+  if (usesSet) {
+    behaviorHelpers.push(`def _set_subject(subject, value):
+    # Stand-in for lv_obj_add_subject_set_int_event (not in the pinned binding).
+    def set_value(e):
+        subject.set_int(value)
+    return set_value`);
+  }
+  if (timelines.size) {
+    // The pinned binding has no lv.anim_timeline_t / lv_obj_add_play_timeline_event
+    // (LVGL v9.3-era), so a timeline is a list of lv.anim_t that the play handler
+    // starts together. set_custom_exec_cb takes a Python callable, and the
+    // lv.anim_t objects (with their callbacks) are kept in `timelines`: a
+    // collected one crashes the interpreter when the animation next ticks.
+    behaviorHelpers.push(`# Timeline name -> [lv.anim_t]; module level so the animations stay alive while they run.
+timelines = {}
+
+
+def _timeline(name, steps):
+    anims = []
+    for target, prop, start, end, duration, delay in steps:
+        anim = lv.anim_t()
+        anim.init()
+        anim.set_var(target)
+        anim.set_values(start, end)
+        anim.set_duration(duration)
+        anim.set_delay(delay)
+        anim.set_custom_exec_cb(_set_prop(target, prop))
+        anims.append(anim)
+    timelines[name] = anims
+
+
+def _set_prop(target, prop):
+    setter = getattr(target, "set_style_" + prop)
+    return lambda anim, value: setter(value, 0)
+
+
+def _play_timeline(name):
+    # Stand-in for lv_obj_add_play_timeline_event (not in the pinned binding).
+    def play(e):
+        for anim in timelines[name]:
+            anim.start()
+    return play`);
+  }
   if (usesFonts) prologue.push('    fonts = fonts or {}');
   if (usesImages) prologue.push('    images = images or {}');
 
@@ -228,7 +402,7 @@ export function emitPy(view, opts = {}) {
 import lvgl as lv
 
 
-${navFuncs.length ? navFuncs.join('\n\n\n') + '\n\n\n' : ''}def ${symbol}(${params.join(', ')}):
+${[...behaviorHelpers, ...navFuncs].length ? [...behaviorHelpers, ...navFuncs].join('\n\n\n') + '\n\n\n' : ''}def ${symbol}(${params.join(', ')}):
 ${prologue.length ? prologue.join('\n') + '\n' : ''}${lines.join('\n')}
     return root
 `;

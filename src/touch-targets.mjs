@@ -50,16 +50,24 @@ function describe(node) {
  * A target inside another target is not reported (the outer one is what a
  * finger hits), and hidden nodes are skipped. A `minSize` of 0 disables it.
  *
+ * A link that convert() turns into a plain label (single-page output, or an
+ * href that is no sibling screen) is not pressable, so `isLinkLive` lets the
+ * caller say which links navigate; without it every link counts.
+ *
  * @param {UiNode} tree  The recognized tree.
- * @param {{ diagnostics: { add(d: object): unknown }, minSize?: number }} options
+ * @param {{ diagnostics: { add(d: object): unknown }, minSize?: number, isLinkLive?: (node: UiNode) => boolean }} options
  * @returns {number} How many diagnostics were added.
  */
-export function checkTouchTargets(tree, { diagnostics, minSize = 30 }) {
+export function checkTouchTargets(tree, { diagnostics, minSize = 30, isLinkLive = () => true }) {
   if (!(minSize > 0)) return 0;
   let added = 0;
   const visit = (/** @type {UiNode} */ node) => {
     if (node.hidden) return;
     if (isTouchTarget(node)) {
+      if ((node.tag === 'a' || node.link) && node.tag !== 'button' && !isLinkLive(node)) {
+        for (const child of node.children ?? []) visit(child);
+        return;
+      }
       const { w, h } = node;
       if (Number.isFinite(w) && Number.isFinite(h) && (w < minSize || h < minSize)) {
         diagnostics.add({

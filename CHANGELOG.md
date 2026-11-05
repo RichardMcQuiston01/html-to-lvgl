@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Stateful components** (Phase 8): `accordion`, `modal` and `drawer`. An Accordion item is a trigger with `aria-expanded` and `aria-controls` (or `MuiAccordion-root`, or an `accordion` class); a Modal is a `role="dialog"` or `alertdialog` (or `MuiDialog-root`); a Drawer is a dialog docked to a screen edge (or `MuiDrawer-root`). State lives in LVGL subjects: the trigger toggles or sets one, and the target binds the `hidden` flag to it. A Modal becomes a full-screen floating overlay with a 50% backdrop (a backdrop tap closes it, except for an `alertdialog`). A Drawer becomes a scrim plus a panel slid in and out by an `<animations>` timeline from any of the four edges. Collapsed panels and closed dialogs named by `aria-controls` are measured at their open size.
+- **Behavior in every format.** XML writes `subject_toggle_event`, `subject_set_int_event`, `bind_flag_if_*` and `play_timeline_event`, plus a generated `globals.xml` of subjects. C and C++ use `lv_subject_t`, `lv_obj_add_subject_*_event`, `lv_obj_bind_flag_if_*` and `lv_anim_timeline_t`. MicroPython uses `lv.subject_t` with small callback helpers (the pinned binding lacks the toggle and set helpers and timelines) and `lv.anim_t` lists. Library XML components are not available in MicroPython output (it writes a comment). CI click-tests the same Accordion, Modal and Drawer scenarios on XML, C, C++ and MicroPython.
+- New diagnostics `BEHAVIOR_SUBJECT_UNDECLARED`, `BEHAVIOR_SUBJECT_CONFLICT` and `BEHAVIOR_TIMELINE_CONFLICT`.
+- `html2lvgl --version` (`-v`) prints the package version.
+
+### Changed
+
+- A wrapper is collapsed based on its own parent's layout, not its grandparent's, so wrappers inside a flex row keep their margins (the Material UI example's avatar spacing now matches the browser).
+- A `<button>` honors `text-align: left` and `right`.
+- C and Python size `content` as `LV_SIZE_CONTENT` / `lv.SIZE_CONTENT`.
+- **Children can draw outside their parent.** A box that a child overhangs gets `overflow_visible` and an invisible outline for the extended-draw size, so badges are no longer clipped. C, C++ and Python now write the `overflow_visible` flag.
+- A rounded `overflow: hidden` box that holds an image gets `style_clip_corner`, so photo avatars have round corners.
+- `rgba()` alpha on borders and text becomes `style_border_opa` and `style_text_opa`.
+- A `<button>` or link with no background is transparent instead of LVGL's default blue.
+- A padded text-only block keeps its padding, negative margins are kept, and `text-transform` is applied to the label text.
+- A border drawn on one side only (left, right or top) becomes `style_border_side`. LVGL takes one side per object, so a border on two or more different sides still collapses to one.
+- Links that become plain labels (single-page output, or an href that is not a sibling screen) are no longer reported as `TOUCH_TARGET_SMALL`.
+- Unrecognized Material UI parts and `css-<hash>` classes get readable widget names (`icon_button`, `card_header_title`) instead of `muiiconbutton_root`. Generated names in existing Material UI output change.
+- The render harness prints an error naming `LV_MEM_SIZE` when LVGL runs out of memory, instead of hanging.
+
+### Known limits
+
+- Stateful components: an overlay covers its own screen only (no `lv_layer_top()`); every button inside a dialog closes it; there is no chevron rotation (icons are placeholders); `aria-expanded` is read once at conversion time; a Material UI accordion header label can clip by a few pixels because of font metrics.
+- An empty spacer toolbar still costs an object, because removing it is not provably layout-safe.
+- The icon recognizer places an icon outline at the top-left of its button without an offset.
+
 ## [0.5.1] - 2026-11-03
 
 ### Changed

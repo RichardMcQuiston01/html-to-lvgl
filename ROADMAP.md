@@ -46,21 +46,13 @@ Rules for every phase:
 - **Verify against real LVGL.** Anything that emits XML or C is checked by the existing `validate-xml` and C harness jobs, not only by string comparison.
 - **A review agent** reads each phase's combined diff before the phase closes. It looks for gaps between lanes, not style.
 
-### Carry-over from Phase 7: converter fidelity
+### Carry-over from Phase 7: converter fidelity (done)
 
-Not a numbered phase. These are gaps in the base converter that the Phase 7 lanes had to work around inside their own components, or could not fix. Fixing them in `src/convert.mjs` and `src/extract.mjs` lets the workarounds in card, paper, chip, alert and the app bar be deleted, and is worth doing before the stateful components add more of the same markup.
+Delivered in the unreleased changes after 0.5.0: badge overhang, rounded image corners, `rgba()` alpha, transparent buttons, padded text blocks, negative margins, `text-transform`, one-sided borders, touch-target noise, readable Material UI names, and the harness memory error. Still open: mixed font sizes for one CSS size and `font-weight` bold, the empty spacer toolbar, and removing the Phase 7 component workarounds (`blendTranslucentColors`, `transparentTextButtons`, `keepTextPadding`, `withTransparentButtons`), which the converter now makes redundant.
 
-- **Badge overhang is clipped.** LVGL draws a child outside its parent only with `overflow_visible` and a nonzero extended-draw size (an outline or shadow with opacity above 2) on the parent and every ancestor. Hand-edited XML renders correctly; the converter needs to emit it.
-- **Photo avatar corners are square.** `style_clip_corner="true"` on the parent works in the XML runtime; the converter does not emit it.
-- **`rgba()` alpha is dropped** on borders and on text colors, so translucent colors render opaque.
-- **A `<button>` with no background gets LVGL's default blue.** It should map to a transparent fill.
-- **A padded text-only block loses its padding**, and negative margins, `text-transform`, and left and right borders are not handled.
-- **Mixed font sizes** for one CSS size, because the font fit depends on label width, and `font-weight` is not rendered bold.
-- **Touch-target noise.** A link that becomes a plain label (single-page output, or a target that is not a screen) is still reported as too small to press.
-- **Names.** Unrecognized Material UI parts get class-derived names such as `muiiconbutton_root`, and an empty spacer toolbar costs an object.
-- **Render harness.** It now has a 512 KB heap; it should also print a clear error instead of crashing when memory runs out.
+### Phase 8 — Stateful components (done)
 
-### Phase 8 — Stateful components
+Delivered after 0.5.1: the behavior IR (`src/behavior.mjs`), Accordion, Modal and Drawer, output in XML, C, C++ and MicroPython, and one click scenario per component run in CI on all four. Left over: a `lv_layer_top()` variant, chevron rotation, and library XML components in MicroPython.
 
 Goal: components that open and close. Depends on the Phase 5 subject spike.
 

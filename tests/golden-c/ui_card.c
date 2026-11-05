@@ -92,12 +92,13 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(card_header, 0, 0);
     lv_obj_set_flag(card_header, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muicardheader_title = lv_label_create(card_header);
-    lv_obj_set_x(muicardheader_title, 12);
-    lv_obj_set_y(muicardheader_title, 11);
-    lv_label_set_text(muicardheader_title, "Elevated");
-    lv_obj_set_style_text_font(muicardheader_title, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(muicardheader_title, lv_color_hex(0x000000), 0);
+    lv_obj_t * card_header_title = lv_label_create(card_header);
+    lv_obj_set_x(card_header_title, 12);
+    lv_obj_set_y(card_header_title, 11);
+    lv_label_set_text(card_header_title, "Elevated");
+    lv_obj_set_style_text_font(card_header_title, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(card_header_title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(card_header_title, 222, 0);
 
     lv_obj_t * card_body = lv_obj_create(card_2);
     lv_obj_set_width(card_body, 147);
@@ -194,12 +195,13 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_all(card_header_2, 0, 0);
     lv_obj_set_flag(card_header_2, LV_OBJ_FLAG_SCROLLABLE, false);
 
-    lv_obj_t * muicardheader_title_2 = lv_label_create(card_header_2);
-    lv_obj_set_x(muicardheader_title_2, 12);
-    lv_obj_set_y(muicardheader_title_2, 11);
-    lv_label_set_text(muicardheader_title_2, "Outlined");
-    lv_obj_set_style_text_font(muicardheader_title_2, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(muicardheader_title_2, lv_color_hex(0x000000), 0);
+    lv_obj_t * card_header_title_2 = lv_label_create(card_header_2);
+    lv_obj_set_x(card_header_title_2, 12);
+    lv_obj_set_y(card_header_title_2, 11);
+    lv_label_set_text(card_header_title_2, "Outlined");
+    lv_obj_set_style_text_font(card_header_title_2, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(card_header_title_2, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(card_header_title_2, 222, 0);
 
     lv_obj_t * card_body_2 = lv_obj_create(card_3);
     lv_obj_set_width(card_body_2, 147);
@@ -270,6 +272,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(paper_2, "A plain Paper surface");
     lv_obj_set_style_text_font(paper_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(paper_2, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(paper_2, 222, 0);
 
     return root;
 }

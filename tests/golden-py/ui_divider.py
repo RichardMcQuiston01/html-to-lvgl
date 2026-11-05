@@ -15,6 +15,7 @@ def ui_create(parent):
     root.set_flag(lv.obj.FLAG.SCROLLABLE, False)
     root.set_style_text_font(lv.font_montserrat_16, 0)
     root.set_style_text_color(lv.color_hex(0x000000), 0)
+    root.set_style_text_opa(222, 0)
 
     cap = lv.label(root)
     cap.set_x(12)
@@ -29,6 +30,7 @@ def ui_create(parent):
     line.set_text("Above the hr")
     line.set_style_text_font(lv.font_montserrat_12, 0)
     line.set_style_text_color(lv.color_hex(0x000000), 0)
+    line.set_style_text_opa(222, 0)
 
     divider = lv.obj(root)
     divider.set_x(12)
@@ -48,6 +50,7 @@ def ui_create(parent):
     line_2.set_text("Between hr and separator")
     line_2.set_style_text_font(lv.font_montserrat_12, 0)
     line_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    line_2.set_style_text_opa(222, 0)
 
     divider_2 = lv.obj(root)
     divider_2.set_x(12)
@@ -67,6 +70,7 @@ def ui_create(parent):
     line_3.set_text("Then a vertical rule")
     line_3.set_style_text_font(lv.font_montserrat_12, 0)
     line_3.set_style_text_color(lv.color_hex(0x000000), 0)
+    line_3.set_style_text_opa(222, 0)
 
     bar = lv.obj(root)
     bar.set_x(12)
@@ -92,6 +96,7 @@ def ui_create(parent):
     label.set_text("Left")
     label.set_style_text_font(lv.font_montserrat_12, 0)
     label.set_style_text_color(lv.color_hex(0x000000), 0)
+    label.set_style_text_opa(222, 0)
 
     divider_3 = lv.obj(bar)
     divider_3.set_width(1)
@@ -107,6 +112,7 @@ def ui_create(parent):
     label_2.set_text("Right")
     label_2.set_style_text_font(lv.font_montserrat_12, 0)
     label_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    label_2.set_style_text_opa(222, 0)
 
     cap_2 = lv.label(root)
     cap_2.set_x(12)
@@ -151,6 +157,7 @@ def ui_create(parent):
     label_3.set_text("One")
     label_3.set_style_text_font(lv.font_montserrat_12, 0)
     label_3.set_style_text_color(lv.color_hex(0x000000), 0)
+    label_3.set_style_text_opa(222, 0)
 
     divider_5 = lv.obj(bar_2)
     divider_5.set_width(1)
@@ -166,6 +173,7 @@ def ui_create(parent):
     label_4.set_text("Two")
     label_4.set_style_text_font(lv.font_montserrat_12, 0)
     label_4.set_style_text_color(lv.color_hex(0x000000), 0)
+    label_4.set_style_text_opa(222, 0)
 
     box = lv.obj(root)
     box.set_x(12)
@@ -195,6 +203,7 @@ def ui_create(parent):
     line_5.set_text("List item")
     line_5.set_style_text_font(lv.font_montserrat_12, 0)
     line_5.set_style_text_color(lv.color_hex(0x000000), 0)
+    line_5.set_style_text_opa(222, 0)
 
     divider_6 = lv.obj(box)
     divider_6.set_x(0)
@@ -224,6 +233,7 @@ def ui_create(parent):
     line_7.set_text("Next item")
     line_7.set_style_text_font(lv.font_montserrat_12, 0)
     line_7.set_style_text_color(lv.color_hex(0x000000), 0)
+    line_7.set_style_text_opa(222, 0)
 
     divider_7 = lv.obj(root)
     divider_7.set_x(12)
@@ -256,17 +266,17 @@ def ui_create(parent):
     divider_line.set_style_pad_all(0, 0)
     divider_line.set_flag(lv.obj.FLAG.SCROLLABLE, False)
 
-    muidivider_wrapper = lv.obj(divider_7)
-    muidivider_wrapper.set_width(33)
-    muidivider_wrapper.set_height(12)
-    muidivider_wrapper.set_style_bg_opa(0, 0)
-    muidivider_wrapper.set_style_border_width(0, 0)
-    muidivider_wrapper.set_style_radius(0, 0)
-    muidivider_wrapper.set_style_shadow_width(0, 0)
-    muidivider_wrapper.set_style_pad_all(0, 0)
-    muidivider_wrapper.set_flag(lv.obj.FLAG.SCROLLABLE, False)
+    divider_wrapper = lv.obj(divider_7)
+    divider_wrapper.set_width(33)
+    divider_wrapper.set_height(12)
+    divider_wrapper.set_style_bg_opa(0, 0)
+    divider_wrapper.set_style_border_width(0, 0)
+    divider_wrapper.set_style_radius(0, 0)
+    divider_wrapper.set_style_shadow_width(0, 0)
+    divider_wrapper.set_style_pad_all(0, 0)
+    divider_wrapper.set_flag(lv.obj.FLAG.SCROLLABLE, False)
 
-    label_5 = lv.label(muidivider_wrapper)
+    label_5 = lv.label(divider_wrapper)
     label_5.set_x(8)
     label_5.set_y(0)
     label_5.set_text("OR")

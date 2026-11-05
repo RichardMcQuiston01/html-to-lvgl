@@ -93,12 +93,13 @@ def ui_create(parent):
     card_header.set_style_pad_all(0, 0)
     card_header.set_flag(lv.obj.FLAG.SCROLLABLE, False)
 
-    muicardheader_title = lv.label(card_header)
-    muicardheader_title.set_x(12)
-    muicardheader_title.set_y(11)
-    muicardheader_title.set_text("Elevated")
-    muicardheader_title.set_style_text_font(lv.font_montserrat_12, 0)
-    muicardheader_title.set_style_text_color(lv.color_hex(0x000000), 0)
+    card_header_title = lv.label(card_header)
+    card_header_title.set_x(12)
+    card_header_title.set_y(11)
+    card_header_title.set_text("Elevated")
+    card_header_title.set_style_text_font(lv.font_montserrat_12, 0)
+    card_header_title.set_style_text_color(lv.color_hex(0x000000), 0)
+    card_header_title.set_style_text_opa(222, 0)
 
     card_body = lv.obj(card_2)
     card_body.set_width(147)
@@ -195,12 +196,13 @@ def ui_create(parent):
     card_header_2.set_style_pad_all(0, 0)
     card_header_2.set_flag(lv.obj.FLAG.SCROLLABLE, False)
 
-    muicardheader_title_2 = lv.label(card_header_2)
-    muicardheader_title_2.set_x(12)
-    muicardheader_title_2.set_y(11)
-    muicardheader_title_2.set_text("Outlined")
-    muicardheader_title_2.set_style_text_font(lv.font_montserrat_12, 0)
-    muicardheader_title_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    card_header_title_2 = lv.label(card_header_2)
+    card_header_title_2.set_x(12)
+    card_header_title_2.set_y(11)
+    card_header_title_2.set_text("Outlined")
+    card_header_title_2.set_style_text_font(lv.font_montserrat_12, 0)
+    card_header_title_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    card_header_title_2.set_style_text_opa(222, 0)
 
     card_body_2 = lv.obj(card_3)
     card_body_2.set_width(147)
@@ -271,5 +273,6 @@ def ui_create(parent):
     paper_2.set_text("A plain Paper surface")
     paper_2.set_style_text_font(lv.font_montserrat_12, 0)
     paper_2.set_style_text_color(lv.color_hex(0x000000), 0)
+    paper_2.set_style_text_opa(222, 0)
 
     return root

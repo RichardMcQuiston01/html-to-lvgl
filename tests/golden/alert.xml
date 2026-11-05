@@ -21,9 +21,9 @@
         <lv_obj name="icon_info_outlined" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x014361" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
       </lv_obj>
       <lv_label name="alert_message_2" text="Firmware 2.1 is available" style_text_font="montserrat_14" style_text_color="0x014361" />
-      <lv_obj name="alert_action" style_margin_left="7" width="78" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="0" style_pad_top="4" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
-        <lv_button name="muibutton_root" width="62" height="23" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
-          <lv_label name="muibutton_root_2" align="center" text="Update" style_text_font="montserrat_12" style_text_color="0x014361" style_text_align="center" />
+      <lv_obj name="alert_action" style_margin_left="7" style_margin_right="-8" width="78" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="0" style_pad_top="4" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_button name="button" width="62" height="23" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+          <lv_label name="button_2" align="center" text="Update" style_text_font="montserrat_12" style_text_color="0x014361" style_text_align="center" />
         </lv_button>
       </lv_obj>
     </lv_obj>

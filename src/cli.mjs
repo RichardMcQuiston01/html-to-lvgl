@@ -11,17 +11,17 @@
  * --debug also writes the extracted UI tree JSON.
  */
 import { parseArgs } from 'node:util';
-import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
-import { convert } from './convert.mjs';
+import { convert, pageXml as renderPageXml } from './convert.mjs';
 import { withoutHidden } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
 import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
-import { render } from './emit-xml.mjs';
+import { globalsXml } from './behavior.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
@@ -44,8 +44,15 @@ const { values: opts, positionals } = parseArgs({
     overrides: { type: 'string' },
     'min-touch-target': { type: 'string', default: '30' },
     help: { type: 'boolean', short: 'h', default: false },
+    version: { type: 'boolean', short: 'v', default: false },
   },
 });
+
+if (opts.version) {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  console.log(pkg.version);
+  process.exit(0);
+}
 
 if (opts.help || positionals.length === 0) {
   console.error(
@@ -55,7 +62,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
     '                 [--overrides <file.lvgl.json>]\n' +
-    '                 [--min-touch-target <px>]\n' +
+    '                 [--min-touch-target <px>] [--version]\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
@@ -256,7 +263,20 @@ async function buildAll() {
   const diagnostics = createDiagnostics();
   for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
 
-  for (const page of pages) diagnostics.merge(await emitPage(page, fonts));
+  // Subjects declared by every page's interactive components. Names carry the
+  // page name, so one globals.xml serves a multi-screen run.
+  const subjects = [];
+  for (const page of pages) diagnostics.merge(await emitPage(page, fonts, subjects));
+  const globals = formats.has('xml') ? globalsXml(subjects) : null;
+  const globalsPath = join(opts.output, 'globals.xml');
+  if (!globals) {
+    // Only a file this tool would have written: leave a hand-written one alone
+    // unless it is ours (starts with the generated <globals><subjects> shape).
+    if (formats.has('xml') && existsSync(globalsPath) && /^<globals>\n  <subjects>\n    <int /.test(readFileSync(globalsPath, 'utf8'))) rmSync(globalsPath);
+  } else {
+    writeFileSync(globalsPath, globals);
+    console.log(`wrote ${globalsPath} (register it as the "globals" component before creating screens)`);
+  }
 
   writeDiagnostics(diagnostics.list());
 }
@@ -280,9 +300,10 @@ function writeDiagnostics(entries) {
   for (const line of formatSummary(entries, { todoPath })) console.warn(line);
 }
 
-async function emitPage({ input, name, tree }, fonts) {
+async function emitPage({ input, name, tree }, fonts, subjects = []) {
   const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget });
   const { diagnostics, assets, collapsed } = converted;
+  subjects.push(...converted.subjects);
   let { xml, view } = converted;
   const written = [];
 
@@ -293,8 +314,7 @@ async function emitPage({ input, name, tree }, fonts) {
   const applied = applySidecar(view, { path: sidecar, explicit: Boolean(opts.overrides), diagnostics });
   if (applied.applied) {
     view = applied.view;
-    const wrapper = screenMode ? 'screen' : 'component';
-    xml = `<${wrapper}>\n${render(view, 1)}\n</${wrapper}>\n`;
+    xml = renderPageXml(view, { screenMode, animations: converted.animations });
   }
 
   if (formats.has('xml')) {
@@ -305,8 +325,7 @@ async function emitPage({ input, name, tree }, fonts) {
     // runs unconditionally rather than only for reactMode input.
     const { view: pageView, components } = componentize(view, { diagnostics });
     if (components.size) {
-      const wrapper = screenMode ? 'screen' : 'component';
-      pageXml = `<${wrapper}>\n${render(pageView, 1)}\n</${wrapper}>\n`;
+      pageXml = renderPageXml(pageView, { screenMode, animations: converted.animations });
       // Both write to <name>.xml; writing the page after its components
       // would silently overwrite a same-named component's definition.
       // Common in practice: name derives from the filename, cname from the
@@ -332,13 +351,13 @@ async function emitPage({ input, name, tree }, fonts) {
   // Each screen needs its own entry point; a single page keeps ui_create.
   const symbol = screenMode ? `ui_${name}_create` : 'ui_create';
   if (formats.has('c')) {
-    const { c, h, unit } = emitC(view, { name, symbol, lvInclude: opts['lv-include'] });
+    const { c, h, unit } = emitC(view, { name, symbol, lvInclude: opts['lv-include'], subjects: converted.subjects });
     writeFileSync(join(opts.output, `${unit}.c`), c);
     writeFileSync(join(opts.output, `${unit}.h`), h);
     written.push(join(opts.output, `${unit}.c`), join(opts.output, `${unit}.h`));
   }
   if (formats.has('cpp')) {
-    const { c, h, unit } = emitCpp(view, { name, symbol, lvInclude: opts['lv-include'] });
+    const { c, h, unit } = emitCpp(view, { name, symbol, lvInclude: opts['lv-include'], subjects: converted.subjects });
     writeFileSync(join(opts.output, `${unit}.cpp`), c);
     writeFileSync(join(opts.output, `${unit}.hpp`), h);
     written.push(join(opts.output, `${unit}.cpp`), join(opts.output, `${unit}.hpp`));

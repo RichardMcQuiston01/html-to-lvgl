@@ -17,6 +17,7 @@
  */
 import { createDiagnostics } from './diagnostics.mjs';
 import { linkAria } from './link-aria.mjs';
+import { hasBehavior } from './behavior.mjs';
 import { builtinComponents } from './components/index.mjs';
 
 /**
@@ -49,6 +50,18 @@ import { builtinComponents } from './components/index.mjs';
  *   kept in the tree so a recognizer can read them (an Accordion body, a
  *   closed Modal). Anything a recognizer does not consume is dropped before
  *   conversion. Default false.
+ * @property {boolean} [revealed]
+ *   extractor: true on a hidden disclosure target (named by `aria-controls`,
+ *   or a dialog) and its descendants: it was measured with the element shown,
+ *   so x/y/w/h are the size it has when open. Default false.
+ * @property {boolean} [initiallyHidden]
+ *   added by recognize(): the root of a revealed (or otherwise hidden) subtree
+ *   that is hidden when the page loads. It is kept only when a definition gave
+ *   it `behavior`; definitions see it and its descendants with `hidden` false.
+ * @property {import('./behavior.mjs').Behavior} [behavior]
+ *   set by a component's build(): subjects, events and binds (src/behavior.mjs).
+ * @property {{ tag: string, props: Record<string, unknown> }} [xmlComponent]
+ *   set by a component's build(): emit as an instance of a library XML component.
  * @property {string} [key]
  *   added by recognize(): a stable key. See annotateKeys().
  * @property {{ component: string, props: Record<string, unknown> }} [recognized]
@@ -237,10 +250,50 @@ export function annotateKeys(tree) {
   return tree;
 }
 
-/** Remove every node still flagged hidden. Runs after recognition. */
+/**
+ * Remove every node still flagged hidden, after recognition. A hidden node
+ * that a component claimed for an interaction (it carries `behavior` or
+ * `xmlComponent`, see src/behavior.mjs) is kept instead: it is a collapsed
+ * panel or a closed dialog the run-time state will show. It is marked
+ * `initiallyHidden: true`, and it and its descendants lose `hidden`, so every
+ * later pass treats them as ordinary nodes with the size measured open.
+ */
 function dropHidden(node) {
-  node.children = node.children.filter((c) => !c.hidden);
-  for (const c of node.children) dropHidden(c);
+  node.children = node.children.filter((c) => (!c.hidden && !c.initiallyHidden) || hasBehavior(c));
+  for (const c of node.children) {
+    if (c.hidden) {
+      c.initiallyHidden = true;
+      unhide(c);
+    }
+    dropHidden(c);
+  }
+}
+
+/**
+ * Show a measured-open disclosure target to the definitions. The extractor
+ * flags a collapsed panel or closed dialog and everything inside it `hidden`
+ * and `revealed` (it measured them open). If the definitions saw `hidden`
+ * they would skip them all (a Card inside a Modal would stay a plain box), so
+ * before matching, `hidden` is cleared on revealed nodes and the root of each
+ * such subtree is flagged `initiallyHidden`. dropHidden() removes a root no
+ * definition claimed with behavior.
+ *
+ * @param {UiNode} node
+ * @param {boolean} [insideRevealed]
+ */
+function exposeRevealed(node, insideRevealed = false) {
+  const revealed = Boolean(node.revealed && node.hidden);
+  if (revealed) {
+    node.hidden = false;
+    if (!insideRevealed) node.initiallyHidden = true;
+  }
+  for (const c of node.children) exposeRevealed(c, insideRevealed || revealed);
+}
+
+/** @param {UiNode} node */
+function unhide(node) {
+  node.hidden = false;
+  for (const c of node.children) unhide(c);
 }
 
 /**
@@ -303,6 +356,7 @@ const describe = (error) => (error instanceof Error ? error.message : String(err
  */
 export function recognize(tree, { registry = defaultRegistry, diagnostics = createDiagnostics(), linker = linkAria } = {}) {
   annotateKeys(tree);
+  exposeRevealed(tree);
 
   /** @type {Map<string, UiNode>} */
   const byId = new Map();

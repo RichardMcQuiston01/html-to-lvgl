@@ -32,8 +32,34 @@
  *     confirmed by reproducing the resulting "undefined reference" link
  *     failure during development. Keep font/image .c files compiled as C;
  *     this declaration is what lets C++ code call into them correctly.
+ *
+ * Behavior (src/behavior.mjs, LVGL 9.4 observer API; names checked against
+ * lvgl/src/others/observer/lv_observer.h and xml/lv_xml.h of v9.4.0):
+ *   - Each subject is a file-scope `static lv_subject_t subject_<name>`, set
+ *     up by a generated init_subjects(): lv_subject_init_int on the first
+ *     create call, a reset to the initial value on later ones.
+ *   - The same block registers it with lv_xml_register_subject(NULL, name, ..)
+ *     inside `#if LV_USE_XML`, so a library XML component created with
+ *     lv_xml_create can resolve a `subject` prop by name.
+ *   - meta.behavior events become lv_obj_add_subject_toggle_event /
+ *     lv_obj_add_subject_set_int_event and binds become lv_obj_bind_flag_if_<op>;
+ *     all exist in 9.4, so no substitute was needed. The XML child elements
+ *     convert() also writes for them are skipped via isBehaviorElement().
+ *   - An xmlComponent instance (any tag not starting with lv_) becomes
+ *     lv_xml_create(parent, "<tag>", attrs) with a static NULL-terminated
+ *     name/value list; the application registers the component's XML first.
+ *   - Timelines (the Drawer slide): lv_anim_timeline_create + one
+ *     lv_anim_timeline_add per animation, started by lv_obj_add_play_timeline_event.
+ *     An animation targets its widget BY C VARIABLE, so all timeline code is
+ *     emitted after the last widget (a trigger often comes before the panel it
+ *     moves). The exec callback is a generated static function per property
+ *     that calls lv_obj_set_style_<prop>(), the same effect as the XML loader's
+ *     local-style write. The timeline is freed with the screen root.
+ *   Subjects come from opts.subjects (convert()'s final list) plus every
+ *   element's meta.behavior.subjects.
  */
 import { FONT_SIZES } from './fonts.mjs';
+import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 
 // The *exact* set of built-in font names — not a "starts with montserrat_"
 // guess, which a custom family literally named "Montserrat" would also
@@ -41,7 +67,7 @@ import { FONT_SIZES } from './fonts.mjs';
 // of these names but does share the prefix).
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
-const FLAG_ATTRS = { scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT', floating: 'LV_OBJ_FLAG_FLOATING' };
+const FLAG_ATTRS = { scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT', floating: 'LV_OBJ_FLAG_FLOATING', overflow_visible: 'LV_OBJ_FLAG_OVERFLOW_VISIBLE' };
 
 const ENUMS = {
   flex_flow: (v) => `LV_FLEX_FLOW_${v.toUpperCase()}`,
@@ -66,6 +92,10 @@ const C_RESERVED = new Set([
   'void', 'volatile', 'while', 'parent', 'root',
 ]);
 
+/** A view element that stands for a library XML component (see convert.mjs emitLibraryComponent). */
+const isXmlComponent = (node) => node.tag !== 'view' && !node.tag.startsWith('lv_') && !isBehaviorElement(node)
+  && !['screen_create_event', 'screen_load_event'].includes(node.tag);
+
 export function emitC(view, opts = {}) {
   return emit(view, { ...opts, lang: 'c' });
 }
@@ -75,7 +105,7 @@ export function emitCpp(view, opts = {}) {
   return emit(view, { ...opts, lang: 'cpp' });
 }
 
-function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h', lang = 'c' } = {}) {
+function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h', lang = 'c', subjects: declared = [] } = {}) {
   const cpp = lang === 'cpp';
   const headerExt = cpp ? 'hpp' : 'h';
   // extern declarations for symbols DEFINED elsewhere (always-C font/image
@@ -116,8 +146,70 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
     return v;
   }
 
+  // Behavior: every subject of the page, declared once. Declared ones keep
+  // their initial value; one only referenced (already a convert() diagnostic)
+  // starts at 0 so the unit still compiles.
+  const subjects = new Map(declared.map((s) => [s.name, s.initial]));
+  let usesXmlComponent = false;
+  // Declarations first: a trigger often comes before the panel that declares
+  // its subject, and must not claim the default 0 for it.
+  (function collectDeclared(node) {
+    for (const s of node.meta?.behavior?.subjects ?? []) if (!subjects.has(s.name)) subjects.set(s.name, s.initial);
+    if (isXmlComponent(node)) usesXmlComponent = true;
+    node.children.forEach(collectDeclared);
+  })(view);
+  (function collectReferenced(node) {
+    for (const ref of [...(node.meta?.behavior?.events ?? []), ...(node.meta?.behavior?.binds ?? [])]) {
+      if (ref.kind === 'play') continue; // timeline events carry no subject
+      if (!subjects.has(ref.subject)) subjects.set(ref.subject, 0);
+    }
+    node.children.forEach(collectReferenced);
+  })(view);
+  // Timelines: declared on one widget, played from another, and their targets
+  // may be created later, so the code is emitted after the whole tree.
+  const timelines = new Map(); // name -> timeline
+  const playEvents = []; // { widget var, event }
+  const varByName = new Map(); // widget name -> C variable
+  const timelineProps = new Set();
+  (function collectTimelines(node) {
+    for (const t of node.meta?.behavior?.timelines ?? []) if (!timelines.has(t.name)) timelines.set(t.name, t);
+    node.children.forEach(collectTimelines);
+  })(view);
+  const subjectVar = (subject) => `subject_${subject.replace(/[^a-z0-9_]/gi, '_')}`;
+  let xmlAttrCount = 0;
+
+  function emitBehavior(node, v) {
+    for (const e of node.meta?.behavior?.events ?? []) {
+      if (e.kind === 'play') {
+        playEvents.push({ v, e });
+        continue;
+      }
+      const trigger = `LV_EVENT_${(e.trigger ?? 'clicked').toUpperCase()}`;
+      lines.push(e.kind === 'set'
+        ? `    lv_obj_add_subject_set_int_event(${v}, &${subjectVar(e.subject)}, ${trigger}, ${e.value});`
+        : `    lv_obj_add_subject_toggle_event(${v}, &${subjectVar(e.subject)}, ${trigger});`);
+    }
+    for (const b of node.meta?.behavior?.binds ?? []) {
+      lines.push(`    lv_obj_bind_flag_if_${b.op}(${v}, &${subjectVar(b.subject)}, LV_OBJ_FLAG_${b.flag.toUpperCase()}, ${b.ref});`);
+    }
+  }
+
+  /** A library XML component instance: attributes go in a static name/value list. */
+  function emitXmlComponent(node, parentVar) {
+    const v = widgetVar(node);
+    if (node.attrs.name) varByName.set(node.attrs.name, v);
+    const arr = `xml_attrs_${++xmlAttrCount}`;
+    const pairs = Object.entries(node.attrs).filter(([, val]) => val !== null && val !== undefined && val !== '')
+      .flatMap(([k, val]) => [cstr(k), cstr(val)]);
+    statics.push(`static const char * ${arr}[] = {${[...pairs, 'NULL'].join(', ')}};`);
+    lines.push('');
+    lines.push(`    lv_obj_t * ${v} = (lv_obj_t *)lv_xml_create(${parentVar}, ${cstr(node.tag)}, ${arr});`);
+  }
+
   function emitNode(node, parentVar) {
+    if (isXmlComponent(node)) return emitXmlComponent(node, parentVar);
     const v = node.tag === 'view' ? 'root' : widgetVar(node);
+    if (node.attrs.name) varByName.set(node.attrs.name, v);
     const createFn = { view: 'lv_obj_create' }[node.tag] ?? `${node.tag.replace(/-.*/, '')}_create`;
 
     if (node.tag === 'lv_table-column') {
@@ -140,8 +232,45 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
       emitAttr(node, v, key, String(raw));
     }
-    for (const child of node.children) emitNode(child, v);
+    for (const child of node.children) if (!isBehaviorElement(child)) emitNode(child, v);
+    emitBehavior(node, v);
     if (node.tag === 'view') lines.push('');
+  }
+
+  function emitTimelines() {
+    if (!timelines.size && !playEvents.length) return;
+    lines.push('');
+    for (const [name, timeline] of timelines) {
+      const tl = `timeline_${name.replace(/[^a-z0-9_]/gi, '_')}`;
+      lines.push(`    lv_anim_timeline_t * ${tl} = lv_anim_timeline_create();`);
+      for (const a of timeline.animations) {
+        const target = varByName.get(a.target);
+        if (!target || !TIMELINE_PROPS.has(a.prop)) {
+          lines.push(`    /* timeline ${name}: skipped an animation of ${a.prop} on ${a.target} (${target ? 'not an animatable property' : 'no such widget'}) */`);
+          continue;
+        }
+        timelineProps.add(a.prop);
+        lines.push('    {');
+        lines.push('        lv_anim_t tl_anim;');
+        lines.push('        lv_anim_init(&tl_anim);');
+        lines.push(`        lv_anim_set_var(&tl_anim, ${target});`);
+        lines.push(`        lv_anim_set_values(&tl_anim, ${a.start}, ${a.end});`);
+        lines.push(`        lv_anim_set_duration(&tl_anim, ${a.duration});`);
+        lines.push(`        lv_anim_set_exec_cb(&tl_anim, timeline_set_${a.prop});`);
+        // start_time overrides the animation's own delay inside a timeline
+        lines.push(`        lv_anim_timeline_add(${tl}, ${a.delay ?? 0}, &tl_anim);`);
+        lines.push('    }');
+      }
+      lines.push(`    lv_obj_add_event_cb(root, timeline_delete_cb, LV_EVENT_DELETE, ${tl});`);
+    }
+    for (const { v, e } of playEvents) {
+      if (!timelines.has(e.timeline)) {
+        lines.push(`    /* play event: no timeline named ${e.timeline} on this page */`);
+        continue;
+      }
+      const trigger = `LV_EVENT_${(e.trigger ?? 'clicked').toUpperCase()}`;
+      lines.push(`    lv_obj_add_play_timeline_event(${v}, ${trigger}, timeline_${e.timeline.replace(/[^a-z0-9_]/gi, '_')}, 0, false);`);
+    }
   }
 
   function emitAttr(node, v, key, value) {
@@ -160,8 +289,8 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
 
     if (key === 'x') return lines.push(`    lv_obj_set_x(${v}, ${value});`);
     if (key === 'y') return lines.push(`    lv_obj_set_y(${v}, ${value});`);
-    if (key === 'width') return lines.push(`    lv_obj_set_width(${v}, ${value});`);
-    if (key === 'height') return lines.push(`    lv_obj_set_height(${v}, ${value});`);
+    if (key === 'width') return lines.push(`    lv_obj_set_width(${v}, ${value === 'content' ? 'LV_SIZE_CONTENT' : value});`);
+    if (key === 'height') return lines.push(`    lv_obj_set_height(${v}, ${value === 'content' ? 'LV_SIZE_CONTENT' : value});`);
     if (key === 'align') return lines.push(`    lv_obj_set_align(${v}, ${ENUMS.align(value)});`);
     if (key === 'flex_flow') return lines.push(`    lv_obj_set_flex_flow(${v}, ${ENUMS.flex_flow(value)});`);
     if (key === 'flex_grow') return lines.push(`    lv_obj_set_flex_grow(${v}, ${value});`);
@@ -205,6 +334,41 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
   }
 
   emitNode(view, 'parent');
+  emitTimelines();
+
+  if (subjects.size) {
+    const each = (fn) => [...subjects].map(([n, initial]) => fn(subjectVar(n), n, initial)).join('\n');
+    statics.push(`${each((id) => `static lv_subject_t ${id};`)}
+static bool subjects_ready;
+
+/* Subjects outlive the widgets bound to them: set them up once, and start
+ * every later create call from the initial state again. */
+static void init_subjects(void)
+{
+    if(!subjects_ready) {
+${each((id, n, initial) => `        lv_subject_init_int(&${id}, ${initial});`)}
+#if LV_USE_XML
+${each((id, n) => `        lv_xml_register_subject(NULL, ${cstr(n)}, &${id});`)}
+#endif
+        subjects_ready = true;
+    }
+    else {
+${each((id, n, initial) => `        lv_subject_set_int(&${id}, ${initial});`)}
+    }
+}`);
+    lines.unshift('', '    init_subjects();');
+  }
+  if (timelines.size) {
+    statics.push([`/* A timeline is owned by the screen: free it with the root widget. */
+static void timeline_delete_cb(lv_event_t * e)
+{
+    lv_anim_timeline_delete((lv_anim_timeline_t *)lv_event_get_user_data(e));
+}`, ...[...timelineProps].map((prop) => `static void timeline_set_${prop}(void * var, int32_t value)
+{
+    lv_obj_set_style_${prop}((lv_obj_t *)var, value, 0);
+}`)].join('\n\n'));
+  }
+  if (usesXmlComponent) statics.unshift('#if !LV_USE_XML\n#error "this UI instantiates library XML components: enable LV_USE_XML in lv_conf.h"\n#endif\n');
 
   const guard = `${unit.toUpperCase()}_${headerExt.toUpperCase()}`;
   // emitC's own function declaration stays plain-C but is wrapped so this

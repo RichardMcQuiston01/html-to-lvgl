@@ -227,3 +227,29 @@ test('an elliptical border radius uses its horizontal value in its own unit', as
   assert.equal(findByText(tree, 'm').styles.radius, 12);
   assert.equal(findByText(tree, 'n').styles.radius, 20);
 });
+
+test('a single-sided border, text-transform and clipping are extracted', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><body style="margin:0">
+    <p style="border-left: 4px solid rgb(22,163,74)">left</p>
+    <p style="border-right: 3px solid rgba(245,158,11,0.5)">right</p>
+    <p style="border-top: 1px solid #000">top</p>
+    <p style="border-bottom: 2px solid #000">bottom</p>
+    <p style="border: 1px solid #000">frame</p>
+    <p style="border-left: 1px solid #000; border-bottom: 1px solid #000">two</p>
+    <p style="text-transform: uppercase">shout</p>
+    <div style="overflow: hidden; width: 20px; height: 10px">clipped</div>
+  </body></html>`);
+  const s = (text) => findByText(tree, text).styles;
+  assert.deepEqual([s('left').borderSide, s('left').borderWidth, s('left').borderColor], ['left', 4, [22, 163, 74, 255]]);
+  assert.deepEqual([s('right').borderSide, s('right').borderWidth, s('right').borderColor[3]], ['right', 3, 128]);
+  assert.deepEqual([s('top').borderSide, s('top').borderWidth], ['top', 1]);
+  // bottom-only keeps its own fields; a frame and a mixed border keep the old reading
+  assert.equal(s('bottom').borderSide, null);
+  assert.equal(s('bottom').borderBottomWidth, 2);
+  assert.equal(s('frame').borderSide, null);
+  assert.equal(s('frame').borderWidth, 1);
+  assert.equal(s('two').borderSide, null);
+  assert.equal(s('shout').textTransform, 'uppercase');
+  assert.equal(s('clipped').overflowHidden, true);
+  assert.equal(s('frame').overflowHidden, false);
+});
