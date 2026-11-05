@@ -35,6 +35,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(row, 0, 0);
     lv_obj_set_style_pad_top(row, 0, 0);
     lv_obj_set_style_pad_bottom(row, 0, 0);
+    lv_obj_set_flag(row, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(row, 6, 0);
+    lv_obj_set_style_outline_opa(row, 3, 0);
+    lv_obj_set_style_outline_color(row, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_flex_cross_place(row, LV_FLEX_ALIGN_CENTER, 0);
     lv_obj_set_style_flex_track_place(row, LV_FLEX_ALIGN_CENTER, 0);
@@ -53,6 +57,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(badge, 0, 0);
     lv_obj_set_style_pad_top(badge, 0, 0);
     lv_obj_set_style_pad_bottom(badge, 0, 0);
+    lv_obj_set_flag(badge, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(badge, 8, 0);
+    lv_obj_set_style_outline_opa(badge, 3, 0);
+    lv_obj_set_style_outline_color(badge, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(badge, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_row(badge, 0, 0);
     lv_obj_set_style_pad_column(badge, 0, 0);
@@ -99,6 +107,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(badge_2, 0, 0);
     lv_obj_set_style_pad_top(badge_2, 0, 0);
     lv_obj_set_style_pad_bottom(badge_2, 0, 0);
+    lv_obj_set_flag(badge_2, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(badge_2, 3, 0);
+    lv_obj_set_style_outline_opa(badge_2, 3, 0);
+    lv_obj_set_style_outline_color(badge_2, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(badge_2, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_row(badge_2, 0, 0);
     lv_obj_set_style_pad_column(badge_2, 0, 0);
@@ -181,6 +193,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(row_2, 0, 0);
     lv_obj_set_style_pad_top(row_2, 0, 0);
     lv_obj_set_style_pad_bottom(row_2, 0, 0);
+    lv_obj_set_flag(row_2, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(row_2, 10, 0);
+    lv_obj_set_style_outline_opa(row_2, 3, 0);
+    lv_obj_set_style_outline_color(row_2, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(row_2, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_flex_cross_place(row_2, LV_FLEX_ALIGN_CENTER, 0);
     lv_obj_set_style_flex_track_place(row_2, LV_FLEX_ALIGN_CENTER, 0);
@@ -199,6 +215,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(badge_7, 0, 0);
     lv_obj_set_style_pad_top(badge_7, 0, 0);
     lv_obj_set_style_pad_bottom(badge_7, 0, 0);
+    lv_obj_set_flag(badge_7, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(badge_7, 10, 0);
+    lv_obj_set_style_outline_opa(badge_7, 3, 0);
+    lv_obj_set_style_outline_color(badge_7, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(badge_7, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_row(badge_7, 0, 0);
     lv_obj_set_style_pad_column(badge_7, 0, 0);
@@ -245,6 +265,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(badge_8, 0, 0);
     lv_obj_set_style_pad_top(badge_8, 0, 0);
     lv_obj_set_style_pad_bottom(badge_8, 0, 0);
+    lv_obj_set_flag(badge_8, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(badge_8, 4, 0);
+    lv_obj_set_style_outline_opa(badge_8, 3, 0);
+    lv_obj_set_style_outline_color(badge_8, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(badge_8, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_row(badge_8, 0, 0);
     lv_obj_set_style_pad_column(badge_8, 0, 0);
@@ -284,6 +308,10 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_style_pad_right(badge_9, 0, 0);
     lv_obj_set_style_pad_top(badge_9, 0, 0);
     lv_obj_set_style_pad_bottom(badge_9, 0, 0);
+    lv_obj_set_flag(badge_9, LV_OBJ_FLAG_OVERFLOW_VISIBLE, true);
+    lv_obj_set_style_outline_width(badge_9, 16, 0);
+    lv_obj_set_style_outline_opa(badge_9, 3, 0);
+    lv_obj_set_style_outline_color(badge_9, lv_color_hex(0xffffff), 0);
     lv_obj_set_flex_flow(badge_9, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_row(badge_9, 0, 0);
     lv_obj_set_style_pad_column(badge_9, 0, 0);

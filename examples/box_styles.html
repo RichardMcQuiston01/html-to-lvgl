@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 8px; color: #1e293b; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  /* 1. translucent border and translucent text */
+  .glass { width: 120px; height: 30px; border: 3px solid rgba(220, 38, 38, 0.4); border-radius: 6px; font-size: 12px; color: rgba(0, 0, 0, 0.55); padding: 5px 8px; }
+  /* 2. a button with no background takes no fill */
+  .ghost { background: none; border: 0; color: #1d4ed8; font-size: 12px; width: 70px; height: 30px; }
+  .solid { background: #1d4ed8; border: 0; color: #fff; font-size: 12px; width: 70px; height: 30px; border-radius: 6px; }
+  /* 3. padded text-only block, text-transform */
+  .note { font-size: 12px; padding: 8px 14px; width: 150px; height: 30px; }
+  .upper { text-transform: uppercase; font-size: 12px; }
+  .lower { text-transform: lowercase; font-size: 12px; }
+  .cap { text-transform: capitalize; font-size: 12px; }
+  /* 4. negative margin: the second box is pulled over the first */
+  .tile { width: 40px; height: 24px; border-radius: 4px; background: #93c5fd; }
+  .tile + .tile { margin-left: -16px; background: #3b82f6; }
+  /* 5. single-sided borders */
+  .quote { border-left: 4px solid #16a34a; padding: 4px 8px; font-size: 12px; width: 110px; height: 28px; }
+  .side { border-right: 3px solid #f59e0b; padding: 4px 8px; font-size: 12px; width: 110px; height: 28px; }
+</style>
+</head>
+<body>
+  <div class="row"><div class="glass">Translucent</div><button class="ghost">Ghost</button><button class="solid">Solid</button></div>
+  <div class="row"><p class="note">Padded note</p><p class="upper">shout</p><p class="lower">WHISPER</p></div>
+  <div class="row"><p class="cap">make me a title</p></div>
+  <div class="row"><div class="tile"></div><div class="tile"></div></div>
+  <div class="row"><div class="quote">Left rule</div><div class="side">Right rule</div></div>
+</body>
+</html>

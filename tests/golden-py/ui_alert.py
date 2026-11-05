@@ -206,6 +206,7 @@ def ui_create(parent):
 
     alert_action = lv.obj(alert_4)
     alert_action.set_style_margin_left(7, 0)
+    alert_action.set_style_margin_right(-8, 0)
     alert_action.set_width(78)
     alert_action.set_height(38)
     alert_action.set_style_bg_opa(0, 0)

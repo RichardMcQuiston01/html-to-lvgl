@@ -15,6 +15,7 @@ def ui_create(parent):
     root.set_flag(lv.obj.FLAG.SCROLLABLE, False)
     root.set_style_text_font(lv.font_montserrat_16, 0)
     root.set_style_text_color(lv.color_hex(0x000000), 0)
+    root.set_style_text_opa(222, 0)
 
     toolbar = lv.obj(root)
     toolbar.set_x(0)
@@ -34,6 +35,7 @@ def ui_create(parent):
     content.set_text("Content starts below the bar.")
     content.set_style_text_font(lv.font_montserrat_14, 0)
     content.set_style_text_color(lv.color_hex(0x000000), 0)
+    content.set_style_text_opa(222, 0)
 
     appbar = lv.obj(root)
     appbar.set_x(16)
@@ -125,6 +127,7 @@ def ui_create(parent):
     toolbar_2.set_flag(lv.obj.FLAG.SCROLLABLE, False)
 
     muiiconbutton_root = lv.button(toolbar_2)
+    muiiconbutton_root.set_style_margin_left(-12, 0)
     muiiconbutton_root.set_style_margin_right(16, 0)
     muiiconbutton_root.set_width(40)
     muiiconbutton_root.set_height(40)

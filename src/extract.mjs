@@ -230,6 +230,32 @@ export function buildTree() {
   }
   collectPressedRules();
 
+  /**
+   * Border fields. borderWidth/borderColor describe "the border": normally the
+   * top edge, which is the whole frame when all four edges match. When exactly
+   * one of top, left or right is drawn (a sidebar rule, a quote bar), they
+   * carry that edge and borderSide names it, so the converter draws one side
+   * instead of a frame. A bottom-only border keeps its own fields.
+   */
+  function borderStyles(cs) {
+    const edges = {
+      top: [cs.borderTopWidth, cs.borderTopColor],
+      right: [cs.borderRightWidth, cs.borderRightColor],
+      bottom: [cs.borderBottomWidth, cs.borderBottomColor],
+      left: [cs.borderLeftWidth, cs.borderLeftColor],
+    };
+    const drawn = Object.entries(edges).filter(([, [w, c]]) => px(w) > 0 && parseColor(c));
+    const lone = drawn.length === 1 && drawn[0][0] !== 'bottom' ? drawn[0] : null;
+    const [width, color] = lone ? lone[1] : edges.top;
+    return {
+      borderColor: parseColor(color),
+      borderWidth: px(width),
+      borderSide: lone ? lone[0] : null,
+      borderBottomColor: parseColor(cs.borderBottomColor),
+      borderBottomWidth: px(cs.borderBottomWidth),
+    };
+  }
+
   function ownText(el) {
     let t = '';
     for (const n of el.childNodes) {
@@ -295,10 +321,7 @@ export function buildTree() {
       styles: {
         bgColor: parseColor(cs.backgroundColor),
         color: parseColor(cs.color),
-        borderColor: parseColor(cs.borderTopColor),
-        borderWidth: px(cs.borderTopWidth),
-        borderBottomColor: parseColor(cs.borderBottomColor),
-        borderBottomWidth: px(cs.borderBottomWidth),
+        ...borderStyles(cs),
         radius: radiusPx(cs.borderTopLeftRadius, r.width, r.height),
         fontSize: px(cs.fontSize) || 16,
         // Identity of the typeface actually used, for lv_font_conv
@@ -306,6 +329,12 @@ export function buildTree() {
         fontWeight: normalizeWeight(cs.fontWeight),
         fontItalic: cs.fontStyle === 'italic' || cs.fontStyle === 'oblique',
         textAlign: cs.textAlign,
+        // innerText applies this; the text node content we read does not
+        textTransform: cs.textTransform,
+        // True when the browser cuts children at the box (overflow hidden,
+        // clip, auto, scroll). Decides whether a child that sticks out is
+        // really visible, and whether rounded corners clip an image.
+        overflowHidden: cs.overflowX !== 'visible' || cs.overflowY !== 'visible',
         opacity: parseFloat(cs.opacity),
         padLeft: px(cs.paddingLeft),
         padRight: px(cs.paddingRight),

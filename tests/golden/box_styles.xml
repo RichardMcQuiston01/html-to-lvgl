@@ -1,0 +1,37 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x1e293b">
+    <lv_obj name="row" x="8" y="8" width="304" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="glass" width="120" height="30" style_bg_opa="0" style_border_width="3" style_border_color="0xdc2626" style_border_opa="102" style_radius="6" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="glass_2" align="left_mid" x="8" text="Translucent" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="140" />
+      </lv_obj>
+      <lv_button name="ghost" width="70" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="ghost_2" align="center" text="Ghost" style_text_font="montserrat_12" style_text_color="0x1d4ed8" style_text_align="center" />
+      </lv_button>
+      <lv_button name="solid" width="70" height="30" style_bg_color="0x1d4ed8" style_border_width="0" style_radius="6" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="solid_2" align="center" text="Solid" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+      </lv_button>
+    </lv_obj>
+    <lv_obj name="row_2" x="8" y="46" width="304" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="note" width="150" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="note_2" align="left_mid" x="14" text="Padded note" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+      </lv_obj>
+      <lv_label name="upper" text="SHOUT" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+      <lv_label name="lower" text="whisper" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+    </lv_obj>
+    <lv_obj name="row_3" x="8" y="84" width="304" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_label name="cap" text="Make Me A Title" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+    </lv_obj>
+    <lv_obj name="row_4" x="8" y="106" width="304" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="tile" width="40" height="24" style_bg_color="0x93c5fd" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+      <lv_obj name="tile_2" style_margin_left="-16" width="40" height="24" style_bg_color="0x3b82f6" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+    </lv_obj>
+    <lv_obj name="row_5" x="8" y="138" width="304" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_obj name="quote" width="110" height="28" style_bg_opa="0" style_border_width="4" style_border_color="0x16a34a" style_border_side="left" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="quote_2" align="left_mid" x="8" text="Left rule" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+      </lv_obj>
+      <lv_obj name="side" width="110" height="28" style_bg_opa="0" style_border_width="3" style_border_color="0xf59e0b" style_border_side="right" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="side_2" align="left_mid" x="8" text="Right rule" style_text_font="montserrat_12" style_text_color="0x1e293b" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

@@ -14,6 +14,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_flag(root, LV_OBJ_FLAG_SCROLLABLE, false);
     lv_obj_set_style_text_font(root, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(root, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(root, 222, 0);
 
     lv_obj_t * cap = lv_label_create(root);
     lv_obj_set_x(cap, 12);
@@ -28,6 +29,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(line, "Above the hr");
     lv_obj_set_style_text_font(line, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(line, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(line, 222, 0);
 
     lv_obj_t * divider = lv_obj_create(root);
     lv_obj_set_x(divider, 12);
@@ -47,6 +49,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(line_2, "Between hr and separator");
     lv_obj_set_style_text_font(line_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(line_2, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(line_2, 222, 0);
 
     lv_obj_t * divider_2 = lv_obj_create(root);
     lv_obj_set_x(divider_2, 12);
@@ -66,6 +69,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(line_3, "Then a vertical rule");
     lv_obj_set_style_text_font(line_3, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(line_3, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(line_3, 222, 0);
 
     lv_obj_t * bar = lv_obj_create(root);
     lv_obj_set_x(bar, 12);
@@ -91,6 +95,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(label, "Left");
     lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(label, 222, 0);
 
     lv_obj_t * divider_3 = lv_obj_create(bar);
     lv_obj_set_width(divider_3, 1);
@@ -106,6 +111,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(label_2, "Right");
     lv_obj_set_style_text_font(label_2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(label_2, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(label_2, 222, 0);
 
     lv_obj_t * cap_2 = lv_label_create(root);
     lv_obj_set_x(cap_2, 12);
@@ -150,6 +156,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(label_3, "One");
     lv_obj_set_style_text_font(label_3, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(label_3, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(label_3, 222, 0);
 
     lv_obj_t * divider_5 = lv_obj_create(bar_2);
     lv_obj_set_width(divider_5, 1);
@@ -165,6 +172,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(label_4, "Two");
     lv_obj_set_style_text_font(label_4, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(label_4, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(label_4, 222, 0);
 
     lv_obj_t * box = lv_obj_create(root);
     lv_obj_set_x(box, 12);
@@ -194,6 +202,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(line_5, "List item");
     lv_obj_set_style_text_font(line_5, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(line_5, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(line_5, 222, 0);
 
     lv_obj_t * divider_6 = lv_obj_create(box);
     lv_obj_set_x(divider_6, 0);
@@ -223,6 +232,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_label_set_text(line_7, "Next item");
     lv_obj_set_style_text_font(line_7, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(line_7, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_opa(line_7, 222, 0);
 
     lv_obj_t * divider_7 = lv_obj_create(root);
     lv_obj_set_x(divider_7, 12);
