@@ -196,6 +196,16 @@ Ten common components are recognized by their ARIA role or markup, by Material U
 | `toolbar` | `role="toolbar"`, `MuiToolbar-root` | Names it `toolbar`; keeps Material UI's empty spacer so content stays below a fixed bar. |
 | `breadcrumbs` | `<nav aria-label="breadcrumb">`, `MuiBreadcrumbs-root`, a `breadcrumb` list | A row of labels and link buttons; the current page is not clickable. |
 
+### Stateful components
+
+| Component | Recognized from | What the converter does |
+|---|---|---|
+| `accordion` | A button with `aria-expanded` and `aria-controls`, `MuiAccordion-root`, an `accordion` class | One subject per item; the header toggles it and the body binds `hidden`. Starts open or closed from `aria-expanded`. Items are independent and siblings below reflow. |
+| `modal` | `role="dialog"` or `alertdialog`, `MuiDialog-root`, `MuiModal-root` | A full-screen floating overlay as the last child of the screen with a dim backdrop and a centered dialog. Buttons inside close it; the opener opens it. |
+| `drawer` | A dialog docked to a screen edge, `MuiDrawer-root` | A scrim plus a panel parked off-screen and slid in and out by a timeline. Left, right, top and bottom work. |
+
+Output is written in XML (with a generated `globals.xml`), C, C++ and MicroPython. Library XML components are not available in MicroPython. The API for adding more stateful components is documented at the top of `src/behavior.mjs`.
+
 **Pinned app bars.** A recognized app bar with `position: fixed` or `sticky` is emitted with `floating="true"` (XML), `LV_OBJ_FLAG_FLOATING` (C and C++) or `set_flag(lv.obj.FLAG.FLOATING, True)` (Python). LVGL does not scroll a floating object with its parent. The bar is also moved last among its siblings, because LVGL paints later siblings on top.
 
 **Elevation and radius.** A multi-layer `box-shadow` (Material UI elevation) keeps its largest layer, since LVGL has one shadow per object. A percentage `border-radius` resolves against the box, so `50%` on an avatar is a circle.

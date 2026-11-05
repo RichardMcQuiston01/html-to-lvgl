@@ -50,7 +50,9 @@ Rules for every phase:
 
 Delivered in the unreleased changes after 0.5.0: badge overhang, rounded image corners, `rgba()` alpha, transparent buttons, padded text blocks, negative margins, `text-transform`, one-sided borders, touch-target noise, readable Material UI names, and the harness memory error. Still open: mixed font sizes for one CSS size and `font-weight` bold, the empty spacer toolbar, and removing the Phase 7 component workarounds (`blendTranslucentColors`, `transparentTextButtons`, `keepTextPadding`, `withTransparentButtons`), which the converter now makes redundant.
 
-### Phase 8 — Stateful components
+### Phase 8 — Stateful components (done)
+
+Delivered after 0.5.1: the behavior IR (`src/behavior.mjs`), Accordion, Modal and Drawer, output in XML, C, C++ and MicroPython, and one click scenario per component run in CI on all four. Left over: a `lv_layer_top()` variant, chevron rotation, and library XML components in MicroPython.
 
 Goal: components that open and close. Depends on the Phase 5 subject spike.
 
