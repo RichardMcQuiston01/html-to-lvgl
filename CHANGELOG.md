@@ -11,6 +11,7 @@
 
 ### Changed
 
+- The donate link moved from PayPal to Ko-fi (`https://ko-fi.com/P1V529Z7ZP`): the README now has the Ko-fi badge under the author lines and in its Buy Me a Coffee section (the QR image `donate.png` is removed), and the `funding` entry in `package.json` points at Ko-fi, so `npm fund` and the npm page show it. Added `.github/FUNDING.yml` for GitHub's Sponsor button.
 - A wrapper is collapsed based on its own parent's layout, not its grandparent's, so wrappers inside a flex row keep their margins (the Material UI example's avatar spacing now matches the browser).
 - A `<button>` honors `text-align: left` and `right`.
 - C and Python size `content` as `LV_SIZE_CONTENT` / `lv.SIZE_CONTENT`.
