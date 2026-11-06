@@ -25,6 +25,7 @@ import { globalsXml } from './behavior.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
+import { isUrlInput, urlScreenName, extractUrl, parseInputUrl, downloadAsset, localizeFontFaces, UrlInputError, DEFAULT_TIMEOUT_MS } from './url-input.mjs';
 
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
@@ -43,6 +44,10 @@ const { values: opts, positionals } = parseArgs({
     plugin: { type: 'string', multiple: true, default: [] },
     overrides: { type: 'string' },
     'min-touch-target': { type: 'string', default: '30' },
+    'wait-for': { type: 'string' },
+    'wait-ms': { type: 'string' },
+    timeout: { type: 'string' },
+    'block-external': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
     version: { type: 'boolean', short: 'v', default: false },
   },
@@ -63,10 +68,21 @@ if (opts.help || positionals.length === 0) {
     '                 [--plugin <package-or-path>] ...\n' +
     '                 [--overrides <file.lvgl.json>]\n' +
     '                 [--min-touch-target <px>] [--version]\n' +
+    '                 [--wait-for <selector>] [--wait-ms <n>] [--timeout <ms>]\n' +
+    '                 [--block-external]   (URL inputs)\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
     'them (<a href="other.html">) become navigation buttons.\n' +
+    '\n' +
+    'An http(s):// or file:// URL can be given instead of a file: the page is\n' +
+    'loaded in headless Chromium (waiting for load and network idle, or for\n' +
+    '--wait-for <selector> and/or --wait-ms <n> extra), then converted exactly\n' +
+    'like a file. Use it for built or served Angular, Next and Nuxt apps.\n' +
+    '--timeout (default 30000 ms) bounds loading. The page makes whatever\n' +
+    'requests it normally would; --block-external aborts requests to other\n' +
+    'origins for reproducible, offline-friendly runs. Links between several\n' +
+    'URLs resolve by URL path. --watch does not accept URLs.\n' +
     '\n' +
     '--format accepts a comma-separated list (e.g. "xml,cpp"); "both" is a\n' +
     'shorthand for "xml,c". "c" emits ui_<name>.c/.h; "cpp" emits the same\n' +
@@ -121,7 +137,7 @@ if (!/^\d+$/.test(opts['min-touch-target'])) {
 }
 const minTouchTarget = Number(opts['min-touch-target']);
 
-const screenName = (p) => basename(p).replace(/\.[a-z]+$/i, '').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+const screenName = (p) => isUrlInput(p) ? urlScreenName(p) : basename(p).replace(/\.[a-z]+$/i, '').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
 
 // Distinct files can still derive the same screen name (home-page.html and
 // home_page.html both give home_page), which would silently overwrite output.
@@ -169,6 +185,38 @@ if (opts.overrides && screenMode) {
   process.exit(1);
 }
 
+// URL input: validate everything up front so a typo fails before a browser starts.
+const urlMode = positionals.some(isUrlInput);
+let urlTimeoutMs = DEFAULT_TIMEOUT_MS;
+let urlWaitMs = 0;
+if (urlMode) {
+  if (!positionals.every(isUrlInput)) {
+    console.error('inputs must be all URLs or all files; do not mix http(s):// or file:// URLs with file paths');
+    process.exit(1);
+  }
+  try {
+    for (const p of positionals) parseInputUrl(p);
+  } catch (err) {
+    console.error(`error: ${err.message}`);
+    process.exit(1);
+  }
+  if (opts.watch) {
+    console.error('--watch does not support URLs (re-run the command to re-fetch, or serve the app with its own dev server and convert once)');
+    process.exit(1);
+  }
+  for (const [flag, val] of [['timeout', opts.timeout], ['wait-ms', opts['wait-ms']]]) {
+    if (val !== undefined && !/^\d+$/.test(val)) {
+      console.error(`invalid --${flag} "${val}" (expected a non-negative whole number of milliseconds)`);
+      process.exit(1);
+    }
+  }
+  if (opts.timeout !== undefined) urlTimeoutMs = Number(opts.timeout);
+  if (opts['wait-ms'] !== undefined) urlWaitMs = Number(opts['wait-ms']);
+} else if (opts['wait-for'] || opts['wait-ms'] || opts.timeout || opts['block-external']) {
+  console.error('--wait-for, --wait-ms, --timeout and --block-external only apply to URL inputs (http://, https://, file://)');
+  process.exit(1);
+}
+
 if (opts.watch && screenMode) {
   console.error('--watch previews a single page at a time');
   process.exit(1);
@@ -204,7 +252,7 @@ if (opts.watch) {
 
 async function buildAll() {
   // Invalid plugins print every error line and are skipped, never fatal.
-  const { plugins } = await loadPlugins({ specs: opts.plugin, inputs: positionals });
+  const { plugins } = await loadPlugins({ specs: opts.plugin, inputs: urlMode ? [] : positionals });
   // Extract every page before touching fonts: a font used differently by two
   // screens (e.g. a heading on one, body text on the other) needs the union
   // of both screens' glyphs in one shared file, not whichever screen's
@@ -219,9 +267,24 @@ async function buildAll() {
       screenshotPath: opts.screenshot ? join(opts.output, `${pageName}_web.png`) : undefined,
     };
     // Plain .html (or anything no plugin claims) keeps the extractPage path.
-    const plugin = selectPlugin(plugins, page);
+    const plugin = urlMode ? null : selectPlugin(plugins, page);
     let tree;
-    if (plugin) {
+    if (urlMode) {
+      // A served page is already rendered output: no plugin applies.
+      try {
+        tree = await extractUrl(page, {
+          ...extractOptions,
+          waitFor: opts['wait-for'],
+          waitMs: urlWaitMs,
+          timeoutMs: urlTimeoutMs,
+          blockExternal: opts['block-external'],
+        });
+      } catch (err) {
+        if (!(err instanceof UrlInputError)) throw err;
+        console.error(`error: ${err.message}`);
+        process.exit(1);
+      }
+    } else if (plugin) {
       const r = await extractWithPlugin(plugin, page, extractOptions);
       if (!r.ok) {
         console.error(r.error);
@@ -253,6 +316,10 @@ async function buildAll() {
   // sources and relative-URL resolution use the first page's, which is
   // exact for the common single-directory case and a documented limit
   // otherwise (screens in different directories should share --font-map).
+  if (urlMode) {
+    // buildFonts only reads local files: fetch the page's @font-face files.
+    await localizeFontFaces(pages[0].tree, pages[0].input, join(opts.output, 'fonts-src'), urlFetchOptions());
+  }
   const { built, unresolved } = await buildFonts([...mergedPlan.values()], join(opts.output, 'fonts'), {
     fontMap,
     faces: pages[0]?.tree.fontFaces ?? [],
@@ -279,6 +346,10 @@ async function buildAll() {
   }
 
   writeDiagnostics(diagnostics.list());
+}
+
+function urlFetchOptions() {
+  return { blockExternal: opts['block-external'], timeoutMs: urlTimeoutMs };
 }
 
 /**
@@ -370,6 +441,12 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
 
   const assetDir = join(opts.output, 'assets');
   for (const asset of assets) {
+    if (urlMode) {
+      // Served images are downloaded where the file flow would copy them.
+      const r = await downloadAsset(asset.src, input, assetDir, urlFetchOptions());
+      if (!r.path && r.reason !== 'inline') console.warn(`warning: could not download image ${asset.src}: ${r.reason}`);
+      continue;
+    }
     const from = resolve(dirname(input), asset.src);
     if (existsSync(from)) {
       mkdirSync(assetDir, { recursive: true });
