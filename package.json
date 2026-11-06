@@ -26,6 +26,9 @@
   "files": [
     "src"
   ],
+  "workspaces": [
+    "packages/*"
+  ],
   "bin": {
     "html2lvgl": "src/cli.mjs"
   },

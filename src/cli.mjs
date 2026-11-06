@@ -14,9 +14,9 @@ import { parseArgs } from 'node:util';
 import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
-import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
+import { loadPlugins, selectPlugin, extractWithPlugin, registryFor, frameworkDataWanted } from './plugin-loader.mjs';
 import { convert, pageXml as renderPageXml } from './convert.mjs';
-import { withoutHidden } from './recognize.mjs';
+import { withoutHidden, defaultRegistry } from './recognize.mjs';
 import { componentize } from './componentize.mjs';
 import { applySidecar, sidecarFor } from './overrides.mjs';
 import { emitC, emitCpp } from './emit-c.mjs';
@@ -180,6 +180,9 @@ for (const spec of opts['font-map']) {
   fontMap[spec.slice(0, at).trim()] = spec.slice(at + 1).trim();
 }
 
+/** Core components plus plugin recognizers; set by buildAll() before any page converts. */
+let registry = defaultRegistry;
+
 if (opts.overrides && screenMode) {
   console.error('--overrides applies to a single page; several screens each use their own <page>.lvgl.json');
   process.exit(1);
@@ -253,6 +256,8 @@ if (opts.watch) {
 async function buildAll() {
   // Invalid plugins print every error line and are skipped, never fatal.
   const { plugins } = await loadPlugins({ specs: opts.plugin, inputs: urlMode ? [] : positionals });
+  // Library-plugin recognizers apply to every input, plain HTML and URLs included.
+  registry = registryFor(plugins);
   // Extract every page before touching fonts: a font used differently by two
   // screens (e.g. a heading on one, body text on the other) needs the union
   // of both screens' glyphs in one shared file, not whichever screen's
@@ -265,6 +270,8 @@ async function buildAll() {
       width,
       height,
       screenshotPath: opts.screenshot ? join(opts.output, `${pageName}_web.png`) : undefined,
+      // Only asked for when a plugin's recognizers read node.framework.
+      frameworkData: frameworkDataWanted(plugins) || undefined,
     };
     // Plain .html (or anything no plugin claims) keeps the extractPage path.
     const plugin = urlMode ? null : selectPlugin(plugins, page);
@@ -372,7 +379,7 @@ function writeDiagnostics(entries) {
 }
 
 async function emitPage({ input, name, tree }, fonts, subjects = []) {
-  const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget });
+  const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget, registry });
   const { diagnostics, assets, collapsed } = converted;
   subjects.push(...converted.subjects);
   let { xml, view } = converted;

@@ -370,6 +370,10 @@ export function buildTree() {
       // Force cross-page navigation on an element <a href> wouldn't cover
       // (a <button>, a clickable <div> card, ...) — same target syntax as href
       link: el.getAttribute('data-lv-link') || null,
+      // Which framework component rendered this node, when a framework plugin
+      // stamped it (LoadOptions.frameworkData; src/plugin.mjs). A property only
+      // when present, so extracted trees are unchanged otherwise.
+      ...frameworkOf(el),
       // Recognition inputs (see UiNode in src/recognize.mjs)
       role: el.getAttribute('role') || null,
       aria: ariaOf(el),
@@ -488,6 +492,21 @@ export function buildTree() {
   }
 
   /** Every aria-* attribute, keyed without the prefix. */
+  /**
+   * `data-lv-framework` is a JSON string a framework plugin stamps; bad JSON is
+   * ignored (the node just has no framework data) rather than failing extraction.
+   */
+  function frameworkOf(el) {
+    const raw = el.getAttribute('data-lv-framework');
+    if (!raw) return {};
+    try {
+      const info = JSON.parse(raw);
+      return info && typeof info.componentName === 'string' ? { framework: info } : {};
+    } catch {
+      return {};
+    }
+  }
+
   function ariaOf(el) {
     const aria = {};
     for (const attr of el.attributes) {

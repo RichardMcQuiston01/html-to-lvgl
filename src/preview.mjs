@@ -15,7 +15,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join, resolve, dirname, basename, extname, sep } from 'node:path';
 import { extractPage } from './extract.mjs';
-import { loadPlugins, selectPlugin, extractWithPlugin } from './plugin-loader.mjs';
+import { loadPlugins, selectPlugin, extractWithPlugin, registryFor, frameworkDataWanted } from './plugin-loader.mjs';
+import { defaultRegistry } from './recognize.mjs';
 import { convert } from './convert.mjs';
 import { componentize } from './componentize.mjs';
 import { applySidecar, sidecarFor } from './overrides.mjs';
@@ -54,22 +55,43 @@ export async function startPreview(input, options) {
   // A bad plugin is skipped and reported in the preview, never fatal.
   let plugins = [];
   let pluginErrors = [];
-  try {
-    ({ plugins, errors: pluginErrors } = await loadPlugins({
-      specs: options.plugins ?? [],
-      inputs: [input],
-      log: (line) => log(line),
-    }));
-  } catch (err) {
-    pluginErrors = [`plugin loading failed: ${err instanceof Error ? err.message : String(err)}`];
-    log(pluginErrors[0]);
+  /** Absolute paths of plugin modules and config files; edits to them reload plugins. */
+  let pluginFiles = new Set();
+  let registry = defaultRegistry;
+  let pluginsStale = false;
+
+  // `fresh` re-evaluates the plugin entry modules, so editing a plugin (or the
+  // config) while watching takes effect on the next rebuild. A plugin that
+  // fails to load is skipped and reported in the preview, like at startup.
+  async function reloadPlugins(fresh) {
+    try {
+      const r = await loadPlugins({
+        specs: options.plugins ?? [],
+        inputs: [input],
+        log: (line) => log(line),
+        fresh,
+      });
+      plugins = r.plugins;
+      pluginErrors = r.errors;
+      pluginFiles = new Set(r.files);
+      registry = registryFor(plugins);
+    } catch (err) {
+      pluginErrors = [`plugin loading failed: ${err instanceof Error ? err.message : String(err)}`];
+      log(pluginErrors[0]);
+    }
+    pluginsStale = false;
+    state.pluginErrors = pluginErrors;
   }
-  state.pluginErrors = pluginErrors;
+  await reloadPlugins(false);
 
   async function build() {
     const started = Date.now();
     try {
-      const extractOptions = { width, height, screenshotPath: webPng };
+      if (pluginsStale) {
+        await reloadPlugins(true);
+        publish({ pluginErrors });
+      }
+      const extractOptions = { width, height, screenshotPath: webPng, frameworkData: frameworkDataWanted(plugins) || undefined };
       const plugin = selectPlugin(plugins, input);
       let tree;
       if (plugin) {
@@ -91,7 +113,7 @@ export async function startPreview(input, options) {
       });
       const fonts = built.length ? customFonts(built) : builtinFonts();
 
-      const converted = convert(tree, { name, fonts, minTouchTarget: options.minTouchTarget });
+      const converted = convert(tree, { name, fonts, minTouchTarget: options.minTouchTarget, registry });
       const { diagnostics } = converted;
       let { xml, view } = converted;
       for (const d of fontDiagnostics(unresolved)) diagnostics.add(d);
@@ -174,9 +196,10 @@ export async function startPreview(input, options) {
     // Ignore our own output — matching on a path boundary so a sibling
     // directory like `outdated/` next to `out/` is not swallowed too.
     if (full === outAbs || full.startsWith(outAbs + sep)) return;
+    if (pluginFiles.has(full)) pluginsStale = true;
     // Source edits, the page itself (a plugin may load any extension), and the
     // sidecar rebuild; generated artifacts do not.
-    const isSource = SOURCE_EXT.has(extname(filename)) || full === inputAbs || full === sidecarPath ||
+    const isSource = SOURCE_EXT.has(extname(filename)) || pluginFiles.has(full) || full === inputAbs || full === sidecarPath ||
       plugins.some((p) => p.extensions?.some((e) => e.toLowerCase() === extname(filename).toLowerCase()));
     if (!isSource) return;
     clearTimeout(timer);
@@ -196,6 +219,23 @@ export async function startPreview(input, options) {
       });
     } catch (err) {
       log(`cannot watch ${sidecarDir}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // Plugin modules outside the watched folder (a --plugin ../shared/x.mjs)
+  // need their own watcher so saving them still reloads.
+  const pluginWatchers = [];
+  for (const dir of new Set([...pluginFiles].map((f) => dirname(f)))) {
+    if (dir === watchDir || dir.startsWith(watchDir + sep) || dir.includes(`${sep}node_modules${sep}`)) continue;
+    try {
+      pluginWatchers.push(watch(dir, (_event, filename) => {
+        if (!filename || !pluginFiles.has(resolve(dir, filename))) return;
+        pluginsStale = true;
+        clearTimeout(timer);
+        timer = setTimeout(trigger, DEBOUNCE_MS);
+      }));
+    } catch (err) {
+      log(`cannot watch ${dir}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -260,6 +300,7 @@ export async function startPreview(input, options) {
     close: async () => {
       watcher.close();
       sidecarWatcher?.close();
+      for (const w of pluginWatchers) w.close();
       for (const res of clients) res.end();
       await new Promise((ok) => server.close(ok));
     },
