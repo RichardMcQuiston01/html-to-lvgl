@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-06
+
+URL mode, working library plugins and a documented plugin seam are new capabilities in `src/`, so this is a minor bump. It is also the first core version the two new plugin packages (`@richardmcquiston01/html-to-lvgl-vue` and `-mui`) can run on: they require core 0.8.0 or later, so publish this release before them. Generated output for existing pages does not change.
+
 ### Added
 
 - **URL mode.** `html2lvgl http://localhost:4200/ -o out/` converts a built or running app through the same extractor, so every component works. It accepts `http://`, `https://` and `file://`, takes several URLs as linked screens, and adds `--wait-for <selector>`, `--wait-ms <n>`, `--timeout <ms>` and `--block-external`. Errors name the URL and the fix; URLs with credentials are refused; `--watch` is not supported with URLs. See [FEATURES.md](FEATURES.md#url-input).
