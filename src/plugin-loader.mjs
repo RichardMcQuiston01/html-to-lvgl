@@ -17,9 +17,12 @@ import { createRequire } from 'node:module';
 import { dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { validatePlugin } from './plugin.mjs';
+import { defaultRegistry, extendRegistry } from './recognize.mjs';
 import reactPlugin from './plugins/react.mjs';
 
 export const CONFIG_FILE = 'html2lvgl.config.mjs';
+
+let freshCounter = 0;
 
 /**
  * Import a plugin module by path or package name and return its default
@@ -27,28 +30,36 @@ export const CONFIG_FILE = 'html2lvgl.config.mjs';
  * paths relative to `baseDir`; anything else is a package resolved from
  * `baseDir`.
  *
+ * `fresh` appends a unique query so Node re-evaluates the module instead of
+ * returning its cache (watch mode). Only the entry file is re-evaluated; files
+ * it imports stay cached, so edit the entry or restart for those.
+ *
  * @param {string} spec
  * @param {string} baseDir
- * @returns {Promise<{ ok: true, plugin: unknown } | { ok: false, error: string }>}
+ * @param {{ fresh?: boolean }} [options]
+ * @returns {Promise<{ ok: true, plugin: unknown, file?: string } | { ok: false, error: string }>}
  */
-export async function importPlugin(spec, baseDir) {
+export async function importPlugin(spec, baseDir, { fresh = false } = {}) {
   let url;
+  let file;
   const asPath = resolve(baseDir, spec);
   if (/^[./\\]/.test(spec) || /^[a-zA-Z]:[\\/]/.test(spec) || existsSync(asPath)) {
     if (!existsSync(asPath)) {
       return { ok: false, error: `plugin "${spec}": no such file ${asPath}` };
     }
+    file = asPath;
     url = pathToFileURL(asPath).href;
   } else {
     try {
-      url = pathToFileURL(createRequire(join(baseDir, 'noop.js')).resolve(spec)).href;
+      file = createRequire(join(baseDir, 'noop.js')).resolve(spec);
+      url = pathToFileURL(file).href;
     } catch {
       url = spec; // ESM-only packages may not resolve through require
     }
   }
   try {
-    const mod = await import(url);
-    return { ok: true, plugin: mod.default ?? mod };
+    const mod = await import(fresh && url.startsWith('file:') ? `${url}?reload=${freshCounter++}` : url);
+    return { ok: true, plugin: mod.default ?? mod, file };
   } catch (err) {
     return { ok: false, error: `plugin "${spec}" could not be loaded: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -59,12 +70,14 @@ export async function importPlugin(spec, baseDir) {
  * string specs, the latter resolved relative to the config's directory).
  *
  * @param {string} configPath
- * @returns {Promise<{ ok: true, entries: Array<{ plugin: unknown, source: string }> } | { ok: false, errors: string[] }>}
+ * @param {{ fresh?: boolean }} [options]
+ * @returns {Promise<{ ok: true, entries: Array<{ plugin: unknown, source: string, file?: string }> } | { ok: false, errors: string[] }>}
  */
-export async function loadConfig(configPath) {
+export async function loadConfig(configPath, { fresh = false } = {}) {
   let mod;
   try {
-    mod = await import(pathToFileURL(configPath).href);
+    const url = pathToFileURL(configPath).href;
+    mod = await import(fresh ? `${url}?reload=${freshCounter++}` : url);
   } catch (err) {
     return { ok: false, errors: [`${configPath} could not be loaded: ${err instanceof Error ? err.message : String(err)}`] };
   }
@@ -76,8 +89,8 @@ export async function loadConfig(configPath) {
   const errors = [];
   for (const item of config.plugins) {
     if (typeof item === 'string') {
-      const r = await importPlugin(item, dirname(configPath));
-      if (r.ok) entries.push({ plugin: r.plugin, source: `${configPath} (${item})` });
+      const r = await importPlugin(item, dirname(configPath), { fresh });
+      if (r.ok) entries.push({ plugin: r.plugin, source: `${configPath} (${item})`, file: r.file });
       else errors.push(`${configPath}: ${r.error}`);
     } else {
       entries.push({ plugin: item, source: configPath });
@@ -95,20 +108,24 @@ export async function loadConfig(configPath) {
  * @param {string[]} [options.inputs]    input files; config is looked up next to each
  * @param {string} [options.cwd]
  * @param {(line: string) => void} [options.log]  defaults to console.error
- * @returns {Promise<{ plugins: import('./plugin.mjs').Plugin[], errors: string[] }>}
- *   `errors` holds every line that was reported.
+ * @param {boolean} [options.fresh]  re-evaluate plugin modules (watch mode)
+ * @returns {Promise<{ plugins: import('./plugin.mjs').Plugin[], errors: string[], files: string[] }>}
+ *   `errors` holds every line that was reported. `files` are the absolute
+ *   paths of the config files and plugin modules read, for watch mode.
  */
-export async function loadPlugins({ specs = [], inputs = [], cwd = process.cwd(), log = (l) => console.error(l) } = {}) {
+export async function loadPlugins({ specs = [], inputs = [], cwd = process.cwd(), log = (l) => console.error(l), fresh = false } = {}) {
   /** @type {string[]} */
   const errors = [];
   const report = (line) => { errors.push(line); log(line); };
 
-  /** @type {Array<{ plugin: unknown, source: string }>} */
+  /** @type {Array<{ plugin: unknown, source: string, file?: string }>} */
   const candidates = [];
+  /** @type {Set<string>} */
+  const files = new Set();
 
   for (const spec of specs) {
-    const r = await importPlugin(spec, cwd);
-    if (r.ok) candidates.push({ plugin: r.plugin, source: `--plugin ${spec}` });
+    const r = await importPlugin(spec, cwd, { fresh });
+    if (r.ok) candidates.push({ plugin: r.plugin, source: `--plugin ${spec}`, file: r.file });
     else report(`error: ${r.error}; skipping it`);
   }
 
@@ -118,7 +135,8 @@ export async function loadPlugins({ specs = [], inputs = [], cwd = process.cwd()
     const configPath = join(dir, CONFIG_FILE);
     if (seenConfigs.has(configPath) || !existsSync(configPath)) continue;
     seenConfigs.add(configPath);
-    const r = await loadConfig(configPath);
+    files.add(configPath);
+    const r = await loadConfig(configPath, { fresh });
     if (r.ok) candidates.push(...r.entries);
     else for (const e of r.errors) report(`error: ${e}; skipping it`);
   }
@@ -127,7 +145,8 @@ export async function loadPlugins({ specs = [], inputs = [], cwd = process.cwd()
 
   /** @type {import('./plugin.mjs').Plugin[]} */
   const plugins = [];
-  for (const { plugin, source } of candidates) {
+  for (const { plugin, source, file } of candidates) {
+    if (file) files.add(file);
     const check = validatePlugin(plugin);
     if (!check.ok) {
       for (const e of check.errors) report(`error: invalid plugin from ${source}: ${e}; skipping it`);
@@ -137,7 +156,30 @@ export async function loadPlugins({ specs = [], inputs = [], cwd = process.cwd()
     if (plugins.some((x) => x.name === p.name)) continue; // earlier source wins
     plugins.push(p);
   }
-  return { plugins, errors };
+  return { plugins, errors, files: [...files] };
+}
+
+/**
+ * The registry for a run: the core components plus every loaded plugin's
+ * `recognizers` (see extendRegistry for the precedence rules). Pass it to
+ * convert({ registry }). Rejected definitions travel inside the registry and
+ * surface as PLUGIN_RECOGNIZER_REJECTED diagnostics when recognition runs.
+ * With no plugin recognizers this is equivalent to the default registry.
+ *
+ * @param {import('./plugin.mjs').Plugin[]} plugins
+ */
+export function registryFor(plugins) {
+  return plugins.some((p) => p.recognizers !== undefined) ? extendRegistry(defaultRegistry, plugins) : defaultRegistry;
+}
+
+/**
+ * True when any plugin's recognizers want `node.framework`, so the
+ * framework plugin loading the input should supply it (LoadOptions.frameworkData).
+ *
+ * @param {import('./plugin.mjs').Plugin[]} plugins
+ */
+export function frameworkDataWanted(plugins) {
+  return plugins.some((p) => p.wantsFrameworkData === true);
 }
 
 /**

@@ -61,6 +61,8 @@ export const CODES = Object.freeze({
   // Recognition
   RECOGNIZER_ERROR: { severity: 'warning' },
   RECOGNIZER_AMBIGUOUS: { severity: 'warning' },
+  // A plugin's recognizer was invalid or clashed with a name already taken.
+  PLUGIN_RECOGNIZER_REJECTED: { severity: 'warning' },
   ICON_PLACEHOLDER: { severity: 'warning' },
   TOUCH_TARGET_SMALL: { severity: 'info' },
   ARIA_TARGET_MISSING: { severity: 'warning' },

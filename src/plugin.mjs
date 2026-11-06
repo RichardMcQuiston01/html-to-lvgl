@@ -27,6 +27,13 @@ export const PLUGIN_API = 1;
  * @property {number} width           Target display width in pixels.
  * @property {number} height          Target display height in pixels.
  * @property {string} [screenshotPath] Where to save a screenshot, if wanted.
+ * @property {boolean} [frameworkData]
+ *   True when some loaded plugin set `wantsFrameworkData`. A framework plugin
+ *   that can describe which component rendered each DOM node should then stamp
+ *   `data-lv-framework` (a JSON string, see FrameworkInfo in src/recognize.mjs)
+ *   on those nodes BEFORE calling buildTree(); the extractor copies it to
+ *   `node.framework`. When false or absent the plugin must add nothing, so
+ *   output for users who do not need it is unchanged.
  */
 
 /**
@@ -51,7 +58,28 @@ export const PLUGIN_API = 1;
  *   they become reusable LVGL XML components.
  * @property {(page: LoadedPage, selector: string) => Promise<{ file?: string, line?: number } | null>} [sourceOf]
  *   The source file and line behind an element, for TODO.txt. Null when unknown.
- * @property {object[]} [recognizers]  Registry entries for library components.
+ * @property {object[]} [recognizers]
+ *   ComponentDef objects (src/recognize.mjs) for library components. They join
+ *   the registry for EVERY input, plain HTML included; a framework plugin is
+ *   not required. Each is checked with validateComponent(); an invalid one is
+ *   reported as a PLUGIN_RECOGNIZER_REJECTED diagnostic and skipped, and a
+ *   recognizer whose match()/build() throws becomes RECOGNIZER_ERROR for that
+ *   node, never a crash. Rules:
+ *     - Offer order: core definitions, then plugins in load order (--plugin
+ *       flags, then config file, then built-ins), then array order. It breaks
+ *       exact score ties (reported as RECOGNIZER_AMBIGUOUS; first wins).
+ *     - data-lv-widget="<name>" naming a registered definition wins over any
+ *       score. Otherwise the highest match() score wins.
+ *     - A plugin definition named like a core one is rejected, unless it sets
+ *       `override: true`, which replaces the core one in place. Two plugins
+ *       cannot both define a name: the earlier plugin wins.
+ *     - A plugin that wants to beat a core definition on the same node returns
+ *       a higher score (core definitions return 1 for ARIA/class matches).
+ *   match() and build() may read `node.framework` (FrameworkInfo) when the
+ *   framework plugin provided it; it is undefined otherwise.
+ * @property {boolean} [wantsFrameworkData]
+ *   Set by a library plugin whose recognizers read `node.framework`. Turns on
+ *   `LoadOptions.frameworkData` for the framework plugin that loads the input.
  */
 
 /**
@@ -107,6 +135,10 @@ export function validatePlugin(candidate, { apiVersion = PLUGIN_API } = {}) {
 
   if (plugin.recognizers !== undefined && !Array.isArray(plugin.recognizers)) {
     errors.push(`${label}: \`recognizers\` must be an array`);
+  }
+
+  if (plugin.wantsFrameworkData !== undefined && typeof plugin.wantsFrameworkData !== 'boolean') {
+    errors.push(`${label}: \`wantsFrameworkData\` must be a boolean`);
   }
 
   const providesAnything = HOOKS.some((h) => plugin[h] !== undefined) || plugin.recognizers !== undefined;
