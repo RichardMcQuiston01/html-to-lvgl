@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tabs</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 8px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Plain HTML + ARIA tabs: a tablist of role=tab buttons, one role=tabpanel
+     per tab, tab linked to panel by aria-controls, the open tab by aria-selected. */
+  .tabs { background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; }
+  .tablist { display: flex; border-bottom: 1px solid #dee2e6; }
+  .tab { flex: 1; height: 30px; background: #ffffff; border: none; border-bottom: 2px solid transparent; color: #6c757d; font-size: 12px; font-weight: 500; }
+  .tab[aria-selected="true"] { color: #0c63e4; border-bottom-color: #0c63e4; }
+  .tabpanel { padding: 8px 10px; height: 48px; font-size: 11px; color: #495057; }
+  .tabpanel[hidden] { display: none; }
+
+  /* Material UI style (real class names, roles and structure; hand-written CSS) */
+  .tabs-frame { background: #ffffff; border-radius: 4px; box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12); }
+  .tabs-border { border-bottom: 1px solid rgba(0,0,0,0.12); }
+  .MuiTabs-root { overflow: hidden; min-height: 36px; display: flex; }
+  .MuiTabs-scroller { position: relative; display: inline-block; flex: 1 1 auto; white-space: nowrap; overflow-x: hidden; width: 100%; }
+  .MuiTabs-flexContainer { display: flex; }
+  .MuiTabs-indicator { position: absolute; height: 2px; bottom: 0; width: 101px; left: 101px; background-color: #1976d2; }
+  .MuiTab-root { min-width: 90px; min-height: 36px; padding: 6px 12px; flex: 1 1 0; max-width: 360px; background: transparent; border: 0; color: rgba(0,0,0,0.6); font-size: 12px; font-weight: 500; line-height: 1.25; letter-spacing: 0.02857em; text-transform: uppercase; }
+  .MuiTab-root.Mui-selected { color: #1976d2; }
+  .MuiTabPanel-root { padding: 8px 12px; height: 44px; font-size: 12px; color: rgba(0,0,0,0.87); }
+  .MuiTabPanel-root[hidden] { display: none; }
+</style>
+</head>
+<body>
+  <div class="tabs">
+    <div class="tablist" role="tablist" aria-label="Plan">
+      <button class="tab" role="tab" id="plain-t1" aria-selected="false" aria-controls="plain-p1" tabindex="-1">Overview</button>
+      <button class="tab" role="tab" id="plain-t2" aria-selected="true" aria-controls="plain-p2">Specs</button>
+      <button class="tab" role="tab" id="plain-t3" aria-selected="false" aria-controls="plain-p3" tabindex="-1">Reviews</button>
+    </div>
+    <div class="tabpanel" role="tabpanel" id="plain-p1" aria-labelledby="plain-t1" hidden>A short overview.</div>
+    <div class="tabpanel" role="tabpanel" id="plain-p2" aria-labelledby="plain-t2">Weight 1.2 kg, battery 12 h.</div>
+    <div class="tabpanel" role="tabpanel" id="plain-p3" aria-labelledby="plain-t3" hidden>4.6 out of 5 stars.</div>
+  </div>
+
+  <div class="tabs-frame">
+    <div class="tabs-border">
+      <div class="MuiTabs-root">
+        <div class="MuiTabs-scroller">
+          <div class="MuiTabs-flexContainer" role="tablist" aria-label="Account">
+            <button class="MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary" role="tab" id="mui-tab-0" aria-selected="false" aria-controls="mui-tabpanel-0" tabindex="-1">Profile</button>
+            <button class="MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected" role="tab" id="mui-tab-1" aria-selected="true" aria-controls="mui-tabpanel-1">Billing</button>
+            <button class="MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary" role="tab" id="mui-tab-2" aria-selected="false" aria-controls="mui-tabpanel-2" tabindex="-1">Alerts</button>
+          </div>
+          <span class="MuiTabs-indicator"></span>
+        </div>
+      </div>
+    </div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-0" aria-labelledby="mui-tab-0" hidden>Name, email and photo.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-1" aria-labelledby="mui-tab-1">Invoices and payment method.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-2" aria-labelledby="mui-tab-2" hidden>Email and push alerts.</div>
+  </div>
+</body>
+</html>

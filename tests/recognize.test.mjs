@@ -223,6 +223,8 @@ test('the built-in registry lists the icon, every Phase 7 component and the Phas
     'date-picker',
     'stepper',
     'pagination',
+    'tabs',
+    'bottom-navigation',
   ]);
   assert.deepEqual(defaultRegistry.rejected, []);
 });

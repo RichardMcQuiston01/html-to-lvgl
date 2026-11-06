@@ -1,0 +1,44 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="8" style_pad_right="8" style_pad_top="8" style_pad_bottom="8" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="phone" width="304" height="106" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_radius="6" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="box" x="0" y="0" width="302" height="34" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="label" align="left_mid" x="12" text="Plain navigation landmark." style_text_font="montserrat_12" style_text_color="0x495057" />
+      </lv_obj>
+      <lv_tabview name="plain_nav" x="0" y="52" width="302" height="52" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" style_pad_row="0" style_pad_column="0" scrollable="false" tab_bar_position="bottom" active="1">
+        <lv_tabview-tab_bar name="plain_nav_bar" height="52" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_border_side="top" style_radius="0" style_shadow_width="0" style_pad_all="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" style_pad_column="0" style_pad_row="0" scrollable="false" />
+        <lv_tabview-tab name="plain_nav_page" text="Home" scrollable="false" />
+        <lv_tabview-tab name="plain_nav_page_2" text="Stats" scrollable="false" />
+        <lv_tabview-tab name="plain_nav_page_3" text="Settings" scrollable="false" />
+        <lv_tabview-tab_button index="0" name="plain_nav_tab_1" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_10" style_text_color="0x6c757d" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x0c63e4" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="3" style_pad_column="0">
+          <lv_obj name="icon_icon" width="20" height="20" style_bg_opa="0" style_border_width="1" style_border_color="0x6c757d" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+        <lv_tabview-tab_button index="1" name="plain_nav_tab_2" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_10" style_text_color="0x6c757d" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x0c63e4" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="3" style_pad_column="0">
+          <lv_obj name="icon_icon_2" width="20" height="20" style_bg_opa="0" style_border_width="1" style_border_color="0x0c63e4" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+        <lv_tabview-tab_button index="2" name="plain_nav_tab_3" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_10" style_text_color="0x6c757d" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x0c63e4" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="3" style_pad_column="0">
+          <lv_obj name="icon_icon_3" width="20" height="20" style_bg_opa="0" style_border_width="1" style_border_color="0x6c757d" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+      </lv_tabview>
+    </lv_obj>
+    <lv_obj name="phone_2" width="304" height="106" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_radius="6" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="box_2" x="0" y="0" width="302" height="34" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="label_2" align="left_mid" x="12" text="Material UI BottomNavigation." style_text_font="montserrat_12" style_text_color="0x495057" />
+      </lv_obj>
+      <lv_tabview name="mui_nav" x="0" y="48" width="302" height="56" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" style_pad_row="0" style_pad_column="0" scrollable="false" tab_bar_position="bottom" active="1">
+        <lv_tabview-tab_bar name="mui_nav_bar" height="56" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_color="0x000000" style_shadow_opa="36" style_shadow_width="4" style_shadow_offset_y="-1" style_pad_all="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" style_pad_column="0" style_pad_row="0" scrollable="false" />
+        <lv_tabview-tab name="mui_nav_page" text="Recents" scrollable="false" />
+        <lv_tabview-tab name="mui_nav_page_2" text="Favorites" scrollable="false" />
+        <lv_tabview-tab name="mui_nav_page_3" text="Nearby" scrollable="false" />
+        <lv_tabview-tab_button index="0" name="mui_nav_tab_1" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="153" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x1976d2" style_text_opa:checked="255" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="2" style_pad_column="0">
+          <lv_obj name="icon_restore" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x000000" style_border_opa="153" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+        <lv_tabview-tab_button index="1" name="mui_nav_tab_2" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="153" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x1976d2" style_text_opa:checked="255" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="2" style_pad_column="0">
+          <lv_obj name="icon_favorite" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x1976d2" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+        <lv_tabview-tab_button index="2" name="mui_nav_tab_3" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="153" style_text_align="center" style_bg_opa:checked="0" style_border_width:checked="0" style_border_side:checked="full" style_pad_all:checked="0" style_text_color:checked="0x1976d2" style_text_opa:checked="255" flex_flow="column_reverse" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="2" style_pad_column="0">
+          <lv_obj name="icon_location_on" width="24" height="24" style_bg_opa="0" style_border_width="1" style_border_color="0x000000" style_border_opa="153" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" clickable="false" />
+        </lv_tabview-tab_button>
+      </lv_tabview>
+    </lv_obj>
+  </view>
+</component>

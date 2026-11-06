@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bottom navigation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  /* Each "phone" stands for one screen: the bar is pinned to its bottom edge,
+     as position: fixed would pin it to the real viewport. */
+  .phone { position: relative; height: 106px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; font-size: 12px; color: #495057; }
+  .phone p { padding: 10px 12px; }
+
+  /* Plain ARIA: a navigation landmark of buttons, the current one marked aria-current. */
+  nav.bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: flex; background: #ffffff; border-top: 1px solid #dee2e6; }
+  nav.bottom a, nav.bottom button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: transparent; border: 0; color: #6c757d; font-size: 11px; text-decoration: none; }
+  nav.bottom [aria-current="page"] { color: #0c63e4; font-weight: 700; }
+  nav.bottom svg { width: 20px; height: 20px; fill: currentColor; }
+
+  /* Material UI BottomNavigation (real class names; hand-written CSS). */
+  .MuiBottomNavigation-root { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; display: flex; justify-content: center; background-color: #ffffff; box-shadow: 0 -1px 4px rgba(0,0,0,0.14); }
+  .MuiBottomNavigationAction-root { flex: 1 1 0; min-width: 80px; max-width: 168px; padding: 0 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; background: transparent; color: rgba(0,0,0,0.6); }
+  .MuiBottomNavigationAction-root.Mui-selected { color: #1976d2; }
+  .MuiBottomNavigationAction-label { font-size: 12px; margin-top: 2px; }
+  .MuiBottomNavigationAction-label.Mui-selected { font-size: 12px; }
+  .MuiSvgIcon-root { width: 24px; height: 24px; fill: currentColor; }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <p>Plain navigation landmark.</p>
+    <nav class="bottom" aria-label="Main" data-lv-name="plain_nav">
+      <button data-lv-name="nav_home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+      <button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Stats</button>
+      <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 3a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 3h4l.4-3a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.4z"/></svg>Settings</button>
+    </nav>
+  </div>
+
+  <div class="phone">
+    <p>Material UI BottomNavigation.</p>
+    <div class="MuiBottomNavigation-root" data-lv-name="mui_nav">
+      <button class="MuiButtonBase-root MuiBottomNavigationAction-root" tabindex="0" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true" data-testid="RestoreIcon"><path d="M13 3a9 9 0 0 0-9 9H1l3.9 3.9.1.1L9 12H6a7 7 0 1 1 2.1 5l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5.8-1.2-3.6-2.1V8z"/></svg><span class="MuiBottomNavigationAction-label">Recents</span></button>
+      <button class="MuiButtonBase-root MuiBottomNavigationAction-root Mui-selected" tabindex="0" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true" data-testid="FavoriteIcon"><path d="M12 21.4l-1.5-1.3C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.6z"/></svg><span class="MuiBottomNavigationAction-label Mui-selected">Favorites</span></button>
+      <button class="MuiButtonBase-root MuiBottomNavigationAction-root" tabindex="0" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true" data-testid="LocationOnIcon"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg><span class="MuiBottomNavigationAction-label">Nearby</span></button>
+    </div>
+  </div>
+</body>
+</html>

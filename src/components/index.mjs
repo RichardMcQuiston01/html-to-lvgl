@@ -18,6 +18,8 @@ import snackbar from './snackbar.mjs';
 import datePicker from './date-picker.mjs';
 import stepper from './stepper.mjs';
 import pagination from './pagination.mjs';
+import tabs from './tabs.mjs';
+import bottomNavigation from './bottom-navigation.mjs';
 
 /**
  * The component definitions that ship with html2lvgl, in the order they are
@@ -49,4 +51,6 @@ export const builtinComponents = [
   datePicker,
   stepper,
   pagination,
+  tabs,
+  bottomNavigation,
 ];
