@@ -386,6 +386,9 @@ export function buildTree() {
       y: Math.round(r.y),
       w: Math.round(r.width),
       h: Math.round(r.height),
+      // Source position stamped by a framework plugin as "file:line" (the
+      // Vue plugin does); lets TODO.txt point at the author's file.
+      ...sourceFromAttr(el),
       text: ownText(el) || null,
       attrs: {},
       styles: {
@@ -496,6 +499,11 @@ export function buildTree() {
    * `data-lv-framework` is a JSON string a framework plugin stamps; bad JSON is
    * ignored (the node just has no framework data) rather than failing extraction.
    */
+  function sourceFromAttr(el) {
+    const m = /^(.*):(\d+)$/.exec(el.getAttribute('data-lv-source') || '');
+    return m ? { source: { file: m[1], line: Number(m[2]) } } : {};
+  }
+
   function frameworkOf(el) {
     const raw = el.getAttribute('data-lv-framework');
     if (!raw) return {};
