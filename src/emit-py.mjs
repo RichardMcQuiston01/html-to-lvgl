@@ -92,7 +92,7 @@ import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
-const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
+const FLAG_NAMES = { clickable: 'CLICKABLE', scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
 
 // Enum group names verified against a real generated binding (see module
 // doc comment) rather than assumed from the C macro spelling.
@@ -119,6 +119,19 @@ const PY_RESERVED = new Set([
   'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
   'parent', 'root', 'lv', 'e', 'fonts', 'images', 'subjects', 'timelines',
 ]);
+
+/**
+ * lv_tabview parts (Phase 9). The tab bar, a tab page and a tab button are
+ * child elements of `<lv_tabview>` in XML; on the binding they are got from, or
+ * added to, the tabview. The pinned binding (LVGL v9.3-era) has no
+ * `get_tab_button`, so a button is the bar's i-th child: the bar holds the
+ * buttons and nothing else, in tab order.
+ */
+const TABVIEW_PARTS = {
+  'lv_tabview-tab': { create: (parent, a) => `${parent}.add_tab(${pystr(a.text ?? '')})`, consumed: new Set(['text']) },
+  'lv_tabview-tab_bar': { create: (parent) => `${parent}.get_tab_bar()`, consumed: new Set() },
+  'lv_tabview-tab_button': { create: (parent, a) => `${parent}.get_tab_bar().get_child(${a.index ?? 0})`, consumed: new Set(['index']) },
+};
 
 export function emitPy(view, opts = {}) {
   const { name = 'page', symbol = 'ui_create' } = opts;
@@ -214,8 +227,9 @@ export function emitPy(view, opts = {}) {
       return;
     }
 
+    const part = TABVIEW_PARTS[node.tag];
     lines.push('');
-    lines.push(`    ${v} = ${ctor}(${parentVar})`);
+    lines.push(`    ${v} = ${part ? part.create(parentVar, node.attrs) : `${ctor}(${parentVar})`}`);
 
     // lv_slider/lv_bar have no separate min/max setters on the pinned
     // binding's vendored LVGL — see module doc comment — so both attrs
@@ -227,6 +241,7 @@ export function emitPy(view, opts = {}) {
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
       if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && (key === 'min_value' || key === 'max_value')) continue;
+      if (part?.consumed.has(key)) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) emitNode(child, v);
@@ -433,6 +448,10 @@ const WIDGET_ATTRS = {
   lv_dropdown: {
     options: (v, val) => `${v}.set_options(${pystr(val)})`,
     selected: (v, val) => `${v}.set_selected(${val})`,
+  },
+  lv_tabview: {
+    active: (v, val) => `${v}.set_active(${val}, False)`,
+    tab_bar_position: (v, val) => `${v}.set_tab_bar_position(lv.DIR.${val.toUpperCase()})`,
   },
   lv_table: {
     column_count: (v, val) => `${v}.set_column_count(${val})`,

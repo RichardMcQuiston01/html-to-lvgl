@@ -25,6 +25,7 @@ import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
+import { emitTabview } from './emit-tabview.mjs';
 import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml, animationsElement } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
@@ -135,13 +136,14 @@ const isManaged = (node) => isFlex(node) || isGrid(node);
 const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed' || isPinnedBar(node));
 
 /**
- * A recognized app bar that stays put while the page scrolls: position fixed
- * or sticky. LVGL has no sticky, so both become a floating object (see
+ * A recognized app bar or bottom navigation that stays put while the page
+ * scrolls: position fixed or sticky. LVGL has no sticky, so both become a floating object (see
  * LV_OBJ_FLAG_FLOATING: ignores layout and is not moved when the parent
  * scrolls). A sticky bar therefore is out of flow too, like a fixed one.
  */
 const isPinnedBar = (node) =>
-  node.recognized?.component === 'appbar' && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
+  (node.recognized?.component === 'appbar' || node.recognized?.component === 'bottom-navigation')
+  && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
 
 /**
  * Move each pinned app bar to the end of its parent's children. Browsers
@@ -497,7 +499,9 @@ function emit(node, parent, ctx, index = 0) {
   // The browser applies text-transform when it renders; the extracted text is raw.
   const transform = node.styles.textTransform;
   if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
-  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index) : emitByTag(node, parent, ctx, index);
+  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index)
+    : node.tabview ? emitNativeTabview(node, parent, ctx, index)
+    : emitByTag(node, parent, ctx, index);
   if (out && hasBehavior(node)) applyBehavior(node, out, ctx);
   // Carry component boundaries (React fiber walk or data-lv-component)
   // through to the element tree for the componentizer.
@@ -571,6 +575,15 @@ function emitLibraryComponent(node, parent, ctx, index) {
     attrs[key] = value !== null && typeof value === 'object' && 'subject' in value ? `${sanitize(ctx.page)}_${value.subject}` : value;
   }
   return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs });
+}
+
+/**
+ * A node a component turned into a native lv_tabview (node.tabview, see
+ * src/components/tabs.mjs). The element tree is built in src/emit-tabview.mjs
+ * from these helpers, which keep the box, text and placement rules in one place.
+ */
+function emitNativeTabview(node, parent, ctx, index) {
+  return emitTabview(node, parent, ctx, index, { uid, placement, boxStyles, containerLayout, textStyles, fitText, emit, applyTextTransform, resolveScreen, hex });
 }
 
 function emitByTag(node, parent, ctx, index) {

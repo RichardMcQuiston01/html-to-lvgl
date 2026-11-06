@@ -219,6 +219,8 @@ test('the built-in registry lists the icon, every Phase 7 component and the Phas
     'icon', 'card', 'paper', 'divider', 'chip', 'avatar', 'badge', 'alert', 'appbar', 'toolbar', 'breadcrumbs',
     'accordion',
     'modal', 'drawer',
+    'tabs',
+    'bottom-navigation',
   ]);
   assert.deepEqual(defaultRegistry.rejected, []);
 });
