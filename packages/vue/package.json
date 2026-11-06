@@ -1,0 +1,40 @@
+{
+  "name": "@richardmcquiston01/html-to-lvgl-vue",
+  "version": "0.1.0",
+  "description": "Vue single-file component (.vue) input for html2lvgl",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Richard McQuiston",
+    "email": "richard.mcquiston01@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/html-to-lvgl.git",
+    "directory": "packages/vue"
+  },
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@richardmcquiston01/html-to-lvgl": ">=0.7.0",
+    "@vue/compiler-sfc": "^3.4.0",
+    "esbuild": "^0.28.2",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.5.0",
+    "vue": "^3.5.0"
+  }
+}

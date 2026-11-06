@@ -1,0 +1,17 @@
+<component>
+  <view width="320" height="240" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="page" x="0" y="0" width="320" height="240" style_bg_color="0x101820" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="8" style_pad_right="8" style_pad_top="8" style_pad_bottom="8" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false">
+      <lv_obj name="bar" width="304" height="23" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_label name="label" text="Dashboard" style_text_font="montserrat_20" style_text_color="0xffffff" />
+        <lv_obj name="badge" width="51" height="18" style_bg_color="0x2e7d32" style_border_width="0" style_radius="10" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="badge_2" align="center" text="Online" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="stats" width="304" height="114" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="6" style_pad_column="6" scrollable="false">
+        <stat_card name="card" width="304" height="34" label="Temp" value="21 C" />
+        <stat_card name="card_2" width="304" height="34" label="Humidity" value="48 %" />
+        <stat_card name="card_3" width="304" height="34" label="Pressure" value="1013" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>
