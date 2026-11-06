@@ -839,12 +839,29 @@ function emitInput(node, parent, ctx, index) {
   });
 }
 
+/** Background, border and corner radius of a dropdown, from the element it replaces. */
+function dropdownBoxStyles(node) {
+  const s = node.styles;
+  const border = borderOf(s);
+  return {
+    ...(s.bgColor ? { style_bg_color: hex(s.bgColor), ...(s.bgColor[3] < 255 ? { style_bg_opa: s.bgColor[3] } : {}) } : { style_bg_opa: '0' }),
+    style_border_width: border ? border.width : 0,
+    ...(border ? { style_border_color: hex(border.color), ...(border.color[3] < 255 ? { style_border_opa: border.color[3] } : {}) } : {}),
+    style_radius: s.radius,
+    style_shadow_width: 0,
+    ...(s.padLeft > 0 ? { style_pad_left: s.padLeft } : {}),
+  };
+}
+
 function emitDropdown(node, parent, ctx, index) {
   return el('lv_dropdown', {
     name: uid(ctx, node, 'dropdown'),
     ...placement(node, parent, { gridIndex: index }),
     options: (node.attrs.options ?? []).join('\n'),
     ...(node.attrs.selectedIndex > 0 ? { selected: node.attrs.selectedIndex } : {}),
+    // A recognized Select (src/components/select.mjs) takes its box from the
+    // page; any other dropdown keeps LVGL's default theme.
+    ...(node.recognized?.component === 'select' ? dropdownBoxStyles(node) : {}),
     ...textStyles(node, ctx.fonts.for(node.styles)),
   });
 }

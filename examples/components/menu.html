@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Menu</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  h1 { font-size: 18px; font-weight: 500; color: #212529; }
+  p.note { font-size: 12px; color: #6c757d; }
+  .row { display: flex; gap: 12px; }
+  button { border: none; font-size: 13px; cursor: pointer; }
+
+  /* Plain HTML / ARIA: a button with aria-haspopup="menu" and a hidden role=menu list. */
+  .open-plain { background: #0d6efd; color: #ffffff; padding: 8px 14px; border-radius: 4px; }
+  .menu { position: absolute; top: 90px; left: 12px; width: 130px; list-style: none; background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; padding: 4px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .menu li { padding: 6px 14px; font-size: 13px; color: #212529; }
+  .menu li.danger { color: #dc3545; }
+
+  /* Material UI style: Button + Menu (Popover root, invisible Backdrop, Paper, MenuList), kept mounted. */
+  .MuiButton-root { background: none; color: #1976d2; font-weight: 500; text-transform: uppercase; padding: 6px 16px; border-radius: 4px; border: 1px solid rgba(25,118,210,0.5); }
+  .MuiPopover-root { position: fixed; inset: 0; visibility: hidden; }
+  .MuiBackdrop-invisible { position: fixed; inset: 0; background: transparent; }
+  .MuiPaper-root { position: absolute; top: 90px; left: 170px; width: 138px; background: #ffffff; border-radius: 4px; box-shadow: 0px 5px 5px -3px rgba(0,0,0,0.2), 0px 8px 10px 1px rgba(0,0,0,0.14), 0px 3px 14px 2px rgba(0,0,0,0.12); }
+  .MuiMenu-list { list-style: none; padding: 8px 0; }
+  .MuiMenuItem-root { padding: 6px 16px; font-size: 14px; line-height: 24px; color: rgba(0,0,0,0.87); }
+</style>
+</head>
+<body>
+  <h1>Account</h1>
+  <p class="note">Menus float over the page.</p>
+  <div class="row">
+    <button class="open-plain" id="open-plain" aria-haspopup="menu" aria-expanded="false" aria-controls="actions-menu">Actions</button>
+    <button class="MuiButton-root MuiButton-outlined" id="basic-button" aria-haspopup="true" aria-expanded="false">Profile</button>
+  </div>
+
+  <ul class="menu" id="actions-menu" role="menu" aria-labelledby="open-plain" hidden>
+    <li role="menuitem">Rename</li>
+    <li role="menuitem">Duplicate</li>
+    <li role="menuitem" class="danger">Delete</li>
+  </ul>
+
+  <div class="MuiPopover-root MuiMenu-root MuiModal-root" role="presentation">
+    <div class="MuiBackdrop-root MuiBackdrop-invisible" aria-hidden="true"></div>
+    <div class="MuiPaper-root MuiPaper-elevation8 MuiPopover-paper MuiMenu-paper" tabindex="-1">
+      <ul class="MuiList-root MuiMenu-list" id="basic-menu" role="menu" aria-labelledby="basic-button">
+        <li class="MuiMenuItem-root" role="menuitem" tabindex="-1">Profile</li>
+        <li class="MuiMenuItem-root" role="menuitem" tabindex="-1">My account</li>
+        <li class="MuiMenuItem-root" role="menuitem" tabindex="-1">Logout</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

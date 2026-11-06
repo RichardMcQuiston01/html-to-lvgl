@@ -52,6 +52,7 @@ export const CODES = Object.freeze({
   BASELINE_ALIGN_UNSUPPORTED: { severity: 'warning' },
   TAG_UNSUPPORTED: { severity: 'warning' },
   WIDGET_UNSUPPORTED: { severity: 'warning' },
+  UNSUPPORTED_WIDGET: { severity: 'warning' },
   LINK_TARGET_UNKNOWN: { severity: 'warning' },
   // Assets and fonts
   IMAGE_REGISTER: { severity: 'info' },

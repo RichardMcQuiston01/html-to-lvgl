@@ -394,6 +394,7 @@ jobs:
           export MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
           TARGET=py spike/subjects/run-accordion.sh | grep -E '^  (ok|FAIL)|^(Accordion passes|FAILED)'
           TARGET=py spike/subjects/run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)'
+          TARGET=py spike/subjects/run-menu-snackbar.sh | grep -E '^  (ok|FAIL)|^(Generated Menu|FAILED)'
 
       - name: Convert fonts with lv_font_conv and render with them (--format py)
         run: |
@@ -668,3 +669,8 @@ jobs:
 
       - name: Drive the generated Modal and Drawer XML
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-components.sh
+
+      # Phase 9 lane B: the Menu (opener, items, press outside, blocked page
+      # beneath it) and the Snackbar (action and close buttons, an opener).
+      - name: Drive the generated Menu and Snackbar XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-menu-snackbar.sh

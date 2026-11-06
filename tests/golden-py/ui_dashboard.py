@@ -50,6 +50,11 @@ def ui_create(parent):
     mode.set_width(110)
     mode.set_height(22)
     mode.set_options("Automatic\nManual\nMaintenance")
+    mode.set_style_bg_color(lv.color_hex(0xefefef), 0)
+    mode.set_style_border_width(1, 0)
+    mode.set_style_border_color(lv.color_hex(0x767676), 0)
+    mode.set_style_radius(0, 0)
+    mode.set_style_shadow_width(0, 0)
     mode.set_style_text_font(lv.font_montserrat_12, 0)
     mode.set_style_text_color(lv.color_hex(0x000000), 0)
 
