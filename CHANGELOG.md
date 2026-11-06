@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-06
+
+Twelve native widget remaps (tabs, bottom navigation, select, menu, snackbar, switch, slider, progress, text field, date picker, stepper, pagination), so this is a minor bump. Generated output changes for existing pages that use these controls: a `<textarea>` is now an `lv_textarea` instead of an empty box, and a native `<select>` takes the page's box styling, so regenerate any checked-in output.
+
 ### Added
 
 - **Native widget remaps** (Phase 9). ARIA and Material UI components that have an LVGL widget now convert to it, with the first frame read from ARIA: `tabs` and `bottom-navigation` (`lv_tabview`), `select` (`lv_dropdown`), `switch` (`lv_switch`), `slider` (`lv_slider`, including a two-thumb range slider), `progress` (`lv_bar` and `lv_arc`), `textfield` (`lv_textarea` with the page's border and a static floating label) and `date-picker` (`lv_calendar`). `menu` and `snackbar` use the Phase 8 behavior system. `stepper` and `pagination` are composites. All work in XML, C, C++ and MicroPython, and CI click-tests the interactive ones. Two Material UI settings screens (`examples/components/material-ui-forms*.html`) use many of them together, and a click-driven check shows they do not disturb each other. See [FEATURES.md](FEATURES.md#native-widget-remaps).
