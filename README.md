@@ -3,6 +3,8 @@
 - Author: [Richard McQuiston](mailto:richard.mcquiston@gmail.com)
 - Website: https://richardmcquiston.com/
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P1V529Z7ZP)
+
 ## Table of Contents
 
 | [Overview](#overview) | [Getting Started](#getting-started) | [More Information](#more-information) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
@@ -100,9 +102,7 @@ node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 
 If this app, code, or repository has helped you or someone you know, please consider donating. I appreciate any help to offset the costs of development and/or AI Credits.
 
-[**Donate via PayPal**](https://www.paypal.com/ncp/payment/BGTZ6GYWUTPYG), or scan:
-
-<a href="https://www.paypal.com/ncp/payment/BGTZ6GYWUTPYG"><img src="./donate.png" alt="Donate via PayPal" width="180"></a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P1V529Z7ZP)
 
 [Back to Top](#table-of-contents)
 
