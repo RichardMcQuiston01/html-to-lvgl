@@ -81,7 +81,9 @@ Goal: ARIA detection for components that already have an LVGL widget. Lanes are 
 
 Done when: each remap has an example, a golden, and a CI render. Anything that cannot be matched with confidence reports `UNSUPPORTED_WIDGET` instead of guessing.
 
-### Phase 10 — Library and framework plugins
+### Phase 10 — Library and framework plugins (done)
+
+Delivered after 0.7.0, to release as core 0.8.0 and then the two packages: the plugin seam (library `recognizers` wired into every input, precedence rules, `node.framework`, watch-mode reload), `@richardmcquiston01/html-to-lvgl-vue`, `@richardmcquiston01/html-to-lvgl-mui`, URL mode, the npm workspace layout, a documented `exports` map, and per-package tag publishing. Left over: the first publish of the two packages (it needs your `NPM_TOKEN` to cover the new names and a dry run), Angular and server-rendered frameworks through URL mode, and Bootstrap and Vuetify library plugins.
 
 Goal: prove the plugin seam with a second framework and a first library. Published as separate packages.
 

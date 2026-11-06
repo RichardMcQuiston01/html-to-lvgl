@@ -7,15 +7,19 @@
 - **URL mode.** `html2lvgl http://localhost:4200/ -o out/` converts a built or running app through the same extractor, so every component works. It accepts `http://`, `https://` and `file://`, takes several URLs as linked screens, and adds `--wait-for <selector>`, `--wait-ms <n>`, `--timeout <ms>` and `--block-external`. Errors name the URL and the fix; URLs with credentials are refused; `--watch` is not supported with URLs. See [FEATURES.md](FEATURES.md#url-input).
 - **Library plugins work.** A plugin's `recognizers` now join recognition for every input, with a defined precedence (core first, then plugins in load order; highest score wins; ties reported; `override: true` to replace a core definition) and reload in `--watch`. A new diagnostic `PLUGIN_RECOGNIZER_REJECTED` reports an invalid recognizer without stopping the others.
 - **Framework data for recognizers.** A plugin that sets `wantsFrameworkData` gets `node.framework` (component name and chain). The React plugin fills it, and a Material UI component is now stamped even though emotion renders an empty `Insertion` beside it.
-- **Source locations from plugins.** A plugin can stamp `data-lv-source="file:line"`; `TODO.txt` then names the original file and line.
+- **Source locations from plugins.** `data-lv-source="file:line"` is the supported way for a plugin to give `TODO.txt` author locations (the converter never calls `sourceOf`, which remains an optional helper taking a CSS selector). A plugin can stamp `data-lv-source="file:line"`; `TODO.txt` then names the original file and line.
 - **Workspaces.** The repository is now an npm workspace (`packages/*`). The published core package is unchanged apart from the new files in `src`.
+- **Documented entry points.** The core gains an `exports` map: `@richardmcquiston01/html-to-lvgl/extract`, `/plugin` and `/recognize` are documented entries, and existing `./src/*` deep imports keep working. A framework plugin imports the extractor from `/extract`.
+- **Plugin packages publish separately.** Tags `vue-vX.Y.Z` and `mui-vX.Y.Z` run a new workflow, `publish-packages.yml`, that publishes only that package after the same guards as the core (tag on `main`, tag matches the package version, tests pass) plus a check that the plugin's core peer range is satisfied by the published core. A manual dry run is available. Plain `X.Y.Z` tags still publish only the core, through the unchanged `publish.yml`. See [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
 - **Two plugin packages**, versioned separately: `@richardmcquiston01/html-to-lvgl-vue` for `.vue` single-file components, and `@richardmcquiston01/html-to-lvgl-mui` with Material UI recognizers (Checkbox, FormControlLabel, Radio, Rating, icons as LVGL symbols, Button naming and pressed color) that match by React component name. See [FEATURES.md](FEATURES.md#plugins).
 
 ### Known limits
 
 - The Vue plugin takes one snapshot of the first flush and rejects SCSS, Less, `<style module>` and `v-bind()` in CSS. Component names and lines need Vue's development build, which the plugin always bundles.
 - The Material UI plugin needs the React plugin and React's development build. Indeterminate Checkbox shows LVGL's checkmark, half stars are not drawn, Radio circles are not interactive, and outlined or text Buttons get no pressed color.
-- A framework plugin needs the core's extractor at run time.
+- A framework plugin needs the core's extractor at run time, imported from the documented `/extract` entry. The plugins require core 0.8.0 or later, so release the core first.
+- Inside this repository `legacy-peer-deps=true` (a root `.npmrc`) lets `npm ci` work while the plugins peer on a core version that is not yet published. It does not affect anyone installing the packages.
+- The plugin publish workflow has been checked structurally and has not run on GitHub; run its dry run first.
 - URL inputs ignore plugin file selection and sidecar files.
 
 ## [0.7.0] - 2026-11-06
