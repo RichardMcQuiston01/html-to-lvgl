@@ -90,6 +90,31 @@ function findAll(node, test) {
 const byKey = (tree, key) => findNode(tree, (n) => n.key === key);
 
 /**
+ * Every node of a tree as it was extracted, by `key`. A select is a leaf: once
+ * its build() has run, its combobox is no longer in `ctx.tree`, but the popup
+ * listbox that Material UI mounts in a Portal at the end of <body> is visited
+ * AFTER it and must still find the combobox that controls it. Without this the
+ * popup was reported as "a listbox that is always visible" whenever the select
+ * and its popup sat under different parents that no component had replaced.
+ * match() runs on the root before anything is built, so the first call for a
+ * tree sees it untouched.
+ * @type {WeakMap<UiNode, Map<string, UiNode>>}
+ */
+const originalsByTree = new WeakMap();
+
+/** @param {RecognizeContext} ctx @returns {Map<string, UiNode>} */
+function originalsOf(ctx) {
+  let originals = originalsByTree.get(ctx.tree);
+  if (!originals) {
+    originals = new Map();
+    const index = (/** @type {UiNode} */ n) => { if (n.key) originals.set(n.key, n); n.children.forEach(index); };
+    index(ctx.tree);
+    originalsByTree.set(ctx.tree, originals);
+  }
+  return originals;
+}
+
+/**
  * The combobox inside a Material UI Select root, or the node itself.
  * @param {UiNode} node
  * @returns {UiNode}
@@ -128,12 +153,12 @@ const opensListbox = (node) => isSelectCombobox(node) || (hasMuiRoot(node, 'Sele
 function isSelectPopupListbox(node, ctx) {
   if (node.role !== 'listbox') return false;
   const links = ctx.links?.get(node.key);
-  const triggers = (links?.controlledBy ?? []).map((key) => byKey(ctx.tree, key)).filter(Boolean);
+  const triggers = (links?.controlledBy ?? []).map((key) => originalsOf(ctx).get(key) ?? byKey(ctx.tree, key)).filter(Boolean);
   if (triggers.some((t) => opensListbox(t))) return true;
   // Material UI keeps the menu mounted but does not link it by aria-controls when closed;
   // it names the same label the combobox names.
   const labels = links?.labelledBy ?? [];
-  return findAll(ctx.tree, (n) => opensListbox(n)).some((s) => {
+  return [...originalsOf(ctx).values()].filter((n) => opensListbox(n)).some((s) => {
     const own = comboboxOf(s);
     return labels.includes(own.key) || (ctx.links?.get(own.key)?.labelledBy ?? []).some((k) => labels.includes(k));
   });
@@ -168,6 +193,7 @@ const select = {
   name: 'select',
   leaf: true,
   match(node, ctx) {
+    originalsOf(ctx); // snapshot while the tree is untouched (the root is matched first)
     if (node.hidden) return false;
     if (isNativeSelect(node)) return SCORE_SEMANTIC;
     if (isSelectCombobox(node)) return SCORE_SEMANTIC;
