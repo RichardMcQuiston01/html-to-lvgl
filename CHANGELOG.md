@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-06
+
+Three stateful components (Accordion, Modal, Drawer) and a round of converter fidelity fixes, so this is a minor bump. Generated output changes for existing pages: badges, translucent colors, buttons without a background, padded text, negative margins, one-sided borders and Material UI widget names all come out differently, so regenerate any checked-in output. The donate link also moved from PayPal to Ko-fi.
+
 ### Added
 
 - **Stateful components** (Phase 8): `accordion`, `modal` and `drawer`. An Accordion item is a trigger with `aria-expanded` and `aria-controls` (or `MuiAccordion-root`, or an `accordion` class); a Modal is a `role="dialog"` or `alertdialog` (or `MuiDialog-root`); a Drawer is a dialog docked to a screen edge (or `MuiDrawer-root`). State lives in LVGL subjects: the trigger toggles or sets one, and the target binds the `hidden` flag to it. A Modal becomes a full-screen floating overlay with a 50% backdrop (a backdrop tap closes it, except for an `alertdialog`). A Drawer becomes a scrim plus a panel slid in and out by an `<animations>` timeline from any of the four edges. Collapsed panels and closed dialogs named by `aria-controls` are measured at their open size.
