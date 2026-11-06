@@ -91,8 +91,11 @@ import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 // for why this can't be a "starts with montserrat_" guess.
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
+/** lv_calendar attributes emitted as two grouped calls (see emitNode). */
+const CALENDAR_DATE_ATTRS = new Set(['today_year', 'today_month', 'today_day', 'shown_year', 'shown_month']);
+
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
-const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
+const FLAG_NAMES = { clickable: 'CLICKABLE', scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
 
 // Enum group names verified against a real generated binding (see module
 // doc comment) rather than assumed from the C macro spelling.
@@ -106,9 +109,27 @@ const ENUMS = {
   style_border_side: (v) => `lv.BORDER_SIDE.${v.toUpperCase()}`,
   style_text_align: (v) => `lv.TEXT_ALIGN.${v.toUpperCase()}`,
   style_layout: (v) => `lv.LAYOUT.${v.toUpperCase()}`,
+  style_arc_rounded: (v) => pybool(v),
 };
 
+const STYLE_PARTS = new Set(['main', 'scrollbar', 'indicator', 'knob', 'selected', 'items', 'cursor']);
+
+/**
+ * The property and the Python selector expression of a style attribute. The XML
+ * key can chain states and parts after the property, as lv_xml does:
+ * `style_bg_color:checked:indicator` is `lv.STATE.CHECKED | lv.PART.INDICATOR`.
+ * @param {string} key
+ * @returns {[string, string]}
+ */
+function splitSelector(key) {
+  const [propPart, ...tokens] = key.split(':');
+  const flags = tokens.map((t) => (STYLE_PARTS.has(t) ? `lv.PART.${t.toUpperCase()}` : `lv.STATE.${t.toUpperCase()}`));
+  return [propPart, flags.length ? flags.join(' | ') : '0'];
+}
+
 const pystr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+/** Widgets whose min/max collapse into one set_range() call on the pinned binding. */
+const RANGE_WIDGETS = new Set(['lv_slider', 'lv_bar', 'lv_arc']);
 const pybool = (v) => (v === 'true' ? 'True' : 'False');
 
 // Python keywords plus identifiers the generated function already uses
@@ -119,6 +140,19 @@ const PY_RESERVED = new Set([
   'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
   'parent', 'root', 'lv', 'e', 'fonts', 'images', 'subjects', 'timelines',
 ]);
+
+/**
+ * lv_tabview parts (Phase 9). The tab bar, a tab page and a tab button are
+ * child elements of `<lv_tabview>` in XML; on the binding they are got from, or
+ * added to, the tabview. The pinned binding (LVGL v9.3-era) has no
+ * `get_tab_button`, so a button is the bar's i-th child: the bar holds the
+ * buttons and nothing else, in tab order.
+ */
+const TABVIEW_PARTS = {
+  'lv_tabview-tab': { create: (parent, a) => `${parent}.add_tab(${pystr(a.text ?? '')})`, consumed: new Set(['text']) },
+  'lv_tabview-tab_bar': { create: (parent) => `${parent}.get_tab_bar()`, consumed: new Set() },
+  'lv_tabview-tab_button': { create: (parent, a) => `${parent}.get_tab_bar().get_child(${a.index ?? 0})`, consumed: new Set(['index']) },
+};
 
 export function emitPy(view, opts = {}) {
   const { name = 'page', symbol = 'ui_create' } = opts;
@@ -214,19 +248,37 @@ export function emitPy(view, opts = {}) {
       return;
     }
 
+    // A calendar's header is added by a call on its parent: the binding
+    // exposes lv_calendar_add_header_arrow as a method of lv.calendar.
+    if (node.tag === 'lv_calendar-header_arrow') {
+      lines.push(`    ${parentVar}.add_header_arrow()`);
+      return;
+    }
+
+    const part = TABVIEW_PARTS[node.tag];
     lines.push('');
-    lines.push(`    ${v} = ${ctor}(${parentVar})`);
+    lines.push(`    ${v} = ${part ? part.create(parentVar, node.attrs) : `${ctor}(${parentVar})`}`);
+
+    // The pinned binding has set_today_date and set_month_shown only (the
+    // per-field setters are LVGL 9.4), so the date attributes go out as two calls.
+    if (node.tag === 'lv_calendar') {
+      const a = node.attrs;
+      if ('today_year' in a && 'today_month' in a && 'today_day' in a) lines.push(`    ${v}.set_today_date(${a.today_year}, ${a.today_month}, ${a.today_day})`);
+      if ('shown_year' in a && 'shown_month' in a) lines.push(`    ${v}.set_month_shown(${a.shown_year}, ${a.shown_month})`);
+    }
 
     // lv_slider/lv_bar have no separate min/max setters on the pinned
     // binding's vendored LVGL — see module doc comment — so both attrs
     // (always emitted together by convert.mjs) collapse into one set_range.
-    if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && 'min_value' in node.attrs && 'max_value' in node.attrs) {
+    if (RANGE_WIDGETS.has(node.tag) && 'min_value' in node.attrs && 'max_value' in node.attrs) {
       lines.push(`    ${v}.set_range(${node.attrs.min_value}, ${node.attrs.max_value})`);
     }
 
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
-      if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && (key === 'min_value' || key === 'max_value')) continue;
+      if (RANGE_WIDGETS.has(node.tag) && (key === 'min_value' || key === 'max_value')) continue;
+      if (node.tag === 'lv_calendar' && CALENDAR_DATE_ATTRS.has(key)) continue;
+      if (part?.consumed.has(key)) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) emitNode(child, v);
@@ -284,12 +336,12 @@ export function emitPy(view, opts = {}) {
     if (key === 'flex_flow') return lines.push(`    ${v}.set_flex_flow(${ENUMS.flex_flow(value)})`);
     if (key === 'flex_grow') return lines.push(`    ${v}.set_flex_grow(${value})`);
     if (key === 'checked') return lines.push(`    ${v}.set_state(lv.STATE.CHECKED, ${pybool(value)})`);
+    if (key === 'disabled') return lines.push(`    ${v}.set_state(lv.STATE.DISABLED, ${pybool(value)})`);
     if (key in FLAG_NAMES) return lines.push(`    ${v}.set_flag(lv.obj.FLAG.${FLAG_NAMES[key]}, ${pybool(value)})`);
 
     if (key.startsWith('style_')) {
-      const [propPart, state] = key.split(':');
+      const [propPart, selector] = splitSelector(key);
       const prop = propPart.slice(6);
-      const selector = state ? `lv.STATE.${state.toUpperCase()}` : '0';
 
       if (prop === 'grid_column_dsc_array' || prop === 'grid_row_dsc_array') {
         const items = value.split(' ').map((t) => {
@@ -419,10 +471,20 @@ const WIDGET_ATTRS = {
     text: (v, val) => `${v}.set_text(${pystr(val)})`,
   },
   lv_slider: {
+    mode: (v, val) => `${v}.set_mode(lv.slider.MODE.${val.toUpperCase()})`,
+    start_value: (v, val) => `${v}.set_start_value(${val}, False)`,
     value: (v, val) => `${v}.set_value(${val}, False)`,
   },
   lv_bar: {
     value: (v, val) => `${v}.set_value(${val}, False)`,
+  },
+  // The pinned binding's lv_arc has no separate min/max setters, like lv_slider
+  // (see the module comment): set_range takes both, emitted from emitNode.
+  lv_arc: {
+    value: (v, val) => `${v}.set_value(${val})`,
+    rotation: (v, val) => `${v}.set_rotation(${val})`,
+    bg_start_angle: (v, val) => `${v}.set_bg_start_angle(${val})`,
+    bg_end_angle: (v, val) => `${v}.set_bg_end_angle(${val})`,
   },
   lv_textarea: {
     one_line: (v, val) => `${v}.set_one_line(${pybool(val)})`,
@@ -433,6 +495,10 @@ const WIDGET_ATTRS = {
   lv_dropdown: {
     options: (v, val) => `${v}.set_options(${pystr(val)})`,
     selected: (v, val) => `${v}.set_selected(${val})`,
+  },
+  lv_tabview: {
+    active: (v, val) => `${v}.set_active(${val}, False)`,
+    tab_bar_position: (v, val) => `${v}.set_tab_bar_position(lv.DIR.${val.toUpperCase()})`,
   },
   lv_table: {
     column_count: (v, val) => `${v}.set_column_count(${val})`,

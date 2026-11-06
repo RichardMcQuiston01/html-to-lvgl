@@ -1,0 +1,54 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="Account" style_text_font="montserrat_18" style_text_color="0x212529" />
+    <lv_label name="note" text="Menus float over the page." style_text_font="montserrat_12" style_text_color="0x6c757d" />
+    <lv_obj name="row" width="296" height="31" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="12" style_pad_column="12" scrollable="false">
+      <lv_button name="open_plain" width="71" height="31" style_bg_color="0x0d6efd" style_border_width="0" style_radius="4" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="open_plain_2" align="center" text="Actions" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        <subject_set_int_event subject="menu_actions_menu_open" value="1" />
+      </lv_button>
+      <lv_button name="basic_button" width="90" height="31" style_bg_opa="0" style_border_width="1" style_border_color="0x1976d2" style_border_opa="128" style_radius="4" style_shadow_width="0" style_pad_all="0">
+        <lv_label name="basic_button_2" align="center" text="PROFILE" style_text_font="montserrat_12" style_text_color="0x1976d2" style_text_align="center" />
+        <subject_set_int_event subject="menu_body_div_4_open" value="1" />
+      </lv_button>
+    </lv_obj>
+    <lv_obj name="menu" x="-12" y="-12" ignore_layout="true" floating="true" width="320" height="240" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="menu_popup" x="12" y="90" width="130" height="91" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdee2e6" style_radius="6" style_shadow_color="0x000000" style_shadow_opa="38" style_shadow_width="10" style_shadow_offset_y="4" style_pad_all="0" scrollable="false">
+        <lv_obj name="menu_item" x="0" y="4" width="128" height="27" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="menu_item_2" align="left_mid" x="14" text="Rename" style_text_font="montserrat_12" style_text_color="0x212529" />
+          <subject_set_int_event subject="menu_actions_menu_open" value="0" />
+        </lv_obj>
+        <lv_obj name="menu_item_3" x="0" y="31" width="128" height="27" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="menu_item_4" align="left_mid" x="14" text="Duplicate" style_text_font="montserrat_12" style_text_color="0x212529" />
+          <subject_set_int_event subject="menu_actions_menu_open" value="0" />
+        </lv_obj>
+        <lv_obj name="menu_item_5" x="0" y="58" width="128" height="27" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="menu_item_6" align="left_mid" x="14" text="Delete" style_text_font="montserrat_12" style_text_color="0xdc3545" />
+          <subject_set_int_event subject="menu_actions_menu_open" value="0" />
+        </lv_obj>
+      </lv_obj>
+      <subject_set_int_event subject="menu_actions_menu_open" value="0" />
+      <bind_flag_if_eq subject="menu_actions_menu_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+    <lv_obj name="menu_2" x="-12" y="-12" ignore_layout="true" floating="true" width="320" height="240" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="menu_popup_2" x="170" y="90" width="138" height="124" style_bg_color="0xffffff" style_border_width="0" style_radius="4" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="14" style_shadow_offset_y="3" style_shadow_spread="2" style_pad_all="0" scrollable="false">
+        <lv_obj name="basic_menu" x="0" y="0" width="138" height="124" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_obj name="menu_item_7" x="0" y="8" width="138" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="menu_item_8" align="left_mid" x="16" text="Profile" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
+            <subject_set_int_event subject="menu_body_div_4_open" value="0" />
+          </lv_obj>
+          <lv_obj name="menu_item_9" x="0" y="44" width="138" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="menu_item_10" align="left_mid" x="16" text="My account" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
+            <subject_set_int_event subject="menu_body_div_4_open" value="0" />
+          </lv_obj>
+          <lv_obj name="menu_item_11" x="0" y="80" width="138" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+            <lv_label name="menu_item_12" align="left_mid" x="16" text="Logout" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
+            <subject_set_int_event subject="menu_body_div_4_open" value="0" />
+          </lv_obj>
+        </lv_obj>
+      </lv_obj>
+      <subject_set_int_event subject="menu_body_div_4_open" value="0" />
+      <bind_flag_if_eq subject="menu_body_div_4_open" flag="hidden" ref_value="0" />
+    </lv_obj>
+  </view>
+</screen>

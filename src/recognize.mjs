@@ -62,6 +62,11 @@ import { builtinComponents } from './components/index.mjs';
  *   set by a component's build(): subjects, events and binds (src/behavior.mjs).
  * @property {{ tag: string, props: Record<string, unknown> }} [xmlComponent]
  *   set by a component's build(): emit as an instance of a library XML component.
+ * @property {{ tag: string, attrs?: Record<string, string | number>, fontText?: string }} [native]
+ *   set by a component's build(): emit as this one native widget (an lv_switch,
+ *   lv_slider, lv_bar, lv_arc or lv_textarea) with these attributes, placed by
+ *   the node's own box. `fontText` is the text it shows, so convert() can pick
+ *   the font and text color. The node's children are not emitted.
  * @property {string} [key]
  *   added by recognize(): a stable key. See annotateKeys().
  * @property {{ component: string, props: Record<string, unknown> }} [recognized]

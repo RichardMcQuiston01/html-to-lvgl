@@ -253,3 +253,18 @@ test('a single-sided border, text-transform and clipping are extracted', async (
   assert.equal(s('clipped').overflowHidden, true);
   assert.equal(s('frame').overflowHidden, false);
 });
+
+test('form controls: a textarea keeps its value and placeholder, a label keeps its for, and disabled is read', async () => {
+  const tree = await extractHtml(`<!DOCTYPE html><html><body style="margin:0">
+    <label for="n">Notes</label>
+    <textarea id="n" placeholder="Anything else?" disabled>hello</textarea>
+    <input id="u" type="text" value="x" disabled>
+    <input id="v" type="text" value="y">
+  </body></html>`);
+  const find = (node, pred) => (pred(node) ? node : (node.children ?? []).map((c) => find(c, pred)).find(Boolean));
+  assert.equal(find(tree, (n) => n.tag === 'label').attrs.for, 'n');
+  const area = find(tree, (n) => n.tag === 'textarea');
+  assert.deepEqual([area.attrs.value, area.attrs.placeholder, area.attrs.disabled], ['hello', 'Anything else?', true]);
+  assert.equal(find(tree, (n) => n.id === 'u').attrs.disabled, true);
+  assert.equal(find(tree, (n) => n.id === 'v').attrs.disabled, false);
+});

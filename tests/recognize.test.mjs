@@ -214,11 +214,21 @@ test('describeRegistry exports palette data with no functions', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(described)), described);
 });
 
-test('the built-in registry lists the icon, every Phase 7 component and the Phase 8 overlays, with no rejects', () => {
+test('the built-in registry lists the icon, every Phase 7 component, the Phase 8 overlays and the Phase 9 remaps, with no rejects', () => {
   assert.deepEqual(defaultRegistry.list().map((d) => d.name), [
     'icon', 'card', 'paper', 'divider', 'chip', 'avatar', 'badge', 'alert', 'appbar', 'toolbar', 'breadcrumbs',
     'accordion',
     'modal', 'drawer',
+    'select', 'menu', 'snackbar',
+    'date-picker',
+    'stepper',
+    'pagination',
+    'tabs',
+    'bottom-navigation',
+    'switch',
+    'textfield',
+    'slider',
+    'progress',
   ]);
   assert.deepEqual(defaultRegistry.rejected, []);
 });

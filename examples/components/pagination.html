@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pagination</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden;
+         display: flex; flex-direction: column; gap: 14px; padding: 14px 16px; }
+  h2 { font-size: 11px; font-weight: 500; color: #6b7280; letter-spacing: 0.5px; }
+  ul { list-style: none; }
+
+  /* Plain ARIA version: a nav landmark, a list of page links, the current page marked */
+  .pager ul { display: flex; gap: 4px; }
+  .pager a { display: block; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid #d1d5db; border-radius: 6px;
+             font-size: 13px; line-height: 30px; text-align: center; color: #374151; text-decoration: none; }
+  .pager a[aria-current="page"] { background: #2563eb; border-color: #2563eb; color: #ffffff; font-weight: 700; }
+
+  /* Material UI version, hand-written CSS that reproduces MuiPagination */
+  .MuiPagination-ul { display: flex; flex-wrap: wrap; align-items: center; padding: 0; margin: 0; list-style: none; }
+  .MuiPaginationItem-root { margin: 0 3px; min-width: 32px; height: 32px; padding: 0 6px; border: 0; border-radius: 16px; background: transparent;
+         font-size: 14px; color: rgba(0,0,0,0.87); text-align: center; line-height: 32px; display: block; }
+  .MuiPaginationItem-root.Mui-selected { background-color: rgba(25,118,210,0.12); font-weight: 500; }
+  .MuiPaginationItem-root.Mui-disabled { opacity: 0.38; }
+  .MuiPaginationItem-ellipsis { min-width: 32px; }
+</style>
+</head>
+<body>
+  <h2>ARIA</h2>
+  <nav class="pager" aria-label="Pagination">
+    <ul>
+      <li><a href="/results?page=2" aria-label="Previous page">&lt;</a></li>
+      <li><a href="/results?page=1">1</a></li>
+      <li><a href="/results?page=2">2</a></li>
+      <li><a href="/results?page=3" aria-current="page">3</a></li>
+      <li><a href="/results?page=4">4</a></li>
+      <li><a href="/results?page=5">5</a></li>
+      <li><a href="/results?page=4" aria-label="Next page">&gt;</a></li>
+    </ul>
+  </nav>
+
+  <h2>MATERIAL UI</h2>
+  <nav aria-label="pagination navigation" class="MuiPagination-root MuiPagination-text">
+    <ul class="MuiPagination-ul">
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page Mui-disabled" type="button" disabled aria-label="Go to previous page"><svg class="MuiSvgIcon-root MuiPaginationItem-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;vertical-align:middle"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg></button></li>
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page Mui-selected" type="button" aria-current="true" aria-label="page 1">1</button></li>
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to page 2">2</button></li>
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to page 3">3</button></li>
+      <li><div class="MuiPaginationItem-root MuiPaginationItem-ellipsis">&hellip;</div></li>
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to page 10">10</button></li>
+      <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to next page"><svg class="MuiSvgIcon-root MuiPaginationItem-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;vertical-align:middle"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></li>
+    </ul>
+  </nav>
+</body>
+</html>

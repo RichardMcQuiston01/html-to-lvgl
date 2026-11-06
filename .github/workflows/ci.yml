@@ -290,9 +290,22 @@ jobs:
             # already renders this same file against successfully. Not an
             # html2lvgl output problem; see "Known limitations" in
             # spike/micropython/README.md.
-            case "$(basename "$xml")" in monitor.xml) continue ;; esac
+            # date_picker*.xml: the pinned binding's vendored XML calendar
+            # parser (v9.3-era) reads `today_date="Y M D"` and
+            # `shown_month="Y M"`, not v9.4's today_year/shown_year/..., so a
+            # calendar with a header misreads the month as 0 and never
+            # returns. Its --format py output (set_today_date,
+            # set_month_shown) is what MicroPython users get; see "Known
+            # limitations" in spike/micropython/README.md.
+            # material_ui_forms.xml: spins forever on the pinned binding for a
+            # reason not yet found (bisected to an lv_switch inside a page
+            # with a lv_tabview); it renders on v9.4 in validate-xml and as
+            # --format py below. See "Known limitations" item 4 in
+            # spike/micropython/README.md.
+            case "$(basename "$xml")" in monitor.xml|date_picker.xml|date_picker_mui.xml|material_ui_forms.xml) continue ;; esac
             echo "validating $xml"
-            "$MP" spike/micropython/render_xml.py "$xml" /tmp/out.bmp
+            # `timeout` turns a hang into a two-minute failure.
+            timeout 120 "$MP" spike/micropython/render_xml.py "$xml" /tmp/out.bmp
           done
 
       - name: Render componentized React goldens (multi-file registration)
@@ -394,6 +407,8 @@ jobs:
           export MP="$GITHUB_WORKSPACE/lv_micropython/ports/unix/build-lvgl/micropython"
           TARGET=py spike/subjects/run-accordion.sh | grep -E '^  (ok|FAIL)|^(Accordion passes|FAILED)'
           TARGET=py spike/subjects/run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)'
+          TARGET=py spike/subjects/run-menu-snackbar.sh | grep -E '^  (ok|FAIL)|^(Generated Menu|FAILED)'
+          TARGET=py spike/subjects/run-tabs.sh | grep -E '^  (ok|FAIL)|^(Generated tabs|FAILED)'
 
       - name: Convert fonts with lv_font_conv and render with them (--format py)
         run: |
@@ -668,3 +683,22 @@ jobs:
 
       - name: Drive the generated Modal and Drawer XML
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-components.sh
+
+      # Phase 9 lane B: the Menu (opener, items, press outside, blocked page
+      # beneath it) and the Snackbar (action and close buttons, an opener).
+      - name: Drive the generated Menu and Snackbar XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-menu-snackbar.sh
+      # Phase 9: tabs and bottom navigation map to a native lv_tabview, so the
+      # open tab comes from ARIA and a tap on a tab button switches the page.
+      - name: Drive the generated tabs and bottom navigation XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-tabs.sh
+      # Phase 9 native-widget remaps: the first frame comes from ARIA, and a
+      # click toggles a switch and moves a slider.
+      - name: Drive the generated Switch, Slider and Progress XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-form-widgets.sh
+
+      # Phase 9 integration: several remapped components on one screen (app bar,
+      # tabs with a text field, switch and slider, select, pagination, snackbar,
+      # bottom navigation) must not disturb each other.
+      - name: Drive the generated Material UI forms screens
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-material-forms.sh

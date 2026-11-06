@@ -206,6 +206,27 @@ Ten common components are recognized by their ARIA role or markup, by Material U
 
 Output is written in XML (with a generated `globals.xml`), C, C++ and MicroPython. Library XML components are not available in MicroPython. The API for adding more stateful components is documented at the top of `src/behavior.mjs`.
 
+### Native widget remaps
+
+These components already have an LVGL widget, so the converter emits the widget instead of boxes. The first frame comes from ARIA and the DOM. Anything that cannot be matched with confidence keeps the plain boxes and reports `UNSUPPORTED_WIDGET`.
+
+| Component | Recognized from | LVGL widget and notes |
+|---|---|---|
+| `tabs` | `role="tablist"` with `tab` and `tabpanel`, `MuiTabs-root` | `lv_tabview`. Open tab from `aria-selected`; bar on any of four sides; switching is native. Tab icons are dropped. |
+| `bottom-navigation` | `MuiBottomNavigation-root`, a bottom-pinned `nav` of 3 to 5 icon-over-label actions | `lv_tabview` with the bar at the bottom. Selected action from `aria-current`; `data-lv-link` still navigates. |
+| `select` | `<select>`, `role="combobox"` with a listbox, `MuiSelect-root` | `lv_dropdown` with options and selected index from the DOM. A closed Material UI Select needs `keepMounted`. |
+| `menu` | An opener with `aria-haspopup`, `role="menu"`, `MuiMenu-root` | An opener plus a floating popup bound to a subject (the behavior IR). A press outside closes it. |
+| `snackbar` | A floating `role="status"` or `role="alert"`, `MuiSnackbar-root` | A floating bar at its measured position; its buttons dismiss it. No auto-dismiss. |
+| `switch` | `role="switch"`, `MuiSwitch-root` | `lv_switch`, checked state from `aria-checked`. |
+| `slider` | `role="slider"`, `MuiSlider-root` | `lv_slider`; two thumbs become a range slider. Marks and step are not reproduced. |
+| `progress` | `role="progressbar"`, `MuiLinearProgress-root`, `MuiCircularProgress-root` | `lv_bar` or `lv_arc`. Indeterminate progress is static and reported. |
+| `textfield` | A labelled text input or textarea, `role="textbox"`, `MuiTextField-root` | `lv_textarea` with the page's border; `aria-invalid` gives a red border; a floating label is static. |
+| `date-picker` | `role="grid"` of day cells, `MuiDateCalendar-root` | `lv_calendar` with the shown month and one marked day. |
+| `stepper` | `MuiStepper-root`, a list with `aria-current="step"` | Numbered circles and connectors, horizontal or vertical. |
+| `pagination` | A pagination `nav`, `MuiPagination-root`, Bootstrap `.pagination` | Page buttons; the current page loses its link; arrows and ellipsis become text. |
+
+In MicroPython XML output the pinned binding reads calendar attributes differently, so use `--format py` for a date picker.
+
 **Pinned app bars.** A recognized app bar with `position: fixed` or `sticky` is emitted with `floating="true"` (XML), `LV_OBJ_FLAG_FLOATING` (C and C++) or `set_flag(lv.obj.FLAG.FLOATING, True)` (Python). LVGL does not scroll a floating object with its parent. The bar is also moved last among its siblings, because LVGL paints later siblings on top.
 
 **Elevation and radius.** A multi-layer `box-shadow` (Material UI elevation) keeps its largest layer, since LVGL has one shadow per object. A percentage `border-radius` resolves against the box, so `50%` on an avatar is a circle.

@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Native widget remaps** (Phase 9). ARIA and Material UI components that have an LVGL widget now convert to it, with the first frame read from ARIA: `tabs` and `bottom-navigation` (`lv_tabview`), `select` (`lv_dropdown`), `switch` (`lv_switch`), `slider` (`lv_slider`, including a two-thumb range slider), `progress` (`lv_bar` and `lv_arc`), `textfield` (`lv_textarea` with the page's border and a static floating label) and `date-picker` (`lv_calendar`). `menu` and `snackbar` use the Phase 8 behavior system. `stepper` and `pagination` are composites. All work in XML, C, C++ and MicroPython, and CI click-tests the interactive ones. Two Material UI settings screens (`examples/components/material-ui-forms*.html`) use many of them together, and a click-driven check shows they do not disturb each other. See [FEATURES.md](FEATURES.md#native-widget-remaps).
+- New diagnostic `UNSUPPORTED_WIDGET`: a component matched a pattern but cannot be mapped with confidence, so the plain boxes are kept.
+- `<textarea>` now converts to an `lv_textarea` (it was an empty box). The extractor keeps its value and placeholder, `<label for>`, and `disabled` on inputs, and measures hidden popup menus and option lists.
+- Style attributes can chain states and parts (`style_bg_color:checked:indicator`) in all four output formats.
+
+### Changed
+
+- A Select whose Material UI Menu is portaled to the end of `<body>` is now linked to its popup instead of reporting `UNSUPPORTED_WIDGET`.
+- A native `<select>` now takes the page's box (fill, border, radius) instead of LVGL's default dropdown look.
+
+### Known limits
+
+- Indeterminate progress is a static arc or bar (`lv_spinner` has no XML tag in 9.4).
+- The calendar marks one day (the selected day, else today), always starts the week on Sunday, and a Material UI date picker scores lower against the browser because LVGL draws its own theme.
+- Tabs drop their icons; bottom-navigation icons are static placeholders; a Snackbar does not auto-dismiss; a closed Material UI Select or Menu that is not mounted in the page cannot be read.
+- Tabs inside an AppBar (`MuiAppBar` holding `MuiToolbar` and `MuiTabs`) stay unconverted and report `UNSUPPORTED_WIDGET`; the shrink-to-fit text step can give sibling labels (stepper steps, a shrunk text field label) different font sizes, which can clip a label with the fallback font; an accordion's group claim also makes a page `body` that holds a single accordion a flex column so the page reflows.
+- In MicroPython XML output, a calendar header hangs the pinned binding (different attribute names); use `--format py`.
+
 ## [0.6.0] - 2026-11-06
 
 Three stateful components (Accordion, Modal, Drawer) and a round of converter fidelity fixes, so this is a minor bump. Generated output changes for existing pages: badges, translucent colors, buttons without a background, padded text, negative margins, one-sided borders and Material UI widget names all come out differently, so regenerate any checked-in output. The donate link also moved from PayPal to Ko-fi.

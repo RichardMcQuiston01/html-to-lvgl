@@ -49,6 +49,11 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_width(mode, 110);
     lv_obj_set_height(mode, 22);
     lv_dropdown_set_options(mode, "Automatic\nManual\nMaintenance");
+    lv_obj_set_style_bg_color(mode, lv_color_hex(0xefefef), 0);
+    lv_obj_set_style_border_width(mode, 1, 0);
+    lv_obj_set_style_border_color(mode, lv_color_hex(0x767676), 0);
+    lv_obj_set_style_radius(mode, 0, 0);
+    lv_obj_set_style_shadow_width(mode, 0, 0);
     lv_obj_set_style_text_font(mode, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(mode, lv_color_hex(0x000000), 0);
 

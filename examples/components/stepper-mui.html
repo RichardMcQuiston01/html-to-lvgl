@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Stepper (Material UI)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden;
+         display: flex; flex-direction: column; gap: 14px; padding: 12px 12px; }
+  /* Hand-written CSS that reproduces MuiStepper, MuiStep, MuiStepLabel, MuiStepIcon and MuiStepConnector */
+  .MuiStepper-root { display: flex; }
+  .MuiStepper-horizontal { flex-direction: row; align-items: center; }
+  .MuiStepper-vertical { flex-direction: column; align-items: stretch; }
+  .MuiStep-root.MuiStep-horizontal { display: flex; align-items: center; padding: 0 4px; }
+  .MuiStep-root.MuiStep-vertical { display: flex; flex-direction: column; }
+  .MuiStepLabel-root { display: flex; align-items: center; }
+  .MuiStepLabel-iconContainer { display: flex; padding-right: 6px; }
+  .MuiStepIcon-root { width: 24px; height: 24px; color: rgba(0,0,0,0.38); fill: currentColor; }
+  .MuiStepIcon-root.Mui-active, .MuiStepIcon-root.Mui-completed { color: #1976d2; }
+  .MuiStepIcon-text { fill: #ffffff; font-size: 12px; }
+  .MuiStepLabel-label { font-size: 12px; line-height: 17px; color: rgba(0,0,0,0.6); }
+  .MuiStepLabel-label.Mui-active { color: rgba(0,0,0,0.87); font-weight: 500; }
+  .MuiStepLabel-label.Mui-completed { color: rgba(0,0,0,0.87); }
+  .MuiStepConnector-root.MuiStepConnector-horizontal { flex: 1; }
+  .MuiStepConnector-horizontal .MuiStepConnector-line { display: block; border-top: 1px solid #bdbdbd; }
+  .MuiStepConnector-vertical { margin-left: 11px; }
+  .MuiStepConnector-vertical .MuiStepConnector-line { display: block; min-height: 14px; border-left: 1px solid #bdbdbd; }
+  .MuiStepConnector-root.Mui-active .MuiStepConnector-line, .MuiStepConnector-root.Mui-completed .MuiStepConnector-line { border-color: #1976d2; }
+</style>
+</head>
+<body>
+  <div class="MuiStepper-root MuiStepper-horizontal">
+    <div class="MuiStep-root MuiStep-horizontal Mui-completed">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer Mui-completed"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-completed" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm-2 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"></path></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-completed">Select</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-horizontal Mui-completed"><span class="MuiStepConnector-line MuiStepConnector-lineHorizontal"></span></div>
+    <div class="MuiStep-root MuiStep-horizontal">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer Mui-active"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-active" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">2</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-active">Create</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-horizontal"><span class="MuiStepConnector-line MuiStepConnector-lineHorizontal"></span></div>
+    <div class="MuiStep-root MuiStep-horizontal">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer"><svg class="MuiSvgIcon-root MuiStepIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">3</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label">Publish</span></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="MuiStepper-root MuiStepper-vertical">
+    <div class="MuiStep-root MuiStep-vertical Mui-completed">
+      <span class="MuiStepLabel-root MuiStepLabel-vertical">
+        <span class="MuiStepLabel-iconContainer Mui-completed"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-completed" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm-2 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"></path></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-completed">Account</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-vertical Mui-completed"><span class="MuiStepConnector-line MuiStepConnector-lineVertical"></span></div>
+    <div class="MuiStep-root MuiStep-vertical">
+      <span class="MuiStepLabel-root MuiStepLabel-vertical">
+        <span class="MuiStepLabel-iconContainer Mui-active"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-active" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">2</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-active">Verify email</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-vertical"><span class="MuiStepConnector-line MuiStepConnector-lineVertical"></span></div>
+    <div class="MuiStep-root MuiStep-vertical">
+      <span class="MuiStepLabel-root MuiStepLabel-vertical">
+        <span class="MuiStepLabel-iconContainer"><svg class="MuiSvgIcon-root MuiStepIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">3</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label">Add a device</span></span>
+      </span>
+    </div>
+  </div>
+</body>
+</html>

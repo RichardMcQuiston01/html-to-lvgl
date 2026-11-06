@@ -1,0 +1,26 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="10" style_pad_bottom="10" flex_flow="column" style_pad_row="10" style_pad_column="10" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="PLAIN ARIA" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="row" width="296" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_label name="label_2" flex_grow="1" text="Pump enabled" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_switch name="switch" width="44" height="24" checked="true" style_bg_opa="0" style_border_width="0" style_pad_hor="0" style_pad_ver="0" style_bg_opa:indicator="255" style_pad_all:knob="0" style_bg_color:checked:indicator="0x2563eb" style_bg_color:indicator="0x9e9e9e" style_bg_color:checked:knob="0xffffff" />
+    </lv_obj>
+    <lv_obj name="row_2" width="296" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="10" style_pad_column="10" scrollable="false">
+      <lv_label name="label_3" flex_grow="1" text="Night mode" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_switch name="switch_2" width="44" height="24" style_bg_opa="0" style_border_width="0" style_pad_hor="0" style_pad_ver="0" style_bg_opa:indicator="255" style_pad_all:knob="0" style_bg_color:indicator="0xcbd5e1" style_bg_color:knob="0xffffff" />
+    </lv_obj>
+    <lv_label name="label_4" text="MATERIAL UI" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="form_control_label" style_margin_left="-12" width="308" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+      <lv_obj name="switch_3" width="58" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_switch name="switch_toggle" x="9" y="9" width="40" height="20" checked="true" style_bg_opa="0" style_border_width="0" style_pad_hor="3" style_pad_ver="3" style_bg_opa:indicator="255" style_pad_all:knob="0" style_bg_color:checked:indicator="0x8cbae8" style_bg_color:indicator="0x9e9e9e" style_bg_color:checked:knob="0x1976d2" style_shadow_width:knob="3" style_shadow_color:knob="0x000000" style_shadow_opa:knob="31" style_shadow_offset_y:knob="1" />
+      </lv_obj>
+      <lv_label name="typography" text="Wi-Fi" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" />
+    </lv_obj>
+    <lv_obj name="form_control_label_2" style_margin_left="-12" width="308" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+      <lv_obj name="switch_4" width="58" height="38" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_switch name="switch_toggle_2" x="9" y="9" width="40" height="20" style_bg_opa="0" style_border_width="0" style_pad_hor="3" style_pad_ver="3" style_bg_opa:indicator="255" style_pad_all:knob="0" style_bg_color:indicator="0x9e9e9e" style_bg_color:knob="0xfafafa" style_shadow_width:knob="3" style_shadow_color:knob="0x000000" style_shadow_opa:knob="31" style_shadow_offset_y:knob="1" />
+      </lv_obj>
+      <lv_label name="typography_2" text="Bluetooth" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" />
+    </lv_obj>
+  </view>
+</component>

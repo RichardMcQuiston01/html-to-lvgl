@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Material UI forms 2</title>
+<style>
+  /* Integration page 2 of 2: app bar, stepper, a card holding a select and a pagination, a snackbar over the page
+     and a bottom navigation, all Material UI class names with hand-written CSS. */
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; color: rgba(0,0,0,0.87); }
+
+  .MuiPaper-root.MuiAppBar-root { position: fixed; top: 0; left: 0; right: 0; width: 320px; display: flex; flex-direction: column; background-color: #1976d2; color: #fff;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12); }
+  .MuiToolbar-root { display: flex; align-items: center; position: relative; padding: 0 16px; min-height: 40px; }
+  .MuiIconButton-root { width: 32px; height: 32px; margin-left: -8px; margin-right: 12px; padding: 4px; border: 0; border-radius: 50%; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; }
+  .MuiSvgIcon-root { width: 22px; height: 22px; fill: currentColor; }
+  .MuiTypography-h6 { flex-grow: 1; font-size: 18px; font-weight: 500; line-height: 1.6; letter-spacing: 0.0075em; }
+  .spacer { height: 40px; }
+
+  .MuiStepper-root { display: flex; flex-direction: row; align-items: center; padding: 6px 12px; }
+  .MuiStep-root { display: flex; align-items: center; padding: 0 4px; }
+  .MuiStepLabel-root { display: flex; align-items: center; }
+  .MuiStepLabel-iconContainer { display: flex; padding-right: 6px; }
+  .MuiStepIcon-root { width: 20px; height: 20px; color: rgba(0,0,0,0.38); fill: currentColor; }
+  .MuiStepIcon-root.Mui-active, .MuiStepIcon-root.Mui-completed { color: #1976d2; }
+  .MuiStepIcon-text { fill: #ffffff; font-size: 12px; }
+  .MuiStepLabel-label { font-size: 12px; line-height: 17px; color: rgba(0,0,0,0.6); }
+  .MuiStepLabel-label.Mui-active { color: rgba(0,0,0,0.87); font-weight: 500; }
+  .MuiStepLabel-label.Mui-completed { color: rgba(0,0,0,0.87); }
+  .MuiStepConnector-root { flex: 1; }
+  .MuiStepConnector-line { display: block; border-top: 1px solid #bdbdbd; }
+  .MuiStepConnector-root.Mui-completed .MuiStepConnector-line { border-color: #1976d2; }
+
+  .MuiPaper-root { background-color: #ffffff; color: rgba(0,0,0,0.87); border-radius: 4px; }
+  .MuiPaper-elevation1 { box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12); }
+  .MuiCard-root { margin: 4px 12px 0; overflow: hidden; }
+  .MuiCardContent-root { padding: 8px 12px 6px; display: flex; flex-direction: column; gap: 6px; }
+
+  .MuiInputBase-root { position: relative; display: inline-flex; align-items: center; width: 100%; height: 34px; font-size: 13px; color: rgba(0,0,0,0.87); border-radius: 4px; }
+  .MuiSelect-select { flex: 1; padding: 0 32px 0 12px; display: block; line-height: 34px; min-width: 0; }
+  .MuiSelect-nativeInput { position: absolute; bottom: 0; left: 0; width: 100%; opacity: 0; pointer-events: none; border: 0; }
+  .MuiSelect-icon { position: absolute; right: 6px; top: 5px; width: 24px; height: 24px; fill: rgba(0,0,0,0.54); }
+  .MuiOutlinedInput-notchedOutline { position: absolute; inset: 0; border: 1px solid rgba(0,0,0,0.23); border-radius: 4px; pointer-events: none; }
+  .MuiPopover-root { position: fixed; inset: 0; visibility: hidden; }
+  .MuiPopover-root .MuiPaper-root { position: absolute; top: 120px; left: 24px; width: 272px; box-shadow: 0px 5px 5px -3px rgba(0,0,0,0.2), 0px 8px 10px 1px rgba(0,0,0,0.14), 0px 3px 14px 2px rgba(0,0,0,0.12); }
+  .MuiMenu-list { list-style: none; padding: 8px 0; }
+  .MuiMenuItem-root { padding: 6px 16px; font-size: 14px; line-height: 24px; }
+
+  .MuiPagination-ul { display: flex; align-items: center; list-style: none; }
+  .MuiPaginationItem-root { margin: 0 3px; min-width: 28px; height: 28px; padding: 0 6px; border: 0; border-radius: 14px; background: transparent; font-size: 13px; color: rgba(0,0,0,0.87); text-align: center; line-height: 28px; display: block; }
+  .MuiPaginationItem-root.Mui-selected { background-color: rgba(25,118,210,0.12); font-weight: 500; }
+  .MuiPaginationItem-root.Mui-disabled { opacity: 0.38; }
+
+  .MuiSnackbar-root { position: fixed; left: 8px; right: 8px; bottom: 52px; z-index: 1400; display: flex; align-items: center; justify-content: flex-start; }
+  .MuiSnackbar-root .MuiPaper-root { background-color: #323232; color: #ffffff; box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12); }
+  .MuiSnackbarContent-root { display: flex; align-items: center; padding: 2px 16px; font-size: 13px; width: 304px; }
+  .MuiSnackbarContent-message { padding: 6px 0; flex: 1; }
+  .MuiSnackbarContent-action { display: flex; align-items: center; margin-left: 16px; margin-right: -8px; }
+  .MuiButton-root { background: none; border: 0; color: #90caf9; font-weight: 500; text-transform: uppercase; padding: 4px 8px; border-radius: 4px; font-size: 13px; }
+
+  .MuiBottomNavigation-root { position: fixed; left: 0; right: 0; bottom: 0; height: 48px; display: flex; justify-content: center; background-color: #ffffff; box-shadow: 0 -1px 4px rgba(0,0,0,0.14); }
+  .MuiBottomNavigationAction-root { flex: 1 1 0; min-width: 80px; max-width: 168px; padding: 0 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; background: transparent; color: rgba(0,0,0,0.6); }
+  .MuiBottomNavigationAction-root.Mui-selected { color: #1976d2; }
+  .MuiBottomNavigationAction-label { font-size: 11px; margin-top: 1px; }
+  .MuiBottomNavigationAction-root .MuiSvgIcon-root { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+  <header class="MuiPaper-root MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionFixed">
+    <div class="MuiToolbar-root MuiToolbar-gutters MuiToolbar-dense">
+      <button class="MuiIconButton-root" aria-label="back"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+      <h6 class="MuiTypography-root MuiTypography-h6">Delivery</h6>
+    </div>
+  </header>
+  <div class="MuiToolbar-root spacer"></div>
+
+  <div class="MuiStepper-root MuiStepper-horizontal">
+    <div class="MuiStep-root MuiStep-horizontal Mui-completed">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer Mui-completed"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-completed" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm-2 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"></path></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-completed">Cart</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-horizontal Mui-completed"><span class="MuiStepConnector-line MuiStepConnector-lineHorizontal"></span></div>
+    <div class="MuiStep-root MuiStep-horizontal">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer Mui-active"><svg class="MuiSvgIcon-root MuiStepIcon-root Mui-active" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">2</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label Mui-active">Delivery</span></span>
+      </span>
+    </div>
+    <div class="MuiStepConnector-root MuiStepConnector-horizontal"><span class="MuiStepConnector-line MuiStepConnector-lineHorizontal"></span></div>
+    <div class="MuiStep-root MuiStep-horizontal">
+      <span class="MuiStepLabel-root MuiStepLabel-horizontal">
+        <span class="MuiStepLabel-iconContainer"><svg class="MuiSvgIcon-root MuiStepIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12"></circle><text class="MuiStepIcon-text" x="12" y="12" text-anchor="middle" dominant-baseline="central">3</text></svg></span>
+        <span class="MuiStepLabel-labelContainer"><span class="MuiStepLabel-label">Pay</span></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root">
+    <div class="MuiCardContent-root">
+      <div class="MuiInputBase-root MuiOutlinedInput-root MuiSelect-root">
+        <div class="MuiSelect-select MuiSelect-outlined MuiInputBase-input" id="ship-select" role="combobox" tabindex="0" aria-controls="ship-menu" aria-expanded="false" aria-haspopup="listbox" aria-label="Shipping speed">Standard (3-5 days)</div>
+        <input class="MuiSelect-nativeInput" aria-hidden="true" tabindex="-1" value="standard">
+        <svg class="MuiSelect-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+        <fieldset class="MuiOutlinedInput-notchedOutline" aria-hidden="true"></fieldset>
+      </div>
+      <nav aria-label="pagination navigation" class="MuiPagination-root MuiPagination-text">
+        <ul class="MuiPagination-ul">
+          <li><button class="MuiPaginationItem-root MuiPaginationItem-page Mui-disabled" type="button" disabled aria-label="Go to previous page"><svg class="MuiSvgIcon-root MuiPaginationItem-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;vertical-align:middle"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg></button></li>
+          <li><button class="MuiPaginationItem-root MuiPaginationItem-page Mui-selected" type="button" aria-current="true" aria-label="page 1">1</button></li>
+          <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to page 2">2</button></li>
+          <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to page 3">3</button></li>
+          <li><button class="MuiPaginationItem-root MuiPaginationItem-page" type="button" aria-label="Go to next page"><svg class="MuiSvgIcon-root MuiPaginationItem-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;vertical-align:middle"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <div class="MuiPopover-root MuiMenu-root" role="presentation">
+    <div class="MuiPaper-root MuiMenu-paper">
+      <ul class="MuiList-root MuiMenu-list" id="ship-menu" role="listbox" aria-label="Shipping speed">
+        <li class="MuiMenuItem-root Mui-selected" role="option" aria-selected="true">Standard (3-5 days)</li>
+        <li class="MuiMenuItem-root" role="option">Express (1-2 days)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="MuiSnackbar-root MuiSnackbar-anchorOriginBottomLeft">
+    <div class="MuiPaper-root MuiPaper-elevation6 MuiSnackbarContent-root" role="alert">
+      <div class="MuiSnackbarContent-message">Address saved</div>
+      <div class="MuiSnackbarContent-action"><button class="MuiButton-root MuiButton-text">Undo</button></div>
+    </div>
+  </div>
+
+  <nav class="MuiBottomNavigation-root" aria-label="Main">
+    <button class="MuiButtonBase-root MuiBottomNavigationAction-root" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="MuiBottomNavigationAction-label">Home</span></button>
+    <button class="MuiButtonBase-root MuiBottomNavigationAction-root Mui-selected" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.6-1.4 2.4c-.1.3-.2.6-.2 1 0 1.1.9 2 2 2h12v-2H7.4c-.1 0-.2-.1-.2-.2v-.1l.9-1.7h7.5c.8 0 1.4-.4 1.7-1l3.6-6.5c.1-.2.1-.3.1-.5 0-.6-.4-1-1-1H5.2l-.9-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg><span class="MuiBottomNavigationAction-label Mui-selected">Cart</span></button>
+    <button class="MuiButtonBase-root MuiBottomNavigationAction-root" type="button"><svg class="MuiSvgIcon-root" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg><span class="MuiBottomNavigationAction-label">Orders</span></button>
+  </nav>
+</body>
+</html>

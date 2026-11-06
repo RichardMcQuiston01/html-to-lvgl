@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Stepper (ARIA)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden;
+         display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; }
+  h2 { font-size: 11px; font-weight: 500; color: #6b7280; letter-spacing: 0.5px; }
+  ol { list-style: none; }
+
+  /* Plain ARIA: a list of steps, the current one marked with aria-current="step" */
+  .steps.h { display: flex; align-items: flex-start; }
+  .steps.h li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+  .steps .dot { width: 24px; height: 24px; border-radius: 12px; background: #d1d5db; color: #ffffff;
+                font-size: 12px; text-align: center; line-height: 24px; }
+  .steps .label { font-size: 11px; color: #6b7280; }
+  .steps .done .dot { background: #2563eb; }
+  .steps [aria-current="step"] .dot { background: #2563eb; }
+  .steps [aria-current="step"] .label { color: #111827; font-weight: 700; }
+  .steps .bar { position: absolute; top: 11px; left: calc(-50% + 16px); right: calc(50% + 16px); height: 2px; background: #d1d5db; }
+  .steps .done .bar, .steps [aria-current="step"] .bar { background: #2563eb; }
+
+  .steps.v li { display: flex; flex-direction: row; align-items: center; gap: 8px; height: 30px; }
+  .steps.v .label { font-size: 12px; }
+</style>
+</head>
+<body>
+  <h2>HORIZONTAL</h2>
+  <ol class="steps h" role="list" aria-label="Checkout progress">
+    <li class="done"><span class="dot">1</span><span class="label">Cart</span></li>
+    <li class="done"><span class="bar"></span><span class="dot">2</span><span class="label">Address</span></li>
+    <li aria-current="step"><span class="bar"></span><span class="dot">3</span><span class="label">Payment</span></li>
+    <li><span class="bar"></span><span class="dot">4</span><span class="label">Review</span></li>
+  </ol>
+
+  <h2>VERTICAL</h2>
+  <ol class="steps v" role="list" aria-label="Setup steps">
+    <li class="done"><span class="dot">1</span><span class="label">Create account</span></li>
+    <li aria-current="step"><span class="dot">2</span><span class="label">Verify email</span></li>
+    <li><span class="dot">3</span><span class="label">Add a device</span></li>
+  </ol>
+</body>
+</html>

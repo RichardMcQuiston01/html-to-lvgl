@@ -18,13 +18,14 @@
  * overflow its box, try one size smaller; if it still overflows, let the
  * label auto-size and report a warning.
  */
-import { builtinFonts } from './fonts.mjs';
+import { builtinFonts, lineHeight, FONT_SIZES } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
+import { emitTabview } from './emit-tabview.mjs';
 import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml, animationsElement } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
@@ -135,13 +136,14 @@ const isManaged = (node) => isFlex(node) || isGrid(node);
 const outOfFlow = (node) => node.layout && (node.layout.position === 'absolute' || node.layout.position === 'fixed' || isPinnedBar(node));
 
 /**
- * A recognized app bar that stays put while the page scrolls: position fixed
- * or sticky. LVGL has no sticky, so both become a floating object (see
+ * A recognized app bar or bottom navigation that stays put while the page
+ * scrolls: position fixed or sticky. LVGL has no sticky, so both become a floating object (see
  * LV_OBJ_FLAG_FLOATING: ignores layout and is not moved when the parent
  * scrolls). A sticky bar therefore is out of flow too, like a fixed one.
  */
 const isPinnedBar = (node) =>
-  node.recognized?.component === 'appbar' && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
+  (node.recognized?.component === 'appbar' || node.recognized?.component === 'bottom-navigation')
+  && (node.layout?.position === 'fixed' || node.layout?.position === 'sticky');
 
 /**
  * Move each pinned app bar to the end of its parent's children. Browsers
@@ -497,7 +499,10 @@ function emit(node, parent, ctx, index = 0) {
   // The browser applies text-transform when it renders; the extracted text is raw.
   const transform = node.styles.textTransform;
   if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
-  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index) : emitByTag(node, parent, ctx, index);
+  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index)
+    : node.tabview ? emitNativeTabview(node, parent, ctx, index)
+    : node.native ? emitNativeWidget(node, parent, ctx, index)
+    : emitByTag(node, parent, ctx, index);
   if (out && hasBehavior(node)) applyBehavior(node, out, ctx);
   // Carry component boundaries (React fiber walk or data-lv-component)
   // through to the element tree for the componentizer.
@@ -570,7 +575,51 @@ function emitLibraryComponent(node, parent, ctx, index) {
   for (const [key, value] of Object.entries(props)) {
     attrs[key] = value !== null && typeof value === 'object' && 'subject' in value ? `${sanitize(ctx.page)}_${value.subject}` : value;
   }
-  return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs });
+  // A native widget can need child elements to be complete (an lv_calendar's
+  // header); they carry only attributes, so they are built here, unplaced.
+  const children = (node.xmlComponent.children ?? []).map((child) => el(child.tag, { ...child.props }));
+  // A native widget that shows text (a calendar's days) takes the font and
+  // color the component copied onto the node, as a dropdown does.
+  const text = node.xmlComponent.textStyles ? textStyles(node, ctx.fonts.for(node.styles)) : {};
+  return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs, ...text }, children);
+}
+
+/**
+ * A node a component turned into a native lv_tabview (node.tabview, see
+ * src/components/tabs.mjs). The element tree is built in src/emit-tabview.mjs
+ * from these helpers, which keep the box, text and placement rules in one place.
+ */
+function emitNativeTabview(node, parent, ctx, index) {
+  return emitTabview(node, parent, ctx, index, { uid, placement, boxStyles, containerLayout, textStyles, fitText, emit, applyTextTransform, resolveScreen, hex });
+}
+
+/** Height of one text line in a font: measured for Montserrat, about 1.25 em for a converted font. */
+const fontLineHeight = (font) => (FONT_SIZES.includes(font.size) ? lineHeight(font.size) : Math.round(font.size * 1.25));
+
+/**
+ * A node a component definition turned into one native LVGL widget
+ * (`node.native`, see UiNode in src/recognize.mjs): a switch, slider, bar, arc
+ * or textarea whose attributes (value, range, checked state, part styles) the
+ * definition worked out from ARIA state and the measured parts. The node's own
+ * box places it; its children are not emitted. `fontText` is the text the
+ * widget shows, used to pick the font and color, which only convert() can do.
+ */
+function emitNativeWidget(node, parent, ctx, index) {
+  const { tag, attrs = {}, fontText = null } = node.native;
+  const font = fontText === null ? null : fitText({ ...node, text: fontText }, ctx).font;
+  // A single line of text sits at the top of an lv_textarea's padding; the
+  // browser centers it in the field. `centerLine` is the border width, and the
+  // padding is whatever is left of the box once the line height is taken out.
+  const centered = font && node.native.centerLine !== undefined && node.native.centerLine !== null
+    ? { style_pad_ver: Math.max(0, Math.floor((node.h - 2 * node.native.centerLine - fontLineHeight(font)) / 2)) }
+    : {};
+  return el(tag, {
+    name: uid(ctx, node, tag.replace(/^lv_/, '')),
+    ...placement(node, parent, { gridIndex: index }),
+    ...(font ? textStyles(node, font) : {}),
+    ...attrs,
+    ...centered,
+  });
 }
 
 function emitByTag(node, parent, ctx, index) {
@@ -606,6 +655,7 @@ function emitByTag(node, parent, ctx, index) {
 
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
+  if (node.tag === 'textarea') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
   if (node.tag === 'img') return emitImage(node, parent, ctx, index);
   if (node.tag === 'progress') return emitBar(node, parent, ctx, index);
@@ -839,12 +889,29 @@ function emitInput(node, parent, ctx, index) {
   });
 }
 
+/** Background, border and corner radius of a dropdown, from the element it replaces. */
+function dropdownBoxStyles(node) {
+  const s = node.styles;
+  const border = borderOf(s);
+  return {
+    ...(s.bgColor ? { style_bg_color: hex(s.bgColor), ...(s.bgColor[3] < 255 ? { style_bg_opa: s.bgColor[3] } : {}) } : { style_bg_opa: '0' }),
+    style_border_width: border ? border.width : 0,
+    ...(border ? { style_border_color: hex(border.color), ...(border.color[3] < 255 ? { style_border_opa: border.color[3] } : {}) } : {}),
+    style_radius: s.radius,
+    style_shadow_width: 0,
+    ...(s.padLeft > 0 ? { style_pad_left: s.padLeft } : {}),
+  };
+}
+
 function emitDropdown(node, parent, ctx, index) {
   return el('lv_dropdown', {
     name: uid(ctx, node, 'dropdown'),
     ...placement(node, parent, { gridIndex: index }),
     options: (node.attrs.options ?? []).join('\n'),
     ...(node.attrs.selectedIndex > 0 ? { selected: node.attrs.selectedIndex } : {}),
+    // A recognized Select (src/components/select.mjs) takes its box from the
+    // page; any other dropdown keeps LVGL's default theme.
+    ...(node.recognized?.component === 'select' ? dropdownBoxStyles(node) : {}),
     ...textStyles(node, ctx.fonts.for(node.styles)),
   });
 }

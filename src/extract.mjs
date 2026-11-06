@@ -292,9 +292,12 @@ export function buildTree() {
     if (el.id && controlledIds.has(el.id)) return true;
     const role = el.getAttribute('role');
     if (role === 'dialog' || role === 'alertdialog') return true;
+    // A popup menu or option list is mounted but hidden until opened (Material
+    // UI's keepMounted Menu and Select): its size and its option text are needed.
+    if (role === 'menu' || role === 'listbox') return true;
     // A dialog wrapper (Material UI's Dialog/Drawer root, a portal scrim): the
     // dialog inside it is not a hidden-subtree root itself, so reveal the wrapper.
-    if (el.querySelector('[role="dialog"], [role="alertdialog"]')) return true;
+    if (el.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return true;
     for (const id of controlledIds) {
       if (el.querySelector('#' + CSS.escape(id))) return true;
     }
@@ -440,6 +443,15 @@ export function buildTree() {
       node.attrs.checked = el.checked;
       node.attrs.min = el.min || null;
       node.attrs.max = el.max || null;
+      node.attrs.disabled = el.disabled;
+    }
+    if (el.tagName === 'TEXTAREA') {
+      node.attrs.value = el.value;
+      node.attrs.placeholder = el.placeholder || null;
+      node.attrs.disabled = el.disabled;
+    }
+    if (el.tagName === 'LABEL') {
+      node.attrs.for = el.htmlFor || null; // ties a label to its control (src/components/textfield.mjs)
     }
     if (el.tagName === 'SELECT') {
       node.attrs.options = [...el.options].map((o) => o.textContent.trim());

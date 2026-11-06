@@ -67,7 +67,7 @@ import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 // of these names but does share the prefix).
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
-const FLAG_ATTRS = { scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT', floating: 'LV_OBJ_FLAG_FLOATING', overflow_visible: 'LV_OBJ_FLAG_OVERFLOW_VISIBLE' };
+const FLAG_ATTRS = { clickable: 'LV_OBJ_FLAG_CLICKABLE', scrollable: 'LV_OBJ_FLAG_SCROLLABLE', hidden: 'LV_OBJ_FLAG_HIDDEN', ignore_layout: 'LV_OBJ_FLAG_IGNORE_LAYOUT', floating: 'LV_OBJ_FLAG_FLOATING', overflow_visible: 'LV_OBJ_FLAG_OVERFLOW_VISIBLE' };
 
 const ENUMS = {
   flex_flow: (v) => `LV_FLEX_FLOW_${v.toUpperCase()}`,
@@ -80,6 +80,23 @@ const ENUMS = {
   style_text_align: (v) => `LV_TEXT_ALIGN_${v.toUpperCase()}`,
   style_layout: (v) => `LV_LAYOUT_${v.toUpperCase()}`,
 };
+
+/** lv_calendar attributes emitNode writes as two grouped calls instead of one call each. */
+const CALENDAR_DATE_ATTRS = new Set(['today_year', 'today_month', 'today_day', 'shown_year', 'shown_month']);
+const STYLE_PARTS = new Set(['main', 'scrollbar', 'indicator', 'knob', 'selected', 'items', 'cursor']);
+
+/**
+ * The property and the C selector expression of a style attribute. The XML key
+ * can chain states and parts after the property, as lv_xml does:
+ * `style_bg_color:checked:indicator` is `LV_STATE_CHECKED | LV_PART_INDICATOR`.
+ * @param {string} key
+ * @returns {[string, string]}
+ */
+function splitSelector(key) {
+  const [propPart, ...tokens] = key.split(':');
+  const flags = tokens.map((t) => (STYLE_PARTS.has(t) ? `LV_PART_${t.toUpperCase()}` : `LV_STATE_${t.toUpperCase()}`));
+  return [propPart, flags.length ? flags.join(' | ') : '0'];
+}
 
 const cstr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
 
@@ -95,6 +112,18 @@ const C_RESERVED = new Set([
 /** A view element that stands for a library XML component (see convert.mjs emitLibraryComponent). */
 const isXmlComponent = (node) => node.tag !== 'view' && !node.tag.startsWith('lv_') && !isBehaviorElement(node)
   && !['screen_create_event', 'screen_load_event'].includes(node.tag);
+
+/**
+ * lv_tabview parts (Phase 9). In XML the tab bar, a tab page and a tab button
+ * are child elements of `<lv_tabview>`; in C they are got from, or added to,
+ * the tabview with these calls. A button is reached by index after all tabs
+ * exist, so the view lists them last (src/emit-tabview.mjs).
+ */
+const TABVIEW_PARTS = {
+  'lv_tabview-tab': { create: (parent, a) => `lv_tabview_add_tab(${parent}, ${cstr(a.text ?? '')})`, consumed: new Set(['text']) },
+  'lv_tabview-tab_bar': { create: (parent) => `lv_tabview_get_tab_bar(${parent})`, consumed: new Set() },
+  'lv_tabview-tab_button': { create: (parent, a) => `lv_tabview_get_tab_button(${parent}, ${a.index ?? 0})`, consumed: new Set(['index']) },
+};
 
 export function emitC(view, opts = {}) {
   return emit(view, { ...opts, lang: 'c' });
@@ -225,11 +254,28 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
       return;
     }
 
-    lines.push('');
-    lines.push(`    lv_obj_t * ${v} = ${createFn}(${parentVar});`);
+    // A calendar's header is added by a call on its parent, not created.
+    if (node.tag === 'lv_calendar-header_arrow') {
+      lines.push(`    lv_calendar_add_header_arrow(${parentVar});`);
+      return;
+    }
 
+    const part = TABVIEW_PARTS[node.tag];
+    lines.push('');
+    lines.push(`    lv_obj_t * ${v} = ${part ? part.create(parentVar, node.attrs) : `${createFn}(${parentVar})`};`);
+
+    // today_* and shown_* are written together: lv_calendar_set_today_date and
+    // lv_calendar_set_month_shown exist on every LVGL 9.x, the per-field setters
+    // the XML parser uses are 9.4 only.
+    if (node.tag === 'lv_calendar') {
+      const a = node.attrs;
+      if ('today_year' in a && 'today_month' in a && 'today_day' in a) lines.push(`    lv_calendar_set_today_date(${v}, ${a.today_year}, ${a.today_month}, ${a.today_day});`);
+      if ('shown_year' in a && 'shown_month' in a) lines.push(`    lv_calendar_set_month_shown(${v}, ${a.shown_year}, ${a.shown_month});`);
+    }
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
+      if (node.tag === 'lv_calendar' && CALENDAR_DATE_ATTRS.has(key)) continue;
+      if (part?.consumed.has(key)) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) if (!isBehaviorElement(child)) emitNode(child, v);
@@ -295,12 +341,12 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
     if (key === 'flex_flow') return lines.push(`    lv_obj_set_flex_flow(${v}, ${ENUMS.flex_flow(value)});`);
     if (key === 'flex_grow') return lines.push(`    lv_obj_set_flex_grow(${v}, ${value});`);
     if (key === 'checked') return lines.push(`    lv_obj_set_state(${v}, LV_STATE_CHECKED, ${value === 'true'});`);
+    if (key === 'disabled') return lines.push(`    lv_obj_set_state(${v}, LV_STATE_DISABLED, ${value === 'true'});`);
     if (key in FLAG_ATTRS) return lines.push(`    lv_obj_set_flag(${v}, ${FLAG_ATTRS[key]}, ${value === 'true'});`);
 
     if (key.startsWith('style_')) {
-      const [propPart, state] = key.split(':');
+      const [propPart, selector] = splitSelector(key);
       const prop = propPart.slice(6);
-      const selector = state ? `LV_STATE_${state.toUpperCase()}` : '0';
 
       if (prop === 'grid_column_dsc_array' || prop === 'grid_row_dsc_array') {
         const arr = `grid_dsc_${++gridDscCount}`;
@@ -411,9 +457,19 @@ const WIDGET_ATTRS = {
     text: (v, val) => `lv_checkbox_set_text(${v}, ${cstr(val)});`,
   },
   lv_slider: {
+    mode: (v, val) => `lv_slider_set_mode(${v}, LV_SLIDER_MODE_${val.toUpperCase()});`,
+    start_value: (v, val) => `lv_slider_set_start_value(${v}, ${val}, LV_ANIM_OFF);`,
     min_value: (v, val) => `lv_slider_set_min_value(${v}, ${val});`,
     max_value: (v, val) => `lv_slider_set_max_value(${v}, ${val});`,
     value: (v, val) => `lv_slider_set_value(${v}, ${val}, LV_ANIM_OFF);`,
+  },
+  lv_arc: {
+    min_value: (v, val) => `lv_arc_set_min_value(${v}, ${val});`,
+    max_value: (v, val) => `lv_arc_set_max_value(${v}, ${val});`,
+    value: (v, val) => `lv_arc_set_value(${v}, ${val});`,
+    rotation: (v, val) => `lv_arc_set_rotation(${v}, ${val});`,
+    bg_start_angle: (v, val) => `lv_arc_set_bg_start_angle(${v}, ${val});`,
+    bg_end_angle: (v, val) => `lv_arc_set_bg_end_angle(${v}, ${val});`,
   },
   lv_bar: {
     min_value: (v, val) => `lv_bar_set_min_value(${v}, ${val});`,
@@ -429,6 +485,12 @@ const WIDGET_ATTRS = {
   lv_dropdown: {
     options: (v, val) => `lv_dropdown_set_options(${v}, ${cstr(val)});`,
     selected: (v, val) => `lv_dropdown_set_selected(${v}, ${val});`,
+  },
+  lv_tabview: {
+    // Order matters: the position resets the tab bar size when the axis changes,
+    // and convert.mjs lists tab_bar_position before the bar element anyway.
+    active: (v, val) => `lv_tabview_set_active(${v}, ${val}, LV_ANIM_OFF);`,
+    tab_bar_position: (v, val) => `lv_tabview_set_tab_bar_position(${v}, LV_DIR_${val.toUpperCase()});`,
   },
   lv_table: {
     column_count: (v, val) => `lv_table_set_column_count(${v}, ${val});`,

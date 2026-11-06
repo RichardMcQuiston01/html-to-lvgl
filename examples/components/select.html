@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Select</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  h1 { font-size: 16px; font-weight: 500; color: #212529; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field > span, .field > label { font-size: 11px; color: #6c757d; }
+
+  /* Plain HTML / ARIA: a combobox with a hidden listbox that names it in aria-controls. */
+  .combo { width: 200px; height: 32px; padding: 0 28px 0 10px; display: flex; align-items: center; font-size: 13px; color: #212529; background: #ffffff; border: 1px solid #ced4da; border-radius: 4px; position: relative; }
+  .combo::after { content: ''; position: absolute; right: 11px; top: 13px; border: 4px solid transparent; border-top-color: #495057; }
+  .listbox { position: absolute; top: 60px; left: 12px; width: 200px; list-style: none; background: #ffffff; border: 1px solid #ced4da; border-radius: 4px; }
+  .listbox li { padding: 6px 10px; font-size: 13px; }
+
+  /* Native <select>: the converter already maps this to lv_dropdown. */
+  select { width: 200px; height: 32px; padding: 0 8px; font-size: 13px; color: #212529; background: #ffffff; border: 1px solid #ced4da; border-radius: 4px; }
+
+  /* Material UI style: Select = InputBase root + combobox div + icon + outline + (kept mounted) Menu. */
+  .MuiInputBase-root { position: relative; display: inline-flex; align-items: center; width: 200px; height: 40px; font-size: 14px; color: rgba(0,0,0,0.87); border-radius: 4px; background: transparent; }
+  .MuiSelect-select { flex: 1; padding: 0 32px 0 14px; display: block; line-height: 40px; min-width: 0; }
+  .MuiSelect-nativeInput { position: absolute; bottom: 0; left: 0; width: 100%; opacity: 0; pointer-events: none; border: 0; }
+  .MuiSelect-icon { position: absolute; right: 7px; top: 8px; width: 24px; height: 24px; fill: rgba(0,0,0,0.54); }
+  .MuiOutlinedInput-notchedOutline { position: absolute; inset: 0; border: 1px solid rgba(0,0,0,0.23); border-radius: 4px; pointer-events: none; }
+  .MuiPopover-root { position: fixed; inset: 0; visibility: hidden; }
+  .MuiPaper-root { position: absolute; top: 190px; left: 12px; width: 200px; background: #ffffff; border-radius: 4px; box-shadow: 0px 5px 5px -3px rgba(0,0,0,0.2), 0px 8px 10px 1px rgba(0,0,0,0.14), 0px 3px 14px 2px rgba(0,0,0,0.12); }
+  .MuiMenu-list { list-style: none; padding: 8px 0; }
+  .MuiMenuItem-root { padding: 6px 16px; font-size: 14px; line-height: 24px; color: rgba(0,0,0,0.87); }
+</style>
+</head>
+<body>
+  <h1>Preferences</h1>
+
+  <div class="field">
+    <span id="lang-label">Language</span>
+    <div class="combo" id="lang" role="combobox" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" aria-labelledby="lang-label">Spanish</div>
+    <ul class="listbox" id="lang-list" role="listbox" aria-labelledby="lang-label" hidden>
+      <li role="option">English</li>
+      <li role="option" aria-selected="true">Spanish</li>
+      <li role="option">Deutsch</li>
+    </ul>
+  </div>
+
+  <div class="field">
+    <label for="theme">Theme (native select)</label>
+    <select id="theme">
+      <option>Light</option>
+      <option selected>Dark</option>
+      <option>System</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <span id="age-label">Age (Material UI)</span>
+    <div class="MuiInputBase-root MuiOutlinedInput-root MuiSelect-root">
+      <div class="MuiSelect-select MuiSelect-outlined MuiInputBase-input" id="age-select" role="combobox" tabindex="0" aria-controls="age-menu" aria-expanded="false" aria-haspopup="listbox" aria-labelledby="age-label age-select">Twenty</div>
+      <input class="MuiSelect-nativeInput" aria-hidden="true" tabindex="-1" value="20">
+      <svg class="MuiSelect-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+      <fieldset class="MuiOutlinedInput-notchedOutline" aria-hidden="true"></fieldset>
+    </div>
+    <div class="MuiPopover-root MuiMenu-root" role="presentation">
+      <div class="MuiPaper-root MuiMenu-paper">
+        <ul class="MuiList-root MuiMenu-list" id="age-menu" role="listbox" aria-labelledby="age-label">
+          <li class="MuiMenuItem-root" role="option" data-value="10">Ten</li>
+          <li class="MuiMenuItem-root Mui-selected" role="option" aria-selected="true" data-value="20">Twenty</li>
+          <li class="MuiMenuItem-root" role="option" data-value="30">Thirty</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

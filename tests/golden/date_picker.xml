@@ -1,0 +1,17 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="8" style_pad_bottom="8" flex_flow="column" style_pad_row="6" style_pad_column="6" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_textarea name="textarea" width="288" height="28" one_line="true" text="2026-11-18" style_bg_color="0xffffff" style_border_width="1" style_border_color="0x9ca3af" style_radius="4" style_shadow_width="0" style_pad_all="8" style_pad_hor="8" style_text_font="montserrat_12" style_text_color="0x111827" />
+    <lv_obj name="picker" width="288" height="186" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xd1d5db" style_radius="8" style_shadow_width="0" style_pad_left="6" style_pad_right="6" style_pad_top="6" style_pad_bottom="6" flex_flow="column" style_pad_row="4" style_pad_column="4" scrollable="false">
+      <lv_obj name="head" width="274" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_button name="button" width="24" height="24" style_bg_color="0xf3f4f6" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0">
+          <lv_label name="label" align="center" text="&lt;" style_text_font="montserrat_14" style_text_color="0x374151" style_text_align="center" />
+        </lv_button>
+        <lv_label name="cal_title" text="November 2026" style_text_font="montserrat_12" style_text_color="0x111827" />
+        <lv_button name="button_2" width="24" height="24" style_bg_color="0xf3f4f6" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0">
+          <lv_label name="label_2" align="center" text="&gt;" style_text_font="montserrat_14" style_text_color="0x374151" style_text_align="center" />
+        </lv_button>
+      </lv_obj>
+      <lv_calendar name="calendar" width="274" height="144" today_year="2026" today_month="11" today_day="18" shown_year="2026" shown_month="11" style_text_font="montserrat_12" style_text_color="0x111827" />
+    </lv_obj>
+  </view>
+</component>

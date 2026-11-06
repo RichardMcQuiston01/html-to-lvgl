@@ -302,3 +302,27 @@ periodically to see if either is now moot.
    screens still instantiate and render correctly through
    `lv_xml_component_register_from_data()` — only the click-driven
    navigation itself can't be exercised on this binding commit.
+3. **`lv_calendar` XML attributes differ** (Phase 9). The pinned binding's
+   vendored XML calendar parser reads `today_date="Y M D"` and
+   `shown_month="Y M"`; LVGL v9.4 reads `today_year`/`today_month`/`today_day`
+   and `shown_year`/`shown_month`. Fed the v9.4 form, a calendar with a
+   `lv_calendar-header_arrow` parses `shown_month="11"` as year 11, month 0
+   and never returns, so `tests/golden/date_picker*.xml` are skipped by
+   `validate-micropython-xml`. The `--format py` output is unaffected: it uses
+   `set_today_date`, `set_month_shown` and `add_header_arrow`, which exist on
+   both versions, and `tests/golden-py/ui_date_picker*.py` run on the binding.
+4. **`material_ui_forms.xml` never returns** (Phase 9). Rendering
+   `tests/golden/material_ui_forms.xml` through `lv_xml_create()` on the pinned
+   binding spins forever at a fixed point (`register_from_data` returns, then
+   nothing). Found by bisecting the page: the hang goes away if either
+   `lv_switch`, or the first `lv_tabview`, is removed, and it does not depend
+   on the switch attributes, the negative margins, the MicroPython heap size
+   (tried 1 MB to 64 MB) or the text area. Every one of its components renders
+   on its own (`switch.xml`, `tabs.xml`, `slider.xml`, ...), and the same page
+   renders against LVGL v9.4 in `validate-xml` and through `--format py`
+   (`tests/golden-py/ui_material_ui_forms.py` runs on the binding). The cause
+   was not identified (the binary is stripped); it is almost certainly in the
+   vendored v9.3-era flex or tabview code, like the `monitor.xml` and calendar
+   items above. `validate-micropython-xml` skips this one file and wraps every
+   render in `timeout`, so a new hang fails the job in two minutes instead of
+   stalling it.

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tab bar positions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  h2 { font-size: 11px; font-weight: 500; color: #6b7280; letter-spacing: 0.5px; }
+
+  /* Bar below the panels (ARIA, tabs placed after the panel in the DOM). */
+  .bottom { background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; display: flex; flex-direction: column; }
+  .bottom .panel { height: 44px; padding: 8px 10px; font-size: 11px; color: #495057; }
+  .bottom .bar { display: flex; border-top: 1px solid #dee2e6; }
+  .bottom .tab { flex: 1; height: 32px; background: #ffffff; border: none; border-top: 2px solid transparent; color: #6c757d; font-size: 12px; font-weight: 500; }
+  .bottom .tab[aria-selected="true"] { color: #0c63e4; border-top-color: #0c63e4; }
+
+  /* Vertical bar on the left (aria-orientation="vertical"), Material UI style names. */
+  .side { display: flex; height: 100px; background: #ffffff; border-radius: 4px; box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12); }
+  .MuiTabs-vertical { width: 96px; border-right: 1px solid rgba(0,0,0,0.12); display: flex; position: relative; }
+  .MuiTabs-flexContainerVertical { display: flex; flex-direction: column; width: 100%; }
+  .MuiTabs-indicator { position: absolute; width: 2px; right: 0; top: 33px; height: 33px; background-color: #1976d2; }
+  .MuiTab-root { flex: 1 1 0; background: transparent; border: 0; color: rgba(0,0,0,0.6); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02857em; }
+  .MuiTab-root.Mui-selected { color: #1976d2; }
+  .side .MuiTabPanel-root { flex: 1; padding: 10px 12px; font-size: 12px; color: rgba(0,0,0,0.87); }
+  .side [hidden] { display: none; }
+  .bottom [hidden] { display: none; }
+</style>
+</head>
+<body>
+  <h2>BAR BELOW</h2>
+  <div class="bottom">
+    <div class="panel" role="tabpanel" id="b-p1" aria-labelledby="b-t1">Playing now: Morning mix.</div>
+    <div class="panel" role="tabpanel" id="b-p2" aria-labelledby="b-t2" hidden>Your saved albums.</div>
+    <div class="bar" role="tablist" aria-label="Library">
+      <button class="tab" role="tab" id="b-t1" aria-selected="true" aria-controls="b-p1">Now</button>
+      <button class="tab" role="tab" id="b-t2" aria-selected="false" aria-controls="b-p2" tabindex="-1">Saved</button>
+    </div>
+  </div>
+
+  <h2>BAR ON THE LEFT</h2>
+  <div class="side">
+    <div class="MuiTabs-root MuiTabs-vertical">
+      <div class="MuiTabs-flexContainer MuiTabs-flexContainerVertical" role="tablist" aria-orientation="vertical" aria-label="Settings">
+        <button class="MuiTab-root" role="tab" id="s-t0" aria-selected="false" aria-controls="s-p0" tabindex="-1">Wi-Fi</button>
+        <button class="MuiTab-root Mui-selected" role="tab" id="s-t1" aria-selected="true" aria-controls="s-p1">Sound</button>
+        <button class="MuiTab-root" role="tab" id="s-t2" aria-selected="false" aria-controls="s-p2" tabindex="-1">Display</button>
+      </div>
+      <span class="MuiTabs-indicator"></span>
+    </div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="s-p0" aria-labelledby="s-t0" hidden>Network list.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="s-p1" aria-labelledby="s-t1">Volume and ringtone.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="s-p2" aria-labelledby="s-t2" hidden>Brightness and theme.</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="20" style_pad_right="20" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="6" style_pad_column="6" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" style_margin_top="4" text="PLAIN ARIA" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="caption" width="280" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_2" text="Volume" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_label name="label_3" text="65%" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+    </lv_obj>
+    <lv_slider name="slider" style_margin_top="10" style_margin_bottom="12" width="280" height="6" min_value="0" max_value="100" value="65" style_bg_color="0xcbd5e1" style_bg_opa="255" style_radius="3" style_bg_color:indicator="0x0d9488" style_radius:indicator="3" style_bg_color:knob="0x0f766e" style_radius:knob="8" style_pad_all:knob="5" />
+    <lv_label name="label_4" style_margin_top="4" text="MATERIAL UI" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="caption_2" width="280" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_5" text="Brightness" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_label name="label_6" text="40" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+    </lv_obj>
+    <lv_obj name="slider_2" width="280" height="30" style_bg_opa="0" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_slider name="slider_control" x="0" y="13" width="280" height="4" min_value="0" max_value="100" value="40" style_bg_color="0xa8cbee" style_bg_opa="255" style_radius="2" style_bg_color:indicator="0x1976d2" style_radius:indicator="2" style_bg_color:knob="0x1976d2" style_radius:knob="10" style_pad_all:knob="8" />
+    </lv_obj>
+    <lv_obj name="caption_3" width="280" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_7" text="Temperature range" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_label name="label_8" text="20 to 70" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+    </lv_obj>
+    <lv_obj name="slider_3" width="280" height="30" style_bg_opa="0" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_slider name="slider_control_2" x="0" y="13" width="280" height="4" mode="range" min_value="0" max_value="100" value="70" start_value="20" style_bg_color="0xa8cbee" style_bg_opa="255" style_radius="2" style_bg_color:indicator="0x1976d2" style_radius:indicator="2" style_bg_color:knob="0x1976d2" style_radius:knob="10" style_pad_all:knob="8" />
+    </lv_obj>
+  </view>
+</component>
