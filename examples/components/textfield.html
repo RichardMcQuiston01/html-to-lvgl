@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Text field</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 8px; display: flex; gap: 8px; }
+  .col { width: 148px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* Plain HTML / ARIA version: a <label for>, the input, and helper text tied by aria-describedby. */
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field label { font-size: 11px; color: #475569; }
+  .field input, .field textarea { height: 28px; border: 1px solid #94a3b8; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #0f172a; background: #ffffff; }
+  .field textarea { height: 36px; padding: 6px 8px; resize: none; }
+  .field small { font-size: 10px; color: #64748b; }
+  .field input[aria-invalid="true"] { border-color: #dc2626; }
+  .field input[aria-invalid="true"] ~ small { color: #dc2626; }
+
+  /* Material UI version: TextField, variant outlined (MUI's own CSS values, scaled for the small screen). */
+  .MuiFormControl-root { display: inline-flex; flex-direction: column; position: relative; min-width: 0; vertical-align: top; width: 100%; }
+  .MuiInputLabel-root { display: block; position: absolute; left: 0; top: 0; transform-origin: top left; transform: translate(12px, 8px) scale(1);
+    font-size: 12px; line-height: 1.4375em; color: rgba(0,0,0,0.6); z-index: 1; pointer-events: none; max-width: calc(100% - 24px); white-space: nowrap; }
+  .MuiInputLabel-shrink { transform: translate(12px, -7px) scale(0.75); max-width: calc(133% - 32px); }
+  .MuiInputLabel-root.Mui-error { color: #d32f2f; }
+  .MuiInputBase-root { position: relative; display: inline-flex; align-items: center; border-radius: 4px; font-size: 12px; line-height: 1.4375em; color: rgba(0,0,0,0.87); width: 100%; }
+  .MuiInputBase-input { box-sizing: content-box; font: inherit; color: currentColor; width: 100%; border: 0; background: none; height: 1.4375em; padding: 7px 12px; outline: none; }
+  .MuiOutlinedInput-notchedOutline { position: absolute; inset: -5px 0 0; margin: 0; padding: 0 8px; border-radius: inherit; border: 1px solid rgba(0,0,0,0.23); pointer-events: none; overflow: hidden; }
+  .MuiOutlinedInput-notchedOutline legend { visibility: hidden; font-size: 0.75em; padding: 0; max-width: 0.01px; height: 11px; white-space: nowrap; }
+  .MuiInputLabel-shrink ~ .MuiInputBase-root .MuiOutlinedInput-notchedOutline legend { max-width: 100%; }
+  .MuiOutlinedInput-notchedOutline legend span { display: inline-block; padding: 0 5px; opacity: 0; visibility: visible; }
+  .MuiInputBase-root.Mui-error .MuiOutlinedInput-notchedOutline { border-color: #d32f2f; }
+  .MuiFormHelperText-root { font-size: 10px; line-height: 1.4; color: rgba(0,0,0,0.6); margin: 2px 12px 0; }
+  .MuiFormHelperText-root.Mui-error { color: #d32f2f; }
+  .mui-stack { display: flex; flex-direction: column; gap: 14px; padding-top: 7px; }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="field">
+      <label for="user">Username</label>
+      <input id="user" type="text" value="jane_doe" aria-describedby="user-help">
+      <small id="user-help">Letters and digits only</small>
+    </div>
+    <div class="field">
+      <label for="mail">Email</label>
+      <input id="mail" type="email" value="jane@" aria-invalid="true" aria-describedby="mail-help">
+      <small id="mail-help">Enter a full address</small>
+    </div>
+    <div class="field">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" value="secret1">
+    </div>
+    <div class="field">
+      <label for="note">Notes</label>
+      <textarea id="note" placeholder="Anything else?"></textarea>
+    </div>
+  </div>
+
+  <div class="col mui-stack">
+    <div class="MuiFormControl-root MuiTextField-root">
+      <label class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-outlined" data-shrink="true" for="mui-name" id="mui-name-label">Name</label>
+      <div class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl">
+        <input aria-invalid="false" id="mui-name" type="text" class="MuiInputBase-input MuiOutlinedInput-input" value="Jane Doe">
+        <fieldset aria-hidden="true" class="MuiOutlinedInput-notchedOutline"><legend><span>Name</span></legend></fieldset>
+      </div>
+    </div>
+    <div class="MuiFormControl-root MuiTextField-root">
+      <label class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-outlined" data-shrink="false" for="mui-city" id="mui-city-label">City</label>
+      <div class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl">
+        <input aria-invalid="false" id="mui-city" type="text" class="MuiInputBase-input MuiOutlinedInput-input" value="">
+        <fieldset aria-hidden="true" class="MuiOutlinedInput-notchedOutline"><legend><span>City</span></legend></fieldset>
+      </div>
+    </div>
+    <div class="MuiFormControl-root MuiTextField-root">
+      <label class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-outlined Mui-error" data-shrink="true" for="mui-pin" id="mui-pin-label">PIN</label>
+      <div class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-error MuiInputBase-formControl">
+        <input aria-invalid="true" aria-describedby="mui-pin-helper-text" id="mui-pin" type="password" class="MuiInputBase-input MuiOutlinedInput-input" value="1234">
+        <fieldset aria-hidden="true" class="MuiOutlinedInput-notchedOutline"><legend><span>PIN</span></legend></fieldset>
+      </div>
+      <p class="MuiFormHelperText-root Mui-error" id="mui-pin-helper-text">Too short</p>
+    </div>
+  </div>
+</body>
+</html>
