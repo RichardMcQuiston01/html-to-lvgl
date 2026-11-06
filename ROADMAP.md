@@ -68,7 +68,7 @@ Done when: Accordion, Modal, and Drawer have the same golden behavior in XML, C,
 
 ### Phase 9 — Native widget remaps (done)
 
-Delivered after 0.6.0: tabs, bottom navigation, select, menu, snackbar, switch, slider, linear and circular progress, text field, date picker, stepper and pagination, each with an example, goldens in four formats and a real-LVGL render. Left over: indeterminate progress (no `lv_spinner` XML tag), a selected-day marker and Monday-first weeks in the calendar, tab icons, snackbar auto-dismiss, and page stepping for pagination.
+Delivered after 0.6.0: tabs, bottom navigation, select, menu, snackbar, switch, slider, linear and circular progress, text field, date picker, stepper and pagination, each with an example, goldens in four formats and a real-LVGL render. Left over: indeterminate progress (no `lv_spinner` XML tag), a selected-day marker and Monday-first weeks in the calendar, tab icons, snackbar auto-dismiss, page stepping for pagination, tabs inside an AppBar, and consistent font sizes for sibling labels (all candidates for Phase 10 or the next fidelity pass).
 
 Goal: ARIA detection for components that already have an LVGL widget. Lanes are independent.
 
