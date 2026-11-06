@@ -24,7 +24,7 @@ import { PLUGIN_API } from '../plugin.mjs';
  * @param {import('../plugin.mjs').LoadOptions} options
  * @returns {Promise<import('../plugin.mjs').LoadedPage>}
  */
-async function load(jsxPath, { width = 320, height = 240, screenshotPath } = {}) {
+async function load(jsxPath, { width = 320, height = 240, screenshotPath, frameworkData = false } = {}) {
   const abs = resolve(jsxPath);
   const bundle = await esbuild.build({
     stdin: {
@@ -71,6 +71,10 @@ async function load(jsxPath, { width = 320, height = 240, screenshotPath } = {})
     await page.addScriptTag({ content: jsOutput.text });
     await page.waitForFunction(() => document.getElementById('root').children.length > 0);
     await page.evaluate(annotateComponents);
+    // Opt-in: a library plugin's recognizers read node.framework (see
+    // LoadOptions.frameworkData). Off by default so the DOM, and therefore
+    // every existing output, is untouched.
+    if (frameworkData) await page.evaluate(annotateFramework);
     const tree = await page.evaluate(buildTree);
     if (screenshotPath) await page.screenshot({ path: screenshotPath });
     return { tree, handle: { page, close: () => browser.close() } };
@@ -92,8 +96,13 @@ async function components(loaded) {
 }
 
 /**
- * The `sourceOf` hook. React 19 removed `_debugSource`, so this returns
- * null unless the fiber still carries it; no location is ever guessed.
+ * The `sourceOf` hook (a helper; the converter does not call it, see
+ * src/plugin.mjs). `selector` is a CSS selector. React 19 removed
+ * `_debugSource`, so this returns null unless the fiber still carries it; no
+ * location is ever guessed. For the same reason this plugin stamps no
+ * `data-lv-source`, so React TODO.txt entries keep their DOM-path locations
+ * until a reliable source map exists (the dev-build `_debugStack` holds
+ * bundled positions, not author lines, so it is not used).
  *
  * @param {import('../plugin.mjs').LoadedPage} loaded
  * @param {string} selector
@@ -151,6 +160,92 @@ function annotateComponents() {
         t.used = true;
       }
       visit(fiber.child, null); // new host context; nested components restamp
+    } else {
+      visit(fiber.child, t);
+    }
+    visit(fiber.sibling, token);
+  }
+
+  visit(rootFiber.child, null);
+}
+
+/**
+ * Runs inside the page. For each host DOM node, stamp `data-lv-framework`
+ * (a JSON FrameworkInfo, see src/recognize.mjs) naming the React components
+ * whose first rendered DOM node it is, innermost first: the `<button>` of a
+ * Material UI Button carries ["ButtonRoot", "ButtonBase", "Button", ...]. That
+ * lets a library plugin match by component name when class names are hashed.
+ *
+ * Names come from displayName / function name / forwardRef render name; they
+ * are minified in production React builds, so this is a development-build
+ * feature (the loader bundles unminified). Unnamed wrappers (providers,
+ * fragments) are skipped. Props are primitives only (strings capped at 200
+ * characters, at most 20 keys, never children/ref/key) so the stamp stays small.
+ */
+function annotateFramework() {
+  const container = document.getElementById('root');
+  const key = Object.keys(container).find((k) => k.startsWith('__reactContainer$'));
+  if (!key) return;
+  let rootFiber = container[key];
+  if (rootFiber.stateNode && rootFiber.stateNode.current) rootFiber = rootFiber.stateNode.current;
+
+  const FORWARD_REF = Symbol.for('react.forward_ref');
+  const MEMO = Symbol.for('react.memo');
+
+  function nameOf(type) {
+    if (typeof type === 'function') return type.displayName || type.name || '';
+    if (type && typeof type === 'object') {
+      if (type.$$typeof === FORWARD_REF) {
+        return type.displayName || (type.render && (type.render.displayName || type.render.name)) || '';
+      }
+      if (type.$$typeof === MEMO) return type.displayName || nameOf(type.type);
+    }
+    return '';
+  }
+
+  function propsOf(props) {
+    const out = {};
+    let count = 0;
+    for (const k of Object.keys(props || {})) {
+      if (k === 'children' || k === 'ref' || k === 'key') continue;
+      const v = props[k];
+      if (typeof v === 'string') out[k] = v.slice(0, 200);
+      else if (typeof v === 'number' || typeof v === 'boolean') out[k] = v;
+      else continue;
+      if (++count >= 20) break;
+    }
+    return out;
+  }
+
+  // token: the composites still waiting for their first host node (outermost
+  // first). Handing it to a nested composite transfers ownership, so a
+  // sibling host after the nested one is not mistaken for the outer's root.
+  function visit(fiber, token) {
+    if (!fiber) return;
+    let t = token;
+    const name = typeof fiber.type === 'string' ? '' : nameOf(fiber.type);
+    if (name) {
+      const inherited = token && !token.used ? token.chain : [];
+      const last = inherited[inherited.length - 1];
+      // memo(forwardRef(X)) is two fibers with one name; keep one entry.
+      const chain = last && last.name === name ? inherited : inherited.concat({ name, props: propsOf(fiber.memoizedProps) });
+      // `outer` lets the stamped host mark every component that handed its
+      // token down. Marking at hand-off let a named component that renders no
+      // DOM (emotion's `Insertion`, rendered beside Material UI's root element)
+      // swallow the token, so the real root element was never stamped.
+      t = { chain, used: false, outer: inherited.length ? token : null };
+    }
+    if (typeof fiber.type === 'string' && fiber.stateNode && fiber.stateNode.setAttribute) {
+      if (t && !t.used && t.chain.length) {
+        const chain = t.chain.slice().reverse();
+        fiber.stateNode.setAttribute('data-lv-framework', JSON.stringify({
+          componentName: chain[0].name,
+          props: chain[0].props,
+          chain,
+        }));
+        for (let o = t; o; o = o.outer) o.used = true;
+      }
+      visit(fiber.child, null);
     } else {
       visit(fiber.child, t);
     }

@@ -132,6 +132,19 @@ Add these attributes to your HTML when the automatic result needs a nudge. In Re
 
 [Back to Top](#features)
 
+## URL Input
+
+Convert a built or running app by URL: `html2lvgl http://localhost:4200/ -o out/`. This is the route for Angular and server-rendered frameworks (Next, Nuxt), and the same extractor and components apply.
+
+- **Inputs:** `http://`, `https://` and `file://`. Several URLs become linked screens, named from the last path segment; `href` and `data-lv-link` values resolve by URL path. Mixing URLs and files is refused.
+- **Readiness:** the default waits for `load`, network idle and fonts. `--wait-for <selector>` waits for an element, `--wait-ms <n>` adds a delay, and `--timeout <ms>` (default 30000) bounds the run.
+- **Network:** only the given URLs are contacted by the tool; the page's own images and fonts are downloaded next to the output. Everything else the page loads is requested by the browser as for any visitor. `--block-external` aborts requests to other origins for reproducible runs.
+- **Safety:** URLs with credentials (`user:pass@`) are refused, and no credentials are stored.
+- **Errors:** each failure (DNS, refused connection, timeout, HTTP error, redirect loop, cross-origin redirect, certificate error) names the URL and the fix and exits 1 with no stack trace.
+- **Limits:** `--watch` is not supported with URLs. URL inputs ignore plugins' file selection and `<page>.lvgl.json` sidecars (an explicit `--overrides` still applies). A relative font URL inside an external stylesheet in another directory may not resolve; use `--font-map`.
+
+[Back to Top](#features)
+
 ## React Input
 
 Give the tool a `.jsx` or `.tsx` file with a default-exported component. The tool bundles it with esbuild and runs it in headless Chromium. It finds each function component by walking the React fiber tree.
@@ -270,12 +283,23 @@ A problem with the file is reported in `TODO.txt` and conversion carries on. An 
 
 ## Plugins
 
-Framework support is a plugin. React is built in; others can be added.
+Framework support and library support are plugins. React is built in; others can be added.
 
 - **Flag:** `--plugin <package-or-path>`, repeatable. A path starts with `.` or `/`; anything else is a package resolved from the working directory.
 - **Config file:** `html2lvgl.config.mjs` next to the input, or in the working directory: `export default { plugins: ['./my-plugin.mjs', otherPlugin] }`.
-- **Selection:** by input file extension (`.jsx` and `.tsx` pick the built-in React plugin). Plain `.html` needs no plugin. Plugins from `--plugin` win over the config file, which wins over the built-in.
+- **Selection:** by input file extension (`.jsx` and `.tsx` pick the built-in React plugin; the Vue package claims `.vue`). Plain `.html` needs no plugin. Plugins from `--plugin` win over the config file, which wins over the built-in.
 - **Bad plugins:** every plugin is validated. An invalid one prints each problem and is skipped; the run continues.
+- **Library plugins** add `recognizers` (component definitions) that join recognition for every input, plain HTML and URLs included. Core definitions are offered first, then plugins in load order; the highest score wins, exact ties are reported as `RECOGNIZER_AMBIGUOUS`, and `data-lv-widget` always wins. A plugin definition named like a core one is rejected unless it sets `override: true`. An invalid recognizer is reported as `PLUGIN_RECOGNIZER_REJECTED` and the plugin's other recognizers still load. `--watch` reloads plugins when a plugin or config file changes.
+- **Framework data:** a library plugin that sets `wantsFrameworkData` receives `node.framework` (`componentName` and a `chain` of component names, innermost first), so it can recognize components whose class names are hashed or renamed. It is off unless a plugin asks, and the React plugin fills it.
+
+### Packages
+
+| Package | Kind | What it adds |
+|---|---|---|
+| `@richardmcquiston01/html-to-lvgl-vue` | Framework | `.vue` single-file components: compiled with `@vue/compiler-sfc`, bundled with esbuild, mounted with `createApp`. Reused components become shared XML components, and `TODO.txt` names the `.vue` file and line. No SCSS or Less, `<style module>`, or `v-bind()` in CSS. |
+| `@richardmcquiston01/html-to-lvgl-mui` | Library | Material UI recognizers found by rendering real `@mui/material`: Checkbox, FormControlLabel, Radio, Rating, Material icons as LVGL symbols, and Button naming and pressed color. They match by React component name, so they survive a renamed class prefix. Core keeps all `Mui*-root` class matching. |
+
+Both live under `packages/` and are versioned separately from the core.
 
 The plugin contract is in `src/plugin.mjs`, with the design in [COMPONENTS.md](COMPONENTS.md#plugins).
 

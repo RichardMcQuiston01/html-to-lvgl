@@ -55,6 +55,16 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   // Recognition runs first, so a component can rewrite its part of the tree
   // before the optimizer collapses wrappers or the emitter maps tags.
   const { tree: recognizedTree } = recognize(structuredClone(input), { registry, diagnostics });
+  // Framework plugins record file:line on nodes (node.source); resolve it by
+  // the node key a diagnostic carries, so TODO.txt names the author's file.
+  const sourceByKey = new Map();
+  (function collect(n) {
+    if (n.key && n.source) sourceByKey.set(n.key, n.source);
+    n.children?.forEach(collect);
+  })(recognizedTree);
+  if (sourceByKey.size) {
+    diagnostics.setLocator((src) => (src?.selector && !src.file && sourceByKey.has(src.selector) ? { ...src, ...sourceByKey.get(src.selector) } : src));
+  }
   // Info-only and read-only: reports pressables under minTouchTarget px (0 = off).
   checkTouchTargets(recognizedTree, {
     diagnostics,

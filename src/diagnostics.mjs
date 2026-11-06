@@ -61,6 +61,8 @@ export const CODES = Object.freeze({
   // Recognition
   RECOGNIZER_ERROR: { severity: 'warning' },
   RECOGNIZER_AMBIGUOUS: { severity: 'warning' },
+  // A plugin's recognizer was invalid or clashed with a name already taken.
+  PLUGIN_RECOGNIZER_REJECTED: { severity: 'warning' },
   ICON_PLACEHOLDER: { severity: 'warning' },
   TOUCH_TARGET_SMALL: { severity: 'info' },
   ARIA_TARGET_MISSING: { severity: 'warning' },
@@ -90,8 +92,19 @@ const SEVERITY_ORDER = Object.freeze({ error: 0, warning: 1, info: 2 });
 export function createDiagnostics() {
   /** @type {Diagnostic[]} */
   const entries = [];
+  /** @type {((source: SourceLocation | null | undefined) => SourceLocation | null | undefined) | null} */
+  let locator = null;
 
   return {
+    /**
+     * Fill in file and line for diagnostics whose source names only a
+     * selector, using positions a framework plugin recorded on the tree.
+     * @param {(source: SourceLocation | null | undefined) => SourceLocation | null | undefined} fn
+     */
+    setLocator(fn) {
+      locator = fn;
+    },
+
     /**
      * @param {{ code: string, message: string, fix?: string, severity?: Severity,
      *           source?: SourceLocation | null, output?: OutputLocation | null }} input
@@ -109,7 +122,7 @@ export function createDiagnostics() {
         severity,
         message: input.message,
         fix: input.fix ?? '',
-        source: input.source ?? null,
+        source: (locator ? locator(input.source) : input.source) ?? null,
         output: input.output ?? null,
       };
       entries.push(entry);

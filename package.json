@@ -26,6 +26,16 @@
   "files": [
     "src"
   ],
+  "exports": {
+    "./extract": "./src/extract.mjs",
+    "./plugin": "./src/plugin.mjs",
+    "./recognize": "./src/recognize.mjs",
+    "./package.json": "./package.json",
+    "./src/*": "./src/*"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
   "bin": {
     "html2lvgl": "src/cli.mjs"
   },

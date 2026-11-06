@@ -71,6 +71,27 @@ import { builtinComponents } from './components/index.mjs';
  *   added by recognize(): a stable key. See annotateKeys().
  * @property {{ component: string, props: Record<string, unknown> }} [recognized]
  *   added by recognize(): which definition matched this node, and its props.
+ * @property {FrameworkInfo} [framework]
+ *   Present only when the active framework plugin supplied it (see
+ *   `wantsFrameworkData` in src/plugin.mjs). Absent for plain HTML, so every
+ *   reader must treat a missing value as "unknown", never as "not a component".
+ */
+
+/**
+ * What a framework plugin knows about the component that rendered a DOM node.
+ * Lets a library plugin match on `MuiButton` even when class names are hashed.
+ * Only the component whose OUTPUT ROOT is this node is listed: a component that
+ * renders another component's root shares the node, so one DOM node can carry a
+ * chain (a user's `SaveButton` that renders `Button` that renders `ButtonBase`).
+ *
+ * @typedef {object} FrameworkInfo
+ * @property {string} componentName
+ *   The innermost named component for this node (closest to the DOM element).
+ * @property {Record<string, string | number | boolean>} [props]
+ *   `componentName`'s props, primitives only, capped in size.
+ * @property {Array<{ name: string, props?: Record<string, string | number | boolean> }>} chain
+ *   Every named component rendering this node, innermost first (so
+ *   `chain[0].name === componentName`).
  */
 
 /**
@@ -108,6 +129,12 @@ import { builtinComponents } from './components/index.mjs';
  *   Return a replacement node (same shape as UiNode), or null to keep the
  *   node as it is. The replacement may carry `recognized.props`.
  * @property {boolean} [leaf]     True to skip recognizing inside this node.
+ * @property {boolean} [override]
+ *   Plugin definitions only. A plugin definition whose `name` equals a core
+ *   definition is REJECTED (reported as PLUGIN_RECOGNIZER_REJECTED) unless it
+ *   sets `override: true`, in which case it replaces the core one in place (same
+ *   position in the offer order). Overriding another plugin's definition is
+ *   never allowed: the plugin listed first wins.
  */
 
 /**
@@ -189,6 +216,27 @@ export function createRegistry(defs = []) {
     },
     /** @returns {ComponentDef[]} In registration order. */
     list: () => [...list],
+    /**
+     * Replace the registered definition of the same name, keeping its
+     * position in the offer order.
+     * @param {ComponentDef} def
+     * @returns {ComponentCheck}
+     */
+    replace(def) {
+      const check = validateComponent(def);
+      if (!check.ok) return check;
+      const at = list.findIndex((d) => d.name === def.name);
+      if (at < 0) return { ok: false, errors: [`no component named "${def.name}" is registered to replace`] };
+      list[at] = def;
+      return { ok: true, errors: [] };
+    },
+    /**
+     * Record why a definition was not added (shown as a diagnostic).
+     * @param {string} line
+     */
+    reject(line) {
+      rejected.push(line);
+    },
     /** @param {string} name */
     get: (name) => list.find((d) => d.name === name) ?? null,
     /** @returns {string[]} Why definitions passed to createRegistry were skipped. */
@@ -209,6 +257,69 @@ export function createRegistry(defs = []) {
  * with html2lvgl. Empty until Phase 7 adds them (src/components/index.mjs).
  */
 export const defaultRegistry = createRegistry(builtinComponents);
+
+/**
+ * A new registry made of `base` plus the recognizers library plugins supply.
+ * `base` itself is not changed (defaultRegistry is shared).
+ *
+ * Rules, in order (full text in COMPONENTS.md, "Plugins"):
+ *   - core definitions come first, then plugins in the order given, each
+ *     plugin's definitions in array order. That order breaks score ties.
+ *   - a definition is validated with validateComponent(); an invalid one, or
+ *     a plugin whose `recognizers` is unreadable, is skipped and recorded in
+ *     `rejected` (never thrown).
+ *   - a name already taken by a core definition is rejected unless the
+ *     definition sets `override: true`; a name taken by an earlier plugin is
+ *     always rejected.
+ *
+ * @param {ReturnType<typeof createRegistry>} base
+ * @param {Array<{ name: string, recognizers?: unknown }>} plugins
+ * @returns {ReturnType<typeof createRegistry>}
+ */
+export function extendRegistry(base, plugins) {
+  const coreNames = new Set(base.list().map((d) => d.name));
+  const registry = createRegistry(base.list());
+  for (const line of base.rejected) registry.reject(line);
+  /** @type {Set<string>} */
+  const fromPlugins = new Set();
+
+  for (const plugin of plugins) {
+    let defs;
+    try {
+      defs = plugin.recognizers;
+    } catch (error) {
+      registry.reject(`plugin "${plugin.name}": reading \`recognizers\` threw: ${describe(error)}; its recognizers were skipped`);
+      continue;
+    }
+    if (defs === undefined) continue;
+    if (!Array.isArray(defs)) {
+      registry.reject(`plugin "${plugin.name}": \`recognizers\` must be an array; its recognizers were skipped`);
+      continue;
+    }
+    defs.forEach((def, i) => {
+      const check = validateComponent(def);
+      if (!check.ok) {
+        for (const e of check.errors) registry.reject(`plugin "${plugin.name}" recognizer #${i}: ${e}; it was skipped`);
+        return;
+      }
+      const label = `plugin "${plugin.name}" recognizer "${def.name}"`;
+      if (fromPlugins.has(def.name)) {
+        registry.reject(`${label}: an earlier plugin already registered "${def.name}"; this one was skipped`);
+      } else if (coreNames.has(def.name)) {
+        if (def.override === true) {
+          registry.replace(def);
+          fromPlugins.add(def.name);
+        } else {
+          registry.reject(`${label}: "${def.name}" is a core component; set \`override: true\` to replace it, or pick another name; this one was skipped`);
+        }
+      } else {
+        registry.add(def);
+        fromPlugins.add(def.name);
+      }
+    });
+  }
+  return registry;
+}
 
 /**
  * The palette data the editor needs: every definition's name, props and
@@ -321,9 +432,12 @@ function collectIds(node, byId) {
   for (const c of node.children) collectIds(c, byId);
 }
 
+/** What data-lv-widget="<name>" scores. See explicit-choice handling in recognize(). */
+const EXPLICIT_SCORE = 2;
+
 /** A match() result as a number. false, 0, NaN and a throw all mean "no". */
 function scoreOf(def, node, ctx, diagnostics) {
-  if (node.widget === def.name) return 2;
+  if (node.widget === def.name) return EXPLICIT_SCORE;
   try {
     const result = def.match(node, ctx);
     if (result === true) return 1;
@@ -350,7 +464,9 @@ const describe = (error) => (error instanceof Error ? error.message : String(err
  *
  * A definition that throws is reported as RECOGNIZER_ERROR and skipped; the
  * node stays as it was. Two definitions with the same top score are reported
- * as RECOGNIZER_AMBIGUOUS and the one registered first wins.
+ * as RECOGNIZER_AMBIGUOUS and the one registered first wins (core definitions
+ * before plugin ones). data-lv-widget naming a registered definition beats any
+ * score.
  *
  * @param {UiNode} tree  Changed in place. Pass a copy to keep the original.
  * @param {object} [options]
@@ -362,6 +478,16 @@ const describe = (error) => (error instanceof Error ? error.message : String(err
 export function recognize(tree, { registry = defaultRegistry, diagnostics = createDiagnostics(), linker = linkAria } = {}) {
   annotateKeys(tree);
   exposeRevealed(tree);
+
+  // Definitions a plugin offered but the registry refused (invalid, a taken
+  // name): report each so the plugin author sees why nothing happened.
+  for (const line of registry.rejected) {
+    diagnostics.add({
+      code: 'PLUGIN_RECOGNIZER_REJECTED',
+      message: line,
+      fix: 'Fix the plugin\'s recognizers (each needs name, match, build, props and slots, and a name no other definition uses), or remove the plugin.',
+    });
+  }
 
   /** @type {Map<string, UiNode>} */
   const byId = new Map();
@@ -395,9 +521,13 @@ export function recognize(tree, { registry = defaultRegistry, diagnostics = crea
     // data-lv-widget naming a built-in widget ("label", "switch", ...) is
     // convert()'s to honor; no registry definition may guess over it.
     const builtinChoice = Boolean(node.widget) && !defs.some((d) => d.name === node.widget);
+    // An explicit data-lv-widget naming a registered definition wins outright:
+    // no other definition (a plugin's match() may return any number) is even
+    // asked, so a person's choice cannot be outbid.
+    const explicit = node.widget ? defs.filter((d) => d.name === node.widget) : [];
     const scored = builtinChoice
       ? []
-      : defs
+      : (explicit.length ? explicit : defs)
         .map((def) => ({ def, score: scoreOf(def, node, ctx, diagnostics) }))
         .filter((s) => s.score > 0);
 

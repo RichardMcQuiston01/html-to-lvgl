@@ -1,0 +1,10 @@
+<component>
+  <api>
+    <prop type="string" name="label" default="Temp"/>
+    <prop type="string" name="value" default="21 C"/>
+  </api>
+  <view style_bg_color="0x1c2a38" style_border_width="0" style_radius="8" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="8" style_pad_bottom="8" flex_flow="row" style_flex_main_place="space_between" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+    <lv_label name="label_2" text="$label" style_text_font="montserrat_14" style_text_color="0x9fb3c8" />
+    <lv_label name="value" text="$value" style_text_font="montserrat_16" style_text_color="0xffffff" />
+  </view>
+</component>

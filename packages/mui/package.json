@@ -1,0 +1,50 @@
+{
+  "name": "@richardmcquiston01/html-to-lvgl-mui",
+  "version": "0.1.0",
+  "description": "Material UI recognizers for html2lvgl: the parts of Material UI that need React fiber names or rules the core does not have",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Richard McQuiston",
+    "email": "richard.mcquiston01@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/html-to-lvgl.git",
+    "directory": "packages/mui"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@richardmcquiston01/html-to-lvgl": ">=0.8.0",
+    "@mui/material": ">=5",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "@mui/material": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^9.5.0",
+    "@mui/material": "^9.5.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}
