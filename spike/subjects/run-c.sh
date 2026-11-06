@@ -83,6 +83,7 @@ for lang in c cpp; do
   echo "== accordion, modal, drawer ($lang)"
   TARGET=$lang ./run-accordion.sh | grep -E '^  (ok|FAIL)|^(Accordion passes|FAILED)' || fail=1
   TARGET=$lang ./run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)' || fail=1
+  TARGET=$lang ./run-tabs.sh | grep -E '^  (ok|FAIL)|^(Generated tabs|FAILED)' || fail=1
 done
 if [ "$fail" -ne 0 ]; then echo "FAILED"; exit 1; fi
 echo "Generated C and C++ behavior output passes against LVGL"
