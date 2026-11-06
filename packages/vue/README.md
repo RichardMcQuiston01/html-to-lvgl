@@ -8,7 +8,7 @@ Vue single-file component (`.vue`) input for [html2lvgl](../../README.md). A fra
 npm install --save-dev @richardmcquiston01/html-to-lvgl @richardmcquiston01/html-to-lvgl-vue vue @vue/compiler-sfc esbuild
 ```
 
-`vue`, `@vue/compiler-sfc` and `esbuild` are peer dependencies: your own Vue version compiles your templates.
+`vue`, `@vue/compiler-sfc` and `esbuild` are peer dependencies: your own Vue version compiles your templates. The core must be **0.8.0 or newer** (it provides the plugin recognizer wiring, framework data and source locations this plugin uses); npm warns when an older core is installed.
 
 ## Use
 
@@ -44,4 +44,5 @@ See `examples/` (`App.vue` and `StatCard.vue`): props, `v-for`, `v-if`, scoped s
 - Vue Router, Pinia or other plugins are not installed: the root component is mounted alone. Wrap such dependencies in your entry or give components default state.
 - Component names and source lines rely on Vue's development build, which the plugin always bundles. A component without a name takes its file name.
 - Diagnostics raised during recognition (before the converter has the full tree) may name the selector but not the file.
-- Inside this repository the plugin loads the core from the sibling `src/`; a published install uses the peer dependency.
+- The plugin takes `buildTree` and `launch` from the core's documented entry point `@richardmcquiston01/html-to-lvgl/extract`. Inside this repository's checkout (detected by a `package.json` named like the core two directories above `packages/vue`) it loads the sibling `src/extract.mjs` instead, so tests run against the checkout rather than an older registry copy; a published install never has that layout and always uses the documented entry.
+- Source lines reach `TODO.txt` through `data-lv-source="file:line"` attributes the plugin stamps before extraction. `sourceOf(page, selector)` is a lookup helper only (the selector is CSS); the converter does not call it.

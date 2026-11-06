@@ -33,7 +33,7 @@ The plugin asks the React plugin for component names (`wantsFrameworkData`), so 
 
 ## Peer dependencies
 
-`@richardmcquiston01/html-to-lvgl` (>= 0.7.0), and `@mui/material` and `react` for the pages you convert. The package itself imports nothing from the core at run time.
+`@richardmcquiston01/html-to-lvgl` (>= 0.8.0, the first core with the recognizer wiring and framework data this plugin needs), and `@mui/material` and `react` for the pages you convert. The package itself imports nothing from the core at run time.
 
 ## Examples
 
