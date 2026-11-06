@@ -221,11 +221,14 @@ function annotateFramework() {
     const name = typeof fiber.type === 'string' ? '' : nameOf(fiber.type);
     if (name) {
       const inherited = token && !token.used ? token.chain : [];
-      if (token) token.used = true;
       const last = inherited[inherited.length - 1];
       // memo(forwardRef(X)) is two fibers with one name; keep one entry.
       const chain = last && last.name === name ? inherited : inherited.concat({ name, props: propsOf(fiber.memoizedProps) });
-      t = { chain, used: false };
+      // `outer` lets the stamped host mark every component that handed its
+      // token down. Marking at hand-off let a named component that renders no
+      // DOM (emotion's `Insertion`, rendered beside Material UI's root element)
+      // swallow the token, so the real root element was never stamped.
+      t = { chain, used: false, outer: inherited.length ? token : null };
     }
     if (typeof fiber.type === 'string' && fiber.stateNode && fiber.stateNode.setAttribute) {
       if (t && !t.used && t.chain.length) {
@@ -235,7 +238,7 @@ function annotateFramework() {
           props: chain[0].props,
           chain,
         }));
-        t.used = true;
+        for (let o = t; o; o = o.outer) o.used = true;
       }
       visit(fiber.child, null);
     } else {
