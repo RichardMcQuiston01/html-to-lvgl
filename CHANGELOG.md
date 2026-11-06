@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- **URL mode.** `html2lvgl http://localhost:4200/ -o out/` converts a built or running app through the same extractor, so every component works. It accepts `http://`, `https://` and `file://`, takes several URLs as linked screens, and adds `--wait-for <selector>`, `--wait-ms <n>`, `--timeout <ms>` and `--block-external`. Errors name the URL and the fix; URLs with credentials are refused; `--watch` is not supported with URLs. See [FEATURES.md](FEATURES.md#url-input).
+- **Library plugins work.** A plugin's `recognizers` now join recognition for every input, with a defined precedence (core first, then plugins in load order; highest score wins; ties reported; `override: true` to replace a core definition) and reload in `--watch`. A new diagnostic `PLUGIN_RECOGNIZER_REJECTED` reports an invalid recognizer without stopping the others.
+- **Framework data for recognizers.** A plugin that sets `wantsFrameworkData` gets `node.framework` (component name and chain). The React plugin fills it, and a Material UI component is now stamped even though emotion renders an empty `Insertion` beside it.
+- **Source locations from plugins.** A plugin can stamp `data-lv-source="file:line"`; `TODO.txt` then names the original file and line.
+- **Workspaces.** The repository is now an npm workspace (`packages/*`). The published core package is unchanged apart from the new files in `src`.
+- **Two plugin packages**, versioned separately: `@richardmcquiston01/html-to-lvgl-vue` for `.vue` single-file components, and `@richardmcquiston01/html-to-lvgl-mui` with Material UI recognizers (Checkbox, FormControlLabel, Radio, Rating, icons as LVGL symbols, Button naming and pressed color) that match by React component name. See [FEATURES.md](FEATURES.md#plugins).
+
+### Known limits
+
+- The Vue plugin takes one snapshot of the first flush and rejects SCSS, Less, `<style module>` and `v-bind()` in CSS. Component names and lines need Vue's development build, which the plugin always bundles.
+- The Material UI plugin needs the React plugin and React's development build. Indeterminate Checkbox shows LVGL's checkmark, half stars are not drawn, Radio circles are not interactive, and outlined or text Buttons get no pressed color.
+- A framework plugin needs the core's extractor at run time.
+- URL inputs ignore plugin file selection and sidecar files.
+
 ## [0.7.0] - 2026-11-06
 
 Twelve native widget remaps (tabs, bottom navigation, select, menu, snackbar, switch, slider, progress, text field, date picker, stepper, pagination), so this is a minor bump. Generated output changes for existing pages that use these controls: a `<textarea>` is now an `lv_textarea` instead of an empty box, and a native `<select>` takes the page's box styling, so regenerate any checked-in output.

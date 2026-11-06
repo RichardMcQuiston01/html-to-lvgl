@@ -238,12 +238,20 @@ Rules:
 
 ### Sequencing
 
-React is built into the core today. It moves behind this interface first, with no change in output and the golden tests as the safety net. Only then is a second framework added, so the interface is checked against more than one example. Vue is the likely second one, because its mounting model is closest to React's.
+**Done (Phase 10).** React moved behind the plugin interface with no change in output. Vue (`@richardmcquiston01/html-to-lvgl-vue`) was added second, which checked the interface against another framework, and Material UI (`@richardmcquiston01/html-to-lvgl-mui`) is the first library plugin. URL mode (`html2lvgl <url>`) opens the way for Angular and server-rendered frameworks.
+
+What the second framework showed:
+
+- `load`, `components` and `sourceOf` fit Vue as they are.
+- Core never called `sourceOf`, so diagnostics could not name a source file. Plugins can stamp `data-lv-source="file:line"` on elements; the extractor keeps it as `node.source` and `TODO.txt` uses it.
+- A framework plugin needs the core's extractor at run time (`buildTree`, `launch`).
+
+**Recognizer precedence.** Core definitions are offered first, then plugins in load order, then array order within a plugin. The highest score wins and `data-lv-widget` wins outright. A plugin can beat a core definition on the same node by returning a higher score, by using a new name, or by setting `override: true` on a definition that replaces a core one. `node.framework` is present only when a loaded plugin sets `wantsFrameworkData`.
 
 Deferred:
 
-- **Angular** needs a CLI build, which does not fit "bundle one file". Start with a "convert a built or running app URL" mode. Non-framework users benefit from that mode too.
-- **Server-rendered frameworks** (Next, Nuxt) can use the same URL mode.
+- **Angular** plugin: use URL mode on a built or served app until a plugin is worth the maintenance.
+- **Bootstrap and Vuetify** library plugins: the same shape as the Material UI package.
 
 [Back to Top](#components)
 
