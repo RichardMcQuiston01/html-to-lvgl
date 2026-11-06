@@ -20,6 +20,10 @@ import stepper from './stepper.mjs';
 import pagination from './pagination.mjs';
 import tabs from './tabs.mjs';
 import bottomNavigation from './bottom-navigation.mjs';
+import switchDef from './switch.mjs';
+import textfield from './textfield.mjs';
+import slider from './slider.mjs';
+import progress from './progress.mjs';
 
 /**
  * The component definitions that ship with html2lvgl, in the order they are
@@ -53,4 +57,8 @@ export const builtinComponents = [
   pagination,
   tabs,
   bottomNavigation,
+  switchDef,
+  textfield,
+  slider,
+  progress,
 ];

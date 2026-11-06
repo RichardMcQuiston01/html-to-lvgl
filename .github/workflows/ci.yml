@@ -686,3 +686,7 @@ jobs:
       # open tab comes from ARIA and a tap on a tab button switches the page.
       - name: Drive the generated tabs and bottom navigation XML
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-tabs.sh
+      # Phase 9 native-widget remaps: the first frame comes from ARIA, and a
+      # click toggles a switch and moves a slider.
+      - name: Drive the generated Switch, Slider and Progress XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-form-widgets.sh

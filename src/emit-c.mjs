@@ -83,6 +83,20 @@ const ENUMS = {
 
 /** lv_calendar attributes emitNode writes as two grouped calls instead of one call each. */
 const CALENDAR_DATE_ATTRS = new Set(['today_year', 'today_month', 'today_day', 'shown_year', 'shown_month']);
+const STYLE_PARTS = new Set(['main', 'scrollbar', 'indicator', 'knob', 'selected', 'items', 'cursor']);
+
+/**
+ * The property and the C selector expression of a style attribute. The XML key
+ * can chain states and parts after the property, as lv_xml does:
+ * `style_bg_color:checked:indicator` is `LV_STATE_CHECKED | LV_PART_INDICATOR`.
+ * @param {string} key
+ * @returns {[string, string]}
+ */
+function splitSelector(key) {
+  const [propPart, ...tokens] = key.split(':');
+  const flags = tokens.map((t) => (STYLE_PARTS.has(t) ? `LV_PART_${t.toUpperCase()}` : `LV_STATE_${t.toUpperCase()}`));
+  return [propPart, flags.length ? flags.join(' | ') : '0'];
+}
 
 const cstr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
 
@@ -327,12 +341,12 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
     if (key === 'flex_flow') return lines.push(`    lv_obj_set_flex_flow(${v}, ${ENUMS.flex_flow(value)});`);
     if (key === 'flex_grow') return lines.push(`    lv_obj_set_flex_grow(${v}, ${value});`);
     if (key === 'checked') return lines.push(`    lv_obj_set_state(${v}, LV_STATE_CHECKED, ${value === 'true'});`);
+    if (key === 'disabled') return lines.push(`    lv_obj_set_state(${v}, LV_STATE_DISABLED, ${value === 'true'});`);
     if (key in FLAG_ATTRS) return lines.push(`    lv_obj_set_flag(${v}, ${FLAG_ATTRS[key]}, ${value === 'true'});`);
 
     if (key.startsWith('style_')) {
-      const [propPart, state] = key.split(':');
+      const [propPart, selector] = splitSelector(key);
       const prop = propPart.slice(6);
-      const selector = state ? `LV_STATE_${state.toUpperCase()}` : '0';
 
       if (prop === 'grid_column_dsc_array' || prop === 'grid_row_dsc_array') {
         const arr = `grid_dsc_${++gridDscCount}`;
@@ -443,9 +457,19 @@ const WIDGET_ATTRS = {
     text: (v, val) => `lv_checkbox_set_text(${v}, ${cstr(val)});`,
   },
   lv_slider: {
+    mode: (v, val) => `lv_slider_set_mode(${v}, LV_SLIDER_MODE_${val.toUpperCase()});`,
+    start_value: (v, val) => `lv_slider_set_start_value(${v}, ${val}, LV_ANIM_OFF);`,
     min_value: (v, val) => `lv_slider_set_min_value(${v}, ${val});`,
     max_value: (v, val) => `lv_slider_set_max_value(${v}, ${val});`,
     value: (v, val) => `lv_slider_set_value(${v}, ${val}, LV_ANIM_OFF);`,
+  },
+  lv_arc: {
+    min_value: (v, val) => `lv_arc_set_min_value(${v}, ${val});`,
+    max_value: (v, val) => `lv_arc_set_max_value(${v}, ${val});`,
+    value: (v, val) => `lv_arc_set_value(${v}, ${val});`,
+    rotation: (v, val) => `lv_arc_set_rotation(${v}, ${val});`,
+    bg_start_angle: (v, val) => `lv_arc_set_bg_start_angle(${v}, ${val});`,
+    bg_end_angle: (v, val) => `lv_arc_set_bg_end_angle(${v}, ${val});`,
   },
   lv_bar: {
     min_value: (v, val) => `lv_bar_set_min_value(${v}, ${val});`,

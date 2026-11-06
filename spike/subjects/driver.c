@@ -113,6 +113,19 @@ static void base_name(const char * path, char * out, size_t n)
     out[i] = '\0';
 }
 
+/**
+ * The part of a report line a form widget adds: " checked=0|1" for every widget
+ * (the switch, checkbox and button toggle state) and " value=N" for a slider,
+ * bar or arc. Appended, so earlier assertions on the leading fields still match.
+ */
+static void print_state(lv_obj_t * c)
+{
+    printf(" checked=%d", lv_obj_has_state(c, LV_STATE_CHECKED) ? 1 : 0);
+    if(lv_obj_check_type(c, &lv_slider_class)) printf(" value=%d", (int)lv_slider_get_value(c));
+    else if(lv_obj_check_type(c, &lv_bar_class)) printf(" value=%d", (int)lv_bar_get_value(c));
+    else if(lv_obj_check_type(c, &lv_arc_class)) printf(" value=%d", (int)lv_arc_get_value(c));
+}
+
 /** Print every widget called `name` (names repeat across component instances). */
 static int report_all(lv_obj_t * parent, const char * name)
 {
@@ -124,9 +137,11 @@ static int report_all(lv_obj_t * parent, const char * name)
         if(cn && strcmp(cn, name) == 0) {
             lv_area_t a;
             lv_obj_get_coords(c, &a);
-            printf("report %s: hidden=%d x=%d y=%d w=%d h=%d\n", name,
+            printf("report %s: hidden=%d x=%d y=%d w=%d h=%d", name,
                    lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) ? 1 : 0,
                    (int)a.x1, (int)a.y1, (int)lv_area_get_width(&a), (int)lv_area_get_height(&a));
+            print_state(c);
+            printf("\n");
             found++;
         }
         found += report_all(c, name);

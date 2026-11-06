@@ -1,0 +1,21 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="PLAIN ARIA" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="caption" width="288" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_2" text="Battery" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_label name="label_3" text="70%" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+    </lv_obj>
+    <lv_bar name="progress" width="288" height="8" min_value="0" max_value="100" value="70" style_bg_color="0xe2e8f0" style_bg_opa="255" style_radius="4" style_bg_color:indicator="0x16a34a" style_radius:indicator="4" />
+    <lv_label name="label_4" style_margin_top="4" text="MATERIAL UI" style_text_font="montserrat_10" style_text_color="0x64748b" />
+    <lv_obj name="caption_2" width="288" height="14" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_main_place="space_between" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_label name="label_5" text="Download" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_label name="label_6" text="60%" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+    </lv_obj>
+    <lv_bar name="progress_2" width="288" height="4" min_value="0" max_value="100" value="60" style_bg_color="0xbbdefb" style_bg_opa="255" style_radius="0" style_bg_color:indicator="0x1976d2" style_radius:indicator="0" />
+    <lv_obj name="row" width="288" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="14" style_pad_column="14" scrollable="false">
+      <lv_arc name="progress_3" width="40" height="40" bg_start_angle="0" bg_end_angle="360" rotation="270" min_value="0" max_value="100" value="75" clickable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_arc_opa="0" style_arc_width="3" style_arc_rounded="false" style_arc_width:indicator="3" style_arc_rounded:indicator="false" style_arc_color:indicator="0x1976d2" style_bg_opa:knob="0" style_pad_all:knob="0" />
+      <lv_label name="lbl" flex_grow="1" text="Installing, 75 percent" style_text_font="montserrat_12" style_text_color="0x0f172a" />
+      <lv_arc name="progress_4" width="40" height="40" bg_start_angle="0" bg_end_angle="360" rotation="270" min_value="0" max_value="100" value="40" clickable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_arc_opa="0" style_arc_width="3" style_arc_rounded="false" style_arc_width:indicator="3" style_arc_rounded:indicator="false" style_arc_color:indicator="0x1976d2" style_bg_opa:knob="0" style_pad_all:knob="0" />
+    </lv_obj>
+  </view>
+</component>

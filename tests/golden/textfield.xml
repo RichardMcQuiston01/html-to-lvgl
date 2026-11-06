@@ -1,0 +1,42 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="8" style_pad_right="8" style_pad_top="8" style_pad_bottom="8" flex_flow="row" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="col" width="148" height="224" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="6" style_pad_column="6" scrollable="false">
+      <lv_obj name="field" width="148" height="55" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="2" style_pad_column="2" scrollable="false">
+        <lv_label name="label" text="Username" style_text_font="montserrat_10" style_text_color="0x475569" />
+        <lv_textarea name="user" width="148" height="28" style_text_font="montserrat_12" style_text_color="0x0f172a" one_line="true" text="jane_doe" style_bg_color="0xffffff" style_border_width="1" style_border_color="0x94a3b8" style_radius="4" style_shadow_width="0" style_pad_hor="8" style_pad_ver="5" />
+        <lv_label name="user_help" text="Letters and digits only" style_text_font="montserrat_10" style_text_color="0x64748b" />
+      </lv_obj>
+      <lv_obj name="field_2" width="148" height="55" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="2" style_pad_column="2" scrollable="false">
+        <lv_label name="label_2" text="Email" style_text_font="montserrat_10" style_text_color="0x475569" />
+        <lv_textarea name="mail" width="148" height="28" style_text_font="montserrat_12" style_text_color="0x0f172a" one_line="true" text="jane@" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xdc2626" style_radius="4" style_shadow_width="0" style_pad_hor="8" style_pad_ver="5" />
+        <lv_label name="mail_help" text="Enter a full address" style_text_font="montserrat_10" style_text_color="0xdc2626" />
+      </lv_obj>
+      <lv_obj name="field_3" width="148" height="42" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="2" style_pad_column="2" scrollable="false">
+        <lv_label name="label_3" text="Password" style_text_font="montserrat_10" style_text_color="0x475569" />
+        <lv_textarea name="pw" width="148" height="28" style_text_font="montserrat_12" style_text_color="0x0f172a" one_line="true" text="secret1" password_mode="true" style_bg_color="0xffffff" style_border_width="1" style_border_color="0x94a3b8" style_radius="4" style_shadow_width="0" style_pad_hor="8" style_pad_ver="5" />
+      </lv_obj>
+      <lv_obj name="field_4" width="148" height="50" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="2" style_pad_column="2" scrollable="false">
+        <lv_label name="label_4" text="Notes" style_text_font="montserrat_10" style_text_color="0x475569" />
+        <lv_textarea name="note" width="148" height="36" style_text_font="montserrat_12" style_text_color="0x0f172a" one_line="false" placeholder_text="Anything else?" style_bg_color="0xffffff" style_border_width="1" style_border_color="0x94a3b8" style_radius="4" style_shadow_width="0" style_pad_hor="8" style_pad_ver="6" />
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="col_2" width="148" height="224" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="7" style_pad_bottom="0" flex_flow="column" style_pad_row="14" style_pad_column="14" scrollable="false">
+      <lv_obj name="text_field" width="148" height="31" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="7" style_outline_opa="3" style_outline_color="0xffffff" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_textarea name="mui_name" width="148" height="31" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" one_line="true" text="Jane Doe" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xc4c4c4" style_radius="4" style_shadow_width="0" style_pad_hor="12" style_pad_ver="7" />
+        <lv_obj name="mui_name_label" x="8" y="-7" ignore_layout="true" width="32" height="13" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="mui_name_label_2" align="left_mid" x="4" text="Name" style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="text_field_2" width="148" height="31" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_textarea name="mui_city" width="148" height="31" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" one_line="true" placeholder_text="City" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xc4c4c4" style_radius="4" style_shadow_width="0" style_pad_hor="12" style_pad_ver="7" />
+      </lv_obj>
+      <lv_obj name="text_field_3" width="148" height="47" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="7" style_outline_opa="3" style_outline_color="0xffffff" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_textarea name="mui_pin" width="148" height="31" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" one_line="true" text="1234" password_mode="true" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xd32f2f" style_radius="4" style_shadow_width="0" style_pad_hor="12" style_pad_ver="7" />
+        <lv_obj name="mui_pin_label" x="8" y="-7" ignore_layout="true" width="23" height="13" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="mui_pin_label_2" align="left_mid" x="4" text="PIN" style_text_font="montserrat_10" style_text_color="0xd32f2f" />
+        </lv_obj>
+        <lv_label name="mui_pin_helper_text" style_margin_left="12" style_margin_right="12" style_margin_top="2" text="Too short" style_text_font="montserrat_10" style_text_color="0xd32f2f" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

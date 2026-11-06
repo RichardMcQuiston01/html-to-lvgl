@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Progress</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background: #ffffff; overflow: hidden; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  h2 { font-size: 11px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .caption { display: flex; justify-content: space-between; font-size: 12px; color: #0f172a; }
+  .row { display: flex; align-items: center; gap: 14px; }
+
+  /* Plain HTML / ARIA version: role="progressbar" with aria-valuenow. */
+  .bar { height: 8px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+  .bar > div { height: 8px; width: 70%; background: #16a34a; border-radius: 4px; }
+
+  /* Material UI version: LinearProgress and CircularProgress (MUI's own CSS values). */
+  .MuiLinearProgress-root { position: relative; overflow: hidden; display: block; height: 4px; z-index: 0; background-color: #bbdefb; }
+  .MuiLinearProgress-bar { width: 100%; position: absolute; left: 0; bottom: 0; top: 0; background-color: #1976d2; transform-origin: left; }
+  .MuiLinearProgress-indeterminate .MuiLinearProgress-bar { width: auto; left: 5%; right: 55%; }
+  .MuiCircularProgress-root { display: inline-block; color: #1976d2; width: 40px; height: 40px; flex: none; }
+  .MuiCircularProgress-determinate { transform: rotate(-90deg); }
+  .MuiCircularProgress-svg { display: block; }
+  .MuiCircularProgress-circle { stroke: currentColor; }
+  .lbl { font-size: 12px; color: #0f172a; flex: 1; }
+</style>
+</head>
+<body>
+  <h2>Plain ARIA</h2>
+  <div class="caption"><span>Battery</span><b style="font-weight:500">70%</b></div>
+  <div class="bar" role="progressbar" aria-label="Battery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="70"><div></div></div>
+  <h2 style="margin-top:4px">Material UI</h2>
+  <div class="caption"><span>Download</span><b style="font-weight:500">60%</b></div>
+  <span class="MuiLinearProgress-root MuiLinearProgress-colorPrimary MuiLinearProgress-determinate" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"><span class="MuiLinearProgress-bar MuiLinearProgress-barColorPrimary MuiLinearProgress-bar1Determinate" style="transform: translateX(-40%)"></span></span>
+  <div class="row">
+    <span class="MuiCircularProgress-root MuiCircularProgress-determinate MuiCircularProgress-colorPrimary" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><svg class="MuiCircularProgress-svg" viewBox="22 22 44 44" width="40" height="40"><circle class="MuiCircularProgress-circle MuiCircularProgress-circleDeterminate" cx="44" cy="44" r="20.2" fill="none" stroke-width="3.6" style="stroke-dasharray:126.92;stroke-dashoffset:31.73px"></circle></svg></span>
+    <span class="lbl">Installing, 75 percent</span>
+    <span class="MuiCircularProgress-root MuiCircularProgress-indeterminate MuiCircularProgress-colorPrimary" role="progressbar"><svg class="MuiCircularProgress-svg" viewBox="22 22 44 44" width="40" height="40"><circle class="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20.2" fill="none" stroke-width="3.6" style="stroke-dasharray:31.7px,200px;stroke-dashoffset:0"></circle></svg></span>
+  </div>
+</body>
+</html>
