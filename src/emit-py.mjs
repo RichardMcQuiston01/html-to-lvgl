@@ -92,7 +92,7 @@ import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
-const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
+const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE', clickable: 'CLICKABLE' };
 
 // Enum group names verified against a real generated binding (see module
 // doc comment) rather than assumed from the C macro spelling.
@@ -106,9 +106,27 @@ const ENUMS = {
   style_border_side: (v) => `lv.BORDER_SIDE.${v.toUpperCase()}`,
   style_text_align: (v) => `lv.TEXT_ALIGN.${v.toUpperCase()}`,
   style_layout: (v) => `lv.LAYOUT.${v.toUpperCase()}`,
+  style_arc_rounded: (v) => pybool(v),
 };
 
+const STYLE_PARTS = new Set(['main', 'scrollbar', 'indicator', 'knob', 'selected', 'items', 'cursor']);
+
+/**
+ * The property and the Python selector expression of a style attribute. The XML
+ * key can chain states and parts after the property, as lv_xml does:
+ * `style_bg_color:checked:indicator` is `lv.STATE.CHECKED | lv.PART.INDICATOR`.
+ * @param {string} key
+ * @returns {[string, string]}
+ */
+function splitSelector(key) {
+  const [propPart, ...tokens] = key.split(':');
+  const flags = tokens.map((t) => (STYLE_PARTS.has(t) ? `lv.PART.${t.toUpperCase()}` : `lv.STATE.${t.toUpperCase()}`));
+  return [propPart, flags.length ? flags.join(' | ') : '0'];
+}
+
 const pystr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+/** Widgets whose min/max collapse into one set_range() call on the pinned binding. */
+const RANGE_WIDGETS = new Set(['lv_slider', 'lv_bar', 'lv_arc']);
 const pybool = (v) => (v === 'true' ? 'True' : 'False');
 
 // Python keywords plus identifiers the generated function already uses
@@ -220,13 +238,13 @@ export function emitPy(view, opts = {}) {
     // lv_slider/lv_bar have no separate min/max setters on the pinned
     // binding's vendored LVGL — see module doc comment — so both attrs
     // (always emitted together by convert.mjs) collapse into one set_range.
-    if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && 'min_value' in node.attrs && 'max_value' in node.attrs) {
+    if (RANGE_WIDGETS.has(node.tag) && 'min_value' in node.attrs && 'max_value' in node.attrs) {
       lines.push(`    ${v}.set_range(${node.attrs.min_value}, ${node.attrs.max_value})`);
     }
 
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
-      if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && (key === 'min_value' || key === 'max_value')) continue;
+      if (RANGE_WIDGETS.has(node.tag) && (key === 'min_value' || key === 'max_value')) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) emitNode(child, v);
@@ -284,12 +302,12 @@ export function emitPy(view, opts = {}) {
     if (key === 'flex_flow') return lines.push(`    ${v}.set_flex_flow(${ENUMS.flex_flow(value)})`);
     if (key === 'flex_grow') return lines.push(`    ${v}.set_flex_grow(${value})`);
     if (key === 'checked') return lines.push(`    ${v}.set_state(lv.STATE.CHECKED, ${pybool(value)})`);
+    if (key === 'disabled') return lines.push(`    ${v}.set_state(lv.STATE.DISABLED, ${pybool(value)})`);
     if (key in FLAG_NAMES) return lines.push(`    ${v}.set_flag(lv.obj.FLAG.${FLAG_NAMES[key]}, ${pybool(value)})`);
 
     if (key.startsWith('style_')) {
-      const [propPart, state] = key.split(':');
+      const [propPart, selector] = splitSelector(key);
       const prop = propPart.slice(6);
-      const selector = state ? `lv.STATE.${state.toUpperCase()}` : '0';
 
       if (prop === 'grid_column_dsc_array' || prop === 'grid_row_dsc_array') {
         const items = value.split(' ').map((t) => {
@@ -419,10 +437,20 @@ const WIDGET_ATTRS = {
     text: (v, val) => `${v}.set_text(${pystr(val)})`,
   },
   lv_slider: {
+    mode: (v, val) => `${v}.set_mode(lv.slider.MODE.${val.toUpperCase()})`,
+    start_value: (v, val) => `${v}.set_start_value(${val}, False)`,
     value: (v, val) => `${v}.set_value(${val}, False)`,
   },
   lv_bar: {
     value: (v, val) => `${v}.set_value(${val}, False)`,
+  },
+  // The pinned binding's lv_arc has no separate min/max setters, like lv_slider
+  // (see the module comment): set_range takes both, emitted from emitNode.
+  lv_arc: {
+    value: (v, val) => `${v}.set_value(${val})`,
+    rotation: (v, val) => `${v}.set_rotation(${val})`,
+    bg_start_angle: (v, val) => `${v}.set_bg_start_angle(${val})`,
+    bg_end_angle: (v, val) => `${v}.set_bg_end_angle(${val})`,
   },
   lv_textarea: {
     one_line: (v, val) => `${v}.set_one_line(${pybool(val)})`,

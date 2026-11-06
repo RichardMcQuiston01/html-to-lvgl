@@ -440,6 +440,15 @@ export function buildTree() {
       node.attrs.checked = el.checked;
       node.attrs.min = el.min || null;
       node.attrs.max = el.max || null;
+      node.attrs.disabled = el.disabled;
+    }
+    if (el.tagName === 'TEXTAREA') {
+      node.attrs.value = el.value;
+      node.attrs.placeholder = el.placeholder || null;
+      node.attrs.disabled = el.disabled;
+    }
+    if (el.tagName === 'LABEL') {
+      node.attrs.for = el.htmlFor || null; // ties a label to its control (src/components/textfield.mjs)
     }
     if (el.tagName === 'SELECT') {
       node.attrs.options = [...el.options].map((o) => o.textContent.trim());

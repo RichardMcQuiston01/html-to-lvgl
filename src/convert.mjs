@@ -18,7 +18,7 @@
  * overflow its box, try one size smaller; if it still overflows, let the
  * label auto-size and report a warning.
  */
-import { builtinFonts } from './fonts.mjs';
+import { builtinFonts, lineHeight, FONT_SIZES } from './fonts.mjs';
 import { el, render } from './emit-xml.mjs';
 import { optimize } from './optimize.mjs';
 import { createDiagnostics } from './diagnostics.mjs';
@@ -497,7 +497,9 @@ function emit(node, parent, ctx, index = 0) {
   // The browser applies text-transform when it renders; the extracted text is raw.
   const transform = node.styles.textTransform;
   if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
-  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index) : emitByTag(node, parent, ctx, index);
+  const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index)
+    : node.native ? emitNativeWidget(node, parent, ctx, index)
+      : emitByTag(node, parent, ctx, index);
   if (out && hasBehavior(node)) applyBehavior(node, out, ctx);
   // Carry component boundaries (React fiber walk or data-lv-component)
   // through to the element tree for the componentizer.
@@ -573,6 +575,35 @@ function emitLibraryComponent(node, parent, ctx, index) {
   return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs });
 }
 
+/** Height of one text line in a font: measured for Montserrat, about 1.25 em for a converted font. */
+const fontLineHeight = (font) => (FONT_SIZES.includes(font.size) ? lineHeight(font.size) : Math.round(font.size * 1.25));
+
+/**
+ * A node a component definition turned into one native LVGL widget
+ * (`node.native`, see UiNode in src/recognize.mjs): a switch, slider, bar, arc
+ * or textarea whose attributes (value, range, checked state, part styles) the
+ * definition worked out from ARIA state and the measured parts. The node's own
+ * box places it; its children are not emitted. `fontText` is the text the
+ * widget shows, used to pick the font and color, which only convert() can do.
+ */
+function emitNativeWidget(node, parent, ctx, index) {
+  const { tag, attrs = {}, fontText = null } = node.native;
+  const font = fontText === null ? null : fitText({ ...node, text: fontText }, ctx).font;
+  // A single line of text sits at the top of an lv_textarea's padding; the
+  // browser centers it in the field. `centerLine` is the border width, and the
+  // padding is whatever is left of the box once the line height is taken out.
+  const centered = font && node.native.centerLine !== undefined && node.native.centerLine !== null
+    ? { style_pad_ver: Math.max(0, Math.floor((node.h - 2 * node.native.centerLine - fontLineHeight(font)) / 2)) }
+    : {};
+  return el(tag, {
+    name: uid(ctx, node, tag.replace(/^lv_/, '')),
+    ...placement(node, parent, { gridIndex: index }),
+    ...(font ? textStyles(node, font) : {}),
+    ...attrs,
+    ...centered,
+  });
+}
+
 function emitByTag(node, parent, ctx, index) {
   // data-lv-widget overrides tag-based and heuristic classification
   if (node.widget) {
@@ -606,6 +637,7 @@ function emitByTag(node, parent, ctx, index) {
 
   if (node.tag === 'button') return emitButton(node, parent, ctx, index);
   if (node.tag === 'input') return emitInput(node, parent, ctx, index);
+  if (node.tag === 'textarea') return emitInput(node, parent, ctx, index);
   if (node.tag === 'select') return emitDropdown(node, parent, ctx, index);
   if (node.tag === 'img') return emitImage(node, parent, ctx, index);
   if (node.tag === 'progress') return emitBar(node, parent, ctx, index);
