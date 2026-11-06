@@ -91,6 +91,9 @@ import { isBehaviorElement, TIMELINE_PROPS } from './behavior.mjs';
 // for why this can't be a "starts with montserrat_" guess.
 const BUILTIN_FONT_NAMES = new Set(FONT_SIZES.map((size) => `montserrat_${size}`));
 
+/** lv_calendar attributes emitted as two grouped calls (see emitNode). */
+const CALENDAR_DATE_ATTRS = new Set(['today_year', 'today_month', 'today_day', 'shown_year', 'shown_month']);
+
 // obj.FLAG.<NAME>, not a top-level lv.OBJ_FLAG.<NAME> — verified above.
 const FLAG_NAMES = { scrollable: 'SCROLLABLE', hidden: 'HIDDEN', ignore_layout: 'IGNORE_LAYOUT', floating: 'FLOATING', overflow_visible: 'OVERFLOW_VISIBLE' };
 
@@ -214,8 +217,23 @@ export function emitPy(view, opts = {}) {
       return;
     }
 
+    // A calendar's header is added by a call on its parent: the binding
+    // exposes lv_calendar_add_header_arrow as a method of lv.calendar.
+    if (node.tag === 'lv_calendar-header_arrow') {
+      lines.push(`    ${parentVar}.add_header_arrow()`);
+      return;
+    }
+
     lines.push('');
     lines.push(`    ${v} = ${ctor}(${parentVar})`);
+
+    // The pinned binding has set_today_date and set_month_shown only (the
+    // per-field setters are LVGL 9.4), so the date attributes go out as two calls.
+    if (node.tag === 'lv_calendar') {
+      const a = node.attrs;
+      if ('today_year' in a && 'today_month' in a && 'today_day' in a) lines.push(`    ${v}.set_today_date(${a.today_year}, ${a.today_month}, ${a.today_day})`);
+      if ('shown_year' in a && 'shown_month' in a) lines.push(`    ${v}.set_month_shown(${a.shown_year}, ${a.shown_month})`);
+    }
 
     // lv_slider/lv_bar have no separate min/max setters on the pinned
     // binding's vendored LVGL — see module doc comment — so both attrs
@@ -227,6 +245,7 @@ export function emitPy(view, opts = {}) {
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
       if ((node.tag === 'lv_slider' || node.tag === 'lv_bar') && (key === 'min_value' || key === 'max_value')) continue;
+      if (node.tag === 'lv_calendar' && CALENDAR_DATE_ATTRS.has(key)) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) emitNode(child, v);
