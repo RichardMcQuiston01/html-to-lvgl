@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Native widget remaps** (Phase 9). ARIA and Material UI components that have an LVGL widget now convert to it, with the first frame read from ARIA: `tabs` and `bottom-navigation` (`lv_tabview`), `select` (`lv_dropdown`), `switch` (`lv_switch`), `slider` (`lv_slider`, including a two-thumb range slider), `progress` (`lv_bar` and `lv_arc`), `textfield` (`lv_textarea` with the page's border and a static floating label) and `date-picker` (`lv_calendar`). `menu` and `snackbar` use the Phase 8 behavior system. `stepper` and `pagination` are composites. All work in XML, C, C++ and MicroPython, and CI click-tests the interactive ones. See [FEATURES.md](FEATURES.md#native-widget-remaps).
+- New diagnostic `UNSUPPORTED_WIDGET`: a component matched a pattern but cannot be mapped with confidence, so the plain boxes are kept.
+- `<textarea>` now converts to an `lv_textarea` (it was an empty box). The extractor keeps its value and placeholder, `<label for>`, and `disabled` on inputs, and measures hidden popup menus and option lists.
+- Style attributes can chain states and parts (`style_bg_color:checked:indicator`) in all four output formats.
+
+### Changed
+
+- A native `<select>` now takes the page's box (fill, border, radius) instead of LVGL's default dropdown look.
+
+### Known limits
+
+- Indeterminate progress is a static arc or bar (`lv_spinner` has no XML tag in 9.4).
+- The calendar marks one day (the selected day, else today), always starts the week on Sunday, and a Material UI date picker scores lower against the browser because LVGL draws its own theme.
+- Tabs drop their icons; bottom-navigation icons are static placeholders; a Snackbar does not auto-dismiss; a closed Material UI Select or Menu that is not mounted in the page cannot be read.
+- In MicroPython XML output, a calendar header hangs the pinned binding (different attribute names); use `--format py`.
+
 ## [0.6.0] - 2026-11-06
 
 Three stateful components (Accordion, Modal, Drawer) and a round of converter fidelity fixes, so this is a minor bump. Generated output changes for existing pages: badges, translucent colors, buttons without a background, padded text, negative margins, one-sided borders and Material UI widget names all come out differently, so regenerate any checked-in output. The donate link also moved from PayPal to Ko-fi.

@@ -154,16 +154,17 @@ Shared pieces ship as **library XML components** (`ui_accordion`, `ui_drawer`, a
 | Card, Paper, Divider, Chip, Avatar, Badge, Alert | Styled `lv_obj`, `lv_label`, `lv_image` | **Done (Phase 7).** Elevation keeps the largest shadow layer; avatars use `LV_RADIUS_CIRCLE`. A badge that overhangs its anchor and photo-avatar corner clipping need small converter changes. See [FEATURES.md](FEATURES.md#components). |
 | App Bar and Toolbar | Top flex-row container | **Done (Phase 7).** A `fixed` or `sticky` bar is emitted with the `floating` flag and moved last among its siblings. |
 | Breadcrumbs | Flex row of labels and buttons | **Done (Phase 7).** Reuses `data-lv-link` navigation; the current page is not clickable. CSS-drawn separators are not reproduced. |
-| Tabs | `lv_tabview` | Native. |
-| Switch, Slider, Select, Linear progress | Existing widgets | Add ARIA detection. |
-| Circular progress | `lv_spinner` or `lv_arc` | Native. |
-| Text field | `lv_textarea` and a label | Floating labels are static in a snapshot. |
-| Dialog, Snackbar, Menu | `lv_msgbox` or a top-layer container | Portals need a special case. |
-| Bottom navigation | `lv_tabview` at the bottom, or a button row | |
-| Date picker | `lv_calendar` | |
+| Tabs | `lv_tabview` | **Done (Phase 9).** Open tab from `aria-selected`; the bar can sit on any side. |
+| Switch, Slider, Select, Linear progress | `lv_switch`, `lv_slider`, `lv_dropdown`, `lv_bar` | **Done (Phase 9).** State from `aria-checked`, `aria-valuenow/min/max` and the DOM. A two-thumb slider becomes a range slider. |
+| Circular progress | `lv_arc` | **Done (Phase 9).** `lv_spinner` has no XML tag in 9.4, so indeterminate progress is a static arc and reports `UNSUPPORTED_WIDGET`. |
+| Text field | `lv_textarea` and a label | **Done (Phase 9).** A resting floating label becomes the placeholder; a shrunk label stays a label over the border. |
+| Dialog, Snackbar, Menu | Floating overlays on the behavior IR | **Done (Phase 8 and 9).** Dialog is the Modal; Snackbar and Menu are subject-bound floating layers. Snackbar does not auto-dismiss. |
+| Bottom navigation | `lv_tabview` at the bottom | **Done (Phase 9).** Chosen over a button row because a tab button is a flex container and switching is native. |
+| Date picker | `lv_calendar` | **Done (Phase 9).** One marked day only; weeks that do not start on Sunday report `UNSUPPORTED_WIDGET`. |
 | Accordion | Header button and body container | **Done (Phase 8).** Composite. See [The Disclosure Primitive](#the-disclosure-primitive). |
 | Drawer | Floating edge-anchored panel and a scrim | **Done (Phase 8).** Slides in with an `<animations>` timeline. Opened by the app bar's menu button. |
-| Stepper, Pagination, Speed dial | Composites | Later. |
+| Stepper, Pagination | Composites of boxes and buttons | **Done (Phase 9).** The current page loses its link. |
+| Speed dial | Composite | Later. |
 | Data grid, Autocomplete, Tree view | Out of scope | Needs its own design. |
 
 [Back to Top](#components)
