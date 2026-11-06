@@ -1,0 +1,17 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="12" style_pad_right="12" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="10" style_pad_column="10" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="Preferences" style_text_font="montserrat_16" style_text_color="0x212529" />
+    <lv_obj name="field" width="296" height="47" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="3" style_pad_column="3" scrollable="false">
+      <lv_label name="lang_label" text="Language" style_text_font="montserrat_10" style_text_color="0x6c757d" />
+      <lv_dropdown name="dropdown" width="200" height="32" options="English&#10;Spanish&#10;Deutsch" selected="1" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xced4da" style_radius="4" style_shadow_width="0" style_pad_left="10" style_text_font="montserrat_12" style_text_color="0x212529" />
+    </lv_obj>
+    <lv_obj name="field_2" width="296" height="47" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="3" style_pad_column="3" scrollable="false">
+      <lv_label name="label_2" text="Theme (native select)" style_text_font="montserrat_10" style_text_color="0x6c757d" />
+      <lv_dropdown name="theme" width="200" height="32" options="Light&#10;Dark&#10;System" selected="1" style_bg_color="0xffffff" style_border_width="1" style_border_color="0xced4da" style_radius="4" style_shadow_width="0" style_pad_left="8" style_text_font="montserrat_12" style_text_color="0x212529" />
+    </lv_obj>
+    <lv_obj name="field_3" width="296" height="55" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="3" style_pad_column="3" scrollable="false">
+      <lv_label name="age_label" text="Age (Material UI)" style_text_font="montserrat_10" style_text_color="0x6c757d" />
+      <lv_dropdown name="dropdown_2" width="200" height="40" options="Ten&#10;Twenty&#10;Thirty" selected="1" style_bg_opa="0" style_border_width="1" style_border_color="0x000000" style_border_opa="59" style_radius="4" style_shadow_width="0" style_pad_left="14" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
+    </lv_obj>
+  </view>
+</component>

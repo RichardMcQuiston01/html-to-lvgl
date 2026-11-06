@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Snackbar</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  h1 { font-size: 18px; font-weight: 500; color: #212529; }
+  p.note { font-size: 12px; color: #6c757d; }
+  button { border: none; font-size: 13px; cursor: pointer; }
+  .show { align-self: flex-start; background: #0d6efd; color: #ffffff; padding: 8px 14px; border-radius: 4px; }
+
+  /* Plain HTML / ARIA: a fixed role=status toast, hidden until the button names it in aria-controls. */
+  .toast { position: fixed; left: 12px; top: 132px; width: 296px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; background: #212529; color: #ffffff; border-radius: 6px; font-size: 13px; }
+  .toast[hidden] { display: none; }
+  .toast button { background: none; color: #6ea8fe; font-weight: 600; padding: 4px 8px; }
+
+  /* Material UI style: Snackbar root (fixed, bottom left) holding a SnackbarContent (role=alert) with an UNDO action and a close icon. */
+  .MuiSnackbar-root { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 1400; display: flex; align-items: center; justify-content: flex-start; }
+  .MuiPaper-root { background-color: #323232; color: #ffffff; border-radius: 4px; box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12); }
+  .MuiSnackbarContent-root { display: flex; align-items: center; flex-wrap: wrap; padding: 6px 16px; font-size: 14px; width: 304px; }
+  .MuiSnackbarContent-message { padding: 8px 0; flex: 1; }
+  .MuiSnackbarContent-action { display: flex; align-items: center; margin-left: 16px; margin-right: -8px; }
+  .MuiButton-root { background: none; color: #90caf9; font-weight: 500; text-transform: uppercase; padding: 5px 8px; border-radius: 4px; font-size: 13px; }
+  .MuiIconButton-root { background: none; color: #ffffff; width: 30px; height: 30px; border-radius: 15px; font-size: 16px; }
+</style>
+</head>
+<body>
+  <h1>Inbox</h1>
+  <p class="note">Messages appear over the page.</p>
+  <button class="show" id="show-toast" aria-controls="toast">Show toast</button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span>Draft saved</span>
+    <button>Dismiss</button>
+  </div>
+
+  <div class="MuiSnackbar-root MuiSnackbar-anchorOriginBottomLeft">
+    <div class="MuiPaper-root MuiPaper-elevation6 MuiSnackbarContent-root" role="alert">
+      <div class="MuiSnackbarContent-message">Note archived</div>
+      <div class="MuiSnackbarContent-action">
+        <button class="MuiButton-root MuiButton-text">Undo</button>
+        <button class="MuiIconButton-root" aria-label="close">x</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

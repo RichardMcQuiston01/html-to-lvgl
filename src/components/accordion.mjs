@@ -231,7 +231,7 @@ function isBareLabel(node) {
  * @param {import('../behavior.mjs').BehaviorEvent} event
  * @returns {UiNode}
  */
-function makePressable(trigger, event) {
+export function makePressable(trigger, event) {
   /** @param {UiNode} n @returns {UiNode} */
   const spread = (n) => ({
     ...n,

@@ -1,0 +1,6 @@
+<globals>
+  <subjects>
+    <int name="snackbar_toast_open" value="0"/>
+    <int name="snackbar_body_div_4_open" value="1"/>
+  </subjects>
+</globals>
