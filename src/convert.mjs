@@ -570,7 +570,13 @@ function emitLibraryComponent(node, parent, ctx, index) {
   for (const [key, value] of Object.entries(props)) {
     attrs[key] = value !== null && typeof value === 'object' && 'subject' in value ? `${sanitize(ctx.page)}_${value.subject}` : value;
   }
-  return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs });
+  // A native widget can need child elements to be complete (an lv_calendar's
+  // header); they carry only attributes, so they are built here, unplaced.
+  const children = (node.xmlComponent.children ?? []).map((child) => el(child.tag, { ...child.props }));
+  // A native widget that shows text (a calendar's days) takes the font and
+  // color the component copied onto the node, as a dropdown does.
+  const text = node.xmlComponent.textStyles ? textStyles(node, ctx.fonts.for(node.styles)) : {};
+  return el(tag, { name: uid(ctx, node, tag), ...placement(node, parent, { gridIndex: index }), ...attrs, ...text }, children);
 }
 
 function emitByTag(node, parent, ctx, index) {

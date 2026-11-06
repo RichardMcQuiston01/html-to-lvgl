@@ -290,7 +290,14 @@ jobs:
             # already renders this same file against successfully. Not an
             # html2lvgl output problem; see "Known limitations" in
             # spike/micropython/README.md.
-            case "$(basename "$xml")" in monitor.xml) continue ;; esac
+            # date_picker*.xml: the pinned binding's vendored XML calendar
+            # parser (v9.3-era) reads `today_date="Y M D"` and
+            # `shown_month="Y M"`, not v9.4's today_year/shown_year/..., so a
+            # calendar with a header misreads the month as 0 and never
+            # returns. Its --format py output (set_today_date,
+            # set_month_shown) is what MicroPython users get; see "Known
+            # limitations" in spike/micropython/README.md.
+            case "$(basename "$xml")" in monitor.xml|date_picker.xml|date_picker_mui.xml) continue ;; esac
             echo "validating $xml"
             "$MP" spike/micropython/render_xml.py "$xml" /tmp/out.bmp
           done

@@ -81,6 +81,9 @@ const ENUMS = {
   style_layout: (v) => `LV_LAYOUT_${v.toUpperCase()}`,
 };
 
+/** lv_calendar attributes emitNode writes as two grouped calls instead of one call each. */
+const CALENDAR_DATE_ATTRS = new Set(['today_year', 'today_month', 'today_day', 'shown_year', 'shown_month']);
+
 const cstr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
 
 // C keywords plus identifiers the generated function already uses
@@ -225,11 +228,26 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
       return;
     }
 
+    // A calendar's header is added by a call on its parent, not created.
+    if (node.tag === 'lv_calendar-header_arrow') {
+      lines.push(`    lv_calendar_add_header_arrow(${parentVar});`);
+      return;
+    }
+
     lines.push('');
     lines.push(`    lv_obj_t * ${v} = ${createFn}(${parentVar});`);
 
+    // today_* and shown_* are written together: lv_calendar_set_today_date and
+    // lv_calendar_set_month_shown exist on every LVGL 9.x, the per-field setters
+    // the XML parser uses are 9.4 only.
+    if (node.tag === 'lv_calendar') {
+      const a = node.attrs;
+      if ('today_year' in a && 'today_month' in a && 'today_day' in a) lines.push(`    lv_calendar_set_today_date(${v}, ${a.today_year}, ${a.today_month}, ${a.today_day});`);
+      if ('shown_year' in a && 'shown_month' in a) lines.push(`    lv_calendar_set_month_shown(${v}, ${a.shown_year}, ${a.shown_month});`);
+    }
     for (const [key, raw] of Object.entries(node.attrs)) {
       if (raw === null || raw === undefined || raw === '' || key === 'name') continue;
+      if (node.tag === 'lv_calendar' && CALENDAR_DATE_ATTRS.has(key)) continue;
       emitAttr(node, v, key, String(raw));
     }
     for (const child of node.children) if (!isBehaviorElement(child)) emitNode(child, v);

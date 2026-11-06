@@ -1,0 +1,55 @@
+<component>
+  <view width="320" height="240" style_bg_color="0xffffff" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="12" style_pad_bottom="12" flex_flow="column" style_pad_row="10" style_pad_column="10" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_label name="label" text="HORIZONTAL" style_text_font="montserrat_10" style_text_color="0x6b7280" />
+    <lv_obj name="stepper" width="288" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+      <lv_obj name="step_1" flex_grow="1" width="72" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_obj name="dot" width="24" height="24" style_bg_color="0x2563eb" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_2" align="center" text="1" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_2" text="Cart" style_text_font="montserrat_10" style_text_color="0x6b7280" />
+      </lv_obj>
+      <lv_obj name="step_2" flex_grow="1" width="72" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="20" style_outline_opa="3" style_outline_color="0xffffff" flex_flow="column" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_obj name="bar" x="-20" y="11" ignore_layout="true" width="40" height="2" style_bg_color="0x2563eb" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="dot_3" width="24" height="24" style_bg_color="0x2563eb" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_4" align="center" text="2" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_3" text="Address" style_text_font="montserrat_10" style_text_color="0x6b7280" />
+      </lv_obj>
+      <lv_obj name="step_3" flex_grow="1" width="72" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="20" style_outline_opa="3" style_outline_color="0xffffff" flex_flow="column" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_obj name="bar_2" x="-20" y="11" ignore_layout="true" width="40" height="2" style_bg_color="0x2563eb" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="dot_5" width="24" height="24" style_bg_color="0x2563eb" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_6" align="center" text="3" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_4" text="Payment" style_text_font="montserrat_10" style_text_color="0x111827" />
+      </lv_obj>
+      <lv_obj name="step_4" flex_grow="1" width="72" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" overflow_visible="true" style_outline_width="20" style_outline_opa="3" style_outline_color="0xffffff" flex_flow="column" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="4" style_pad_column="4" scrollable="false">
+        <lv_obj name="bar_3" x="-20" y="11" ignore_layout="true" width="40" height="2" style_bg_color="0xd1d5db" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false" />
+        <lv_obj name="dot_7" width="24" height="24" style_bg_color="0xd1d5db" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_8" align="center" text="4" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_5" text="Review" style_text_font="montserrat_10" style_text_color="0x6b7280" />
+      </lv_obj>
+    </lv_obj>
+    <lv_label name="label_6" text="VERTICAL" style_text_font="montserrat_10" style_text_color="0x6b7280" />
+    <lv_obj name="stepper_2" width="288" height="90" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="step_1_2" x="0" y="0" width="288" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+        <lv_obj name="dot_9" width="24" height="24" style_bg_color="0x2563eb" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_10" align="center" text="1" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_7" text="Create account" style_text_font="montserrat_12" style_text_color="0x6b7280" />
+      </lv_obj>
+      <lv_obj name="step_2_2" x="0" y="30" width="288" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+        <lv_obj name="dot_11" width="24" height="24" style_bg_color="0x2563eb" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_12" align="center" text="2" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_8" text="Verify email" style_text_font="montserrat_12" style_text_color="0x111827" />
+      </lv_obj>
+      <lv_obj name="step_3_2" x="0" y="60" width="288" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="8" style_pad_column="8" scrollable="false">
+        <lv_obj name="dot_13" width="24" height="24" style_bg_color="0xd1d5db" style_border_width="0" style_radius="12" style_shadow_width="0" style_pad_all="0" scrollable="false">
+          <lv_label name="dot_14" align="center" text="3" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="label_9" text="Add a device" style_text_font="montserrat_12" style_text_color="0x6b7280" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

@@ -302,3 +302,12 @@ periodically to see if either is now moot.
    screens still instantiate and render correctly through
    `lv_xml_component_register_from_data()` — only the click-driven
    navigation itself can't be exercised on this binding commit.
+3. **`lv_calendar` XML attributes differ** (Phase 9). The pinned binding's
+   vendored XML calendar parser reads `today_date="Y M D"` and
+   `shown_month="Y M"`; LVGL v9.4 reads `today_year`/`today_month`/`today_day`
+   and `shown_year`/`shown_month`. Fed the v9.4 form, a calendar with a
+   `lv_calendar-header_arrow` parses `shown_month="11"` as year 11, month 0
+   and never returns, so `tests/golden/date_picker*.xml` are skipped by
+   `validate-micropython-xml`. The `--format py` output is unaffected: it uses
+   `set_today_date`, `set_month_shown` and `add_header_arrow`, which exist on
+   both versions, and `tests/golden-py/ui_date_picker*.py` run on the binding.

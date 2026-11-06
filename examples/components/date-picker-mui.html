@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Date picker (Material UI)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #ffffff; overflow: hidden; padding: 12px 8px; }
+  /* Hand-written CSS that reproduces MuiDateCalendar at a dense size */
+  .MuiDateCalendar-root { width: 304px; display: flex; flex-direction: column; }
+  .MuiPickersCalendarHeader-root { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 12px; height: 36px; }
+  .MuiPickersCalendarHeader-labelContainer { display: flex; font-size: 14px; font-weight: 500; color: rgba(0,0,0,0.87); }
+  .MuiPickersArrowSwitcher-root { display: flex; gap: 4px; }
+  .MuiIconButton-root { width: 28px; height: 28px; border: 0; border-radius: 14px; background: transparent; font-size: 16px; color: rgba(0,0,0,0.54); }
+  .MuiDayCalendar-root { display: flex; flex-direction: column; }
+  .MuiDayCalendar-header { display: flex; justify-content: center; height: 24px; align-items: center; }
+  .MuiDayCalendar-weekDayLabel { width: 36px; text-align: center; font-size: 12px; color: rgba(0,0,0,0.6); }
+  .MuiDayCalendar-monthContainer { display: flex; flex-direction: column; }
+  .MuiDayCalendar-weekContainer { display: flex; justify-content: center; height: 30px; align-items: center; }
+  .MuiPickersDay-root { width: 28px; height: 28px; margin: 0 4px; border: 0; border-radius: 14px; background: transparent; font-size: 12px; color: rgba(0,0,0,0.87); text-align: center; }
+  .MuiPickersDay-today:not(.Mui-selected) { border: 1px solid rgba(0,0,0,0.6); }
+  .MuiPickersDay-root.Mui-selected { background: #1976d2; color: #ffffff; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="MuiDateCalendar-root">
+    <div class="MuiPickersCalendarHeader-root">
+      <div class="MuiPickersCalendarHeader-labelContainer" role="presentation">
+        <div class="MuiPickersFadeTransitionGroup-root MuiPickersCalendarHeader-label" aria-live="polite">November 2026</div>
+      </div>
+      <div class="MuiPickersArrowSwitcher-root">
+        <button class="MuiIconButton-root" aria-label="Previous month">&lt;</button>
+        <button class="MuiIconButton-root" aria-label="Next month">&gt;</button>
+      </div>
+    </div>
+    <div role="grid" aria-labelledby="cal-label" class="MuiDayCalendar-root">
+      <div role="row" class="MuiDayCalendar-header"><span role="columnheader" aria-label="Sunday" class="MuiDayCalendar-weekDayLabel">S</span><span role="columnheader" aria-label="Monday" class="MuiDayCalendar-weekDayLabel">M</span><span role="columnheader" aria-label="Tuesday" class="MuiDayCalendar-weekDayLabel">T</span><span role="columnheader" aria-label="Wednesday" class="MuiDayCalendar-weekDayLabel">W</span><span role="columnheader" aria-label="Thursday" class="MuiDayCalendar-weekDayLabel">T</span><span role="columnheader" aria-label="Friday" class="MuiDayCalendar-weekDayLabel">F</span><span role="columnheader" aria-label="Saturday" class="MuiDayCalendar-weekDayLabel">S</span></div>
+      <div role="rowgroup" class="MuiDayCalendar-monthContainer">
+          <div role="row" class="MuiDayCalendar-weekContainer"><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">1</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">2</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">3</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">4</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">5</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin MuiPickersDay-today" tabindex="-1" role="gridcell" aria-current="date">6</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">7</button></div>
+          <div role="row" class="MuiDayCalendar-weekContainer"><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">8</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">9</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">10</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">11</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">12</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">13</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">14</button></div>
+          <div role="row" class="MuiDayCalendar-weekContainer"><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">15</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">16</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">17</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin Mui-selected" tabindex="-1" role="gridcell" aria-selected="true">18</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">19</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">20</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">21</button></div>
+          <div role="row" class="MuiDayCalendar-weekContainer"><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">22</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">23</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">24</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">25</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">26</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">27</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">28</button></div>
+          <div role="row" class="MuiDayCalendar-weekContainer"><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">29</button><button class="MuiButtonBase-root MuiPickersDay-root MuiPickersDay-dayWithMargin" tabindex="-1" role="gridcell">30</button><div role="gridcell" class="MuiPickersDay-root MuiPickersDay-hiddenDaySpacingFiller" aria-hidden="true"></div><div role="gridcell" class="MuiPickersDay-root MuiPickersDay-hiddenDaySpacingFiller" aria-hidden="true"></div><div role="gridcell" class="MuiPickersDay-root MuiPickersDay-hiddenDaySpacingFiller" aria-hidden="true"></div><div role="gridcell" class="MuiPickersDay-root MuiPickersDay-hiddenDaySpacingFiller" aria-hidden="true"></div><div role="gridcell" class="MuiPickersDay-root MuiPickersDay-hiddenDaySpacingFiller" aria-hidden="true"></div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

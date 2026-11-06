@@ -62,6 +62,7 @@ export const CODES = Object.freeze({
   ICON_PLACEHOLDER: { severity: 'warning' },
   TOUCH_TARGET_SMALL: { severity: 'info' },
   ARIA_TARGET_MISSING: { severity: 'warning' },
+  UNSUPPORTED_WIDGET: { severity: 'warning' },
   // Sidecar overrides
   OVERRIDE_FILE_INVALID: { severity: 'error' },
   OVERRIDE_TARGET_UNKNOWN: { severity: 'warning' },
