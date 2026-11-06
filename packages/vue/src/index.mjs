@@ -8,14 +8,15 @@
  * components():  stamp data-lv-component on each component's root DOM node by
  *                walking the vnode tree, so a component used several times
  *                becomes one reusable LVGL XML component.
- * sourceOf():    file and line of the template element behind a selector.
+ * sourceOf():    file and line behind a CSS selector (a helper; the converter reads
+ *                the data-lv-source attributes that load() stamps).
  *
  * The entry's default export is mounted as the root component.
  */
 import esbuild from 'esbuild';
-import { existsSync } from 'node:fs';
-import { resolve, dirname, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, dirname, basename, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { vueSfcPlugin } from './compile-sfc.mjs';
 
@@ -23,15 +24,45 @@ import { vueSfcPlugin } from './compile-sfc.mjs';
 const PLUGIN_API = 1;
 
 /**
- * The core's browser helpers (launch, buildTree). A published install imports
- * the peer dependency; inside this repository's checkout the sibling src/ is
- * used instead, because the repository root is not a workspace member and
- * would otherwise resolve to an older registry copy.
+ * The core's browser helpers (launch, buildTree), from the core's documented
+ * entry point `@richardmcquiston01/html-to-lvgl/extract` (added in 0.8.0).
+ *
+ * Development vs published resolution:
+ *  - Published (and any normal install): the documented entry is imported
+ *    from the peer dependency, so only the core's public exports are used.
+ *  - Inside this repository's checkout: the sibling `src/extract.mjs` is used
+ *    instead. The repository root is not a workspace member, so
+ *    `node_modules` may hold an older registry copy of the core that lacks
+ *    the entry; tests must run against the checkout's own code. The checkout
+ *    is detected by a package.json named like the core two directories up
+ *    from `packages/vue`, which a published install never has.
  */
 async function loadCore() {
-  const local = resolve(dirname(fileURLToPath(import.meta.url)), '../../../src/extract.mjs');
-  if (existsSync(local)) return import(local);
-  return import('@richardmcquiston01/html-to-lvgl/src/extract.mjs');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const checkoutRoot = resolve(here, '../../..');
+  if (isCoreCheckout(checkoutRoot)) return import(pathToFileURL(join(checkoutRoot, 'src/extract.mjs')).href);
+  try {
+    return await import(CORE_EXTRACT_ENTRY);
+  } catch (err) {
+    throw new Error(
+      `could not load ${CORE_EXTRACT_ENTRY}: ${err instanceof Error ? err.message : String(err)}. ` +
+      `This package needs @richardmcquiston01/html-to-lvgl ${CORE_PEER_RANGE} installed alongside it.`,
+    );
+  }
+}
+
+const CORE_NAME = '@richardmcquiston01/html-to-lvgl';
+const CORE_EXTRACT_ENTRY = `${CORE_NAME}/extract`;
+const CORE_PEER_RANGE = '>=0.8.0';
+
+/** True when `dir` is the core's own checkout (development layout). */
+function isCoreCheckout(dir) {
+  try {
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    return pkg.name === CORE_NAME && existsSync(join(dir, 'src/extract.mjs'));
+  } catch {
+    return false;
+  }
 }
 
 /**

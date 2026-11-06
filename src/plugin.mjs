@@ -6,7 +6,8 @@
  * framework produced the DOM. A plugin supplies only the parts that need
  * framework knowledge. There are two kinds, kept separate on purpose:
  *
- *   Framework plugin (React, Vue, Angular): load, components, sourceOf.
+ *   Framework plugin (React, Vue, Angular): load, components, and optionally
+ *                                           data-lv-source stamps (see `sourceOf`).
  *   Library plugin (MUI, Bootstrap, Vuetify): recognizers.
  *
  * A library such as Bootstrap works with any framework, so a library plugin
@@ -57,7 +58,20 @@ export const PLUGIN_API = 1;
  *   Mark component boundaries (data-lv-component) on the mounted page, so
  *   they become reusable LVGL XML components.
  * @property {(page: LoadedPage, selector: string) => Promise<{ file?: string, line?: number } | null>} [sourceOf]
- *   The source file and line behind an element, for TODO.txt. Null when unknown.
+ *   OPTIONAL lookup helper for tools and tests; the converter never calls it.
+ *   `selector` is a CSS selector for document.querySelector() on the mounted
+ *   page, NOT a core node key (core keys such as "div:2/p:0" are not CSS).
+ *   Returns the source file and line behind that element, or null when unknown.
+ *
+ *   SOURCE LOCATIONS FOR TODO.txt: the supported mechanism is the
+ *   `data-lv-source="<file>:<line>"` attribute. A framework plugin stamps it on
+ *   the DOM nodes whose origin it knows BEFORE calling buildTree(); the
+ *   extractor copies it to `node.source = { file, line }` and diagnostics for
+ *   that node (TODO.txt, CLI output) then name the author's file, not a DOM
+ *   path. The value is split at its LAST colon, so file paths containing
+ *   colons (Windows drives) work. An element without the attribute simply has
+ *   no author location; nothing is guessed. A plugin should offer `sourceOf`
+ *   only as a convenience that reports the same data.
  * @property {object[]} [recognizers]
  *   ComponentDef objects (src/recognize.mjs) for library components. They join
  *   the registry for EVERY input, plain HTML included; a framework plugin is

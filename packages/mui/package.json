@@ -27,7 +27,7 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "@richardmcquiston01/html-to-lvgl": ">=0.7.0",
+    "@richardmcquiston01/html-to-lvgl": ">=0.8.0",
     "@mui/material": ">=5",
     "react": ">=18"
   },

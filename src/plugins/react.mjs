@@ -96,8 +96,13 @@ async function components(loaded) {
 }
 
 /**
- * The `sourceOf` hook. React 19 removed `_debugSource`, so this returns
- * null unless the fiber still carries it; no location is ever guessed.
+ * The `sourceOf` hook (a helper; the converter does not call it, see
+ * src/plugin.mjs). `selector` is a CSS selector. React 19 removed
+ * `_debugSource`, so this returns null unless the fiber still carries it; no
+ * location is ever guessed. For the same reason this plugin stamps no
+ * `data-lv-source`, so React TODO.txt entries keep their DOM-path locations
+ * until a reliable source map exists (the dev-build `_debugStack` holds
+ * bundled positions, not author lines, so it is not used).
  *
  * @param {import('../plugin.mjs').LoadedPage} loaded
  * @param {string} selector

@@ -28,7 +28,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@richardmcquiston01/html-to-lvgl": ">=0.7.0",
+    "@richardmcquiston01/html-to-lvgl": ">=0.8.0",
     "@vue/compiler-sfc": "^3.4.0",
     "esbuild": "^0.28.2",
     "vue": "^3.4.0"
