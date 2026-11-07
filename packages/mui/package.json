@@ -13,6 +13,10 @@
     "url": "git+https://github.com/RichardMcQuiston01/html-to-lvgl.git",
     "directory": "packages/mui"
   },
+  "funding": {
+    "type": "individual",
+    "url": "https://ko-fi.com/P1V529Z7ZP"
+  },
   "publishConfig": {
     "access": "public"
   },
