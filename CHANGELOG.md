@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Plugin packages
+
+- **`@richardmcquiston01/html-to-lvgl-vue` and `@richardmcquiston01/html-to-lvgl-mui` 0.1.1.** Both packages now declare the Ko-fi funding link (`https://ko-fi.com/P1V529Z7ZP`), so `npm fund` and the npm page show it. They are otherwise identical to 0.1.0, and still require core 0.8.0 or later. Plugin packages are versioned and tagged separately from the core (`vue-vX.Y.Z`, `mui-vX.Y.Z`); see [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
+
 ## [0.8.0] - 2026-11-06
 
 URL mode, working library plugins and a documented plugin seam are new capabilities in `src/`, so this is a minor bump. It is also the first core version the two new plugin packages (`@richardmcquiston01/html-to-lvgl-vue` and `-mui`) can run on: they require core 0.8.0 or later, so publish this release before them. Generated output for existing pages does not change.
