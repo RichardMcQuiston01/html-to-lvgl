@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/html-to-lvgl-vue",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vue single-file component (.vue) input for html2lvgl",
   "type": "module",
   "license": "Apache-2.0",

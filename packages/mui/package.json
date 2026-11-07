@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/html-to-lvgl-mui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Material UI recognizers for html2lvgl: the parts of Material UI that need React fiber names or rules the core does not have",
   "type": "module",
   "license": "Apache-2.0",
