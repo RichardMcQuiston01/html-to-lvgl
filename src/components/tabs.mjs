@@ -20,6 +20,9 @@
  * A tablist whose panels cannot be found (a tab strip used as plain
  * navigation, with the page content elsewhere) is NOT turned into a tabview:
  * it stays a row of buttons and reports UNSUPPORTED_WIDGET.
+ * A tablist inside an app bar whose panels are OUTSIDE the bar (Material UI
+ * `AppBar > Toolbar + Tabs`) is appbar-tabs.mjs's: it scores just above this
+ * definition on the same container, so this one never sees that shape.
  *
  * What build() produces. The tabview node keeps the root's box (size, fill,
  * border, radius, padding); its `children` are the tab panels, one per tab, in
@@ -71,7 +74,7 @@ import { ownName } from '../names.mjs';
  */
 
 /** @param {UiNode} node */
-const isTablist = (node) => node.role === 'tablist';
+export const isTablist = (node) => node.role === 'tablist';
 /** @param {UiNode} node */
 const isTab = (node) => node.role === 'tab';
 
@@ -93,7 +96,7 @@ export const contains = (root, target) => root === target || (root.key !== undef
 export const textOf = (n) => [n.text ?? '', ...(n.children ?? []).map(textOf)].join('').replace(/\s+/g, ' ').trim();
 
 /** The tab buttons of a tablist, in document order (nested tablists are not entered). @param {UiNode} list @returns {UiNode[]} */
-function tabsOf(list) {
+export function tabsOf(list) {
   /** @type {UiNode[]} */
   const out = [];
   (function walk(n) {
@@ -135,7 +138,7 @@ function panelOf(tab, ctx) {
  * @param {UiNode} list @param {import('../recognize.mjs').RecognizeContext} ctx
  * @returns {TabGroup | null}
  */
-function groupOf(list, ctx) {
+export function groupOf(list, ctx) {
   const tabs = tabsOf(list);
   if (!tabs.length) return null;
   const panels = tabs.map((t) => panelOf(t, ctx));
@@ -156,7 +159,7 @@ const groupCache = new WeakMap();
  * while the registry rewrites the tree below it.
  * @param {import('../recognize.mjs').RecognizeContext} ctx
  */
-function groupsOf(ctx) {
+export function groupsOf(ctx) {
   let groups = groupCache.get(ctx.tree);
   if (!groups) {
     groups = new Map();
@@ -241,7 +244,7 @@ export function tabviewGeometry({ bar, buttons, content, position }) {
 export const bare = (n) => ({ ...structuredClone({ ...n, children: [] }), children: [] });
 
 /** The first Material UI indicator (a thin box) or similar inside the bar. @param {UiNode} bar @returns {UiNode | null} */
-function findIndicator(bar) {
+export function findIndicator(bar) {
   return findNode(bar, (n) => n !== bar && n.children.length === 0 && !n.text && Boolean(n.styles?.bgColor)
     && (hasClass(n, 'MuiTabs-indicator') || (n.classes ?? []).some((c) => /indicator/i.test(c))) && n.w > 0 && n.h > 0);
 }
@@ -427,7 +430,7 @@ const tabs = {
  * one panel lower; every page of a tabview is in the same place.
  * @param {UiNode} panel @param {UiNode | null} reference @returns {UiNode}
  */
-function clearHidden(panel, reference) {
+export function clearHidden(panel, reference) {
   const copy = structuredClone(panel);
   const dx = reference ? reference.x - panel.x : 0;
   const dy = reference ? reference.y - panel.y : 0;

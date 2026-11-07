@@ -184,9 +184,11 @@ int main(int argc, char ** argv)
             if(!c) { printf("report %s: NOT FOUND\n", label); continue; }
             lv_area_t area;
             lv_obj_get_coords(c, &area);
-            printf("report %s: hidden=%d x=%d y=%d w=%d h=%d\n", label,
+            /* checked=0|1 is appended, as in driver.c, so a tab button's open state can be asserted too. */
+            printf("report %s: hidden=%d x=%d y=%d w=%d h=%d checked=%d\n", label,
                    lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) ? 1 : 0,
-                   (int)area.x1, (int)area.y1, (int)lv_area_get_width(&area), (int)lv_area_get_height(&area));
+                   (int)area.x1, (int)area.y1, (int)lv_area_get_width(&area), (int)lv_area_get_height(&area),
+                   lv_obj_has_state(c, LV_STATE_CHECKED) ? 1 : 0);
         }
     }
     return 0;

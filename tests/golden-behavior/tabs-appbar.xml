@@ -1,0 +1,80 @@
+<screen>
+  <view width="320" height="240" style_bg_color="0xfafafa" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="8" style_pad_column="8" scrollable="false" style_text_font="montserrat_16" style_text_color="0x000000">
+    <lv_obj name="appbar" width="320" height="62" style_bg_color="0x343a40" style_border_width="0" style_radius="0" style_shadow_color="0x000000" style_shadow_opa="51" style_shadow_width="4" style_shadow_offset_y="2" style_shadow_spread="-1" style_pad_all="0" scrollable="false">
+      <lv_obj name="appbar_title" x="0" y="0" width="320" height="32" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="appbar_title_2" align="left_mid" x="12" text="Warehouse" style_text_font="montserrat_14" style_text_color="0xffffff" />
+      </lv_obj>
+      <lv_obj name="tablist" x="0" y="32" width="320" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_button name="wh_t1" flex_grow="1" width="107" height="30" style_bg_color="0x343a40" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_opa="179" style_text_align="center" style_bg_color:checked="0x343a40" style_border_width:checked="2" style_border_color:checked="0xffc107" style_border_side:checked="bottom" style_text_color:checked="0xffffff" style_text_opa:checked="255">
+          <lv_label name="wh_t1_2" align="center" text="Stock" />
+          <subject_set_int_event subject="tabs_appbar_appbar_tabs_selected" value="0" />
+          <bind_state_if_eq subject="tabs_appbar_appbar_tabs_selected" state="checked" ref_value="0" />
+        </lv_button>
+        <lv_button name="wh_t2" flex_grow="1" width="107" height="30" style_bg_color="0x343a40" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_opa="179" style_text_align="center" style_bg_color:checked="0x343a40" style_border_width:checked="2" style_border_color:checked="0xffc107" style_border_side:checked="bottom" style_text_color:checked="0xffffff" style_text_opa:checked="255">
+          <lv_label name="wh_t2_2" align="center" text="Orders" />
+          <subject_set_int_event subject="tabs_appbar_appbar_tabs_selected" value="1" />
+          <bind_state_if_eq subject="tabs_appbar_appbar_tabs_selected" state="checked" ref_value="1" />
+        </lv_button>
+        <lv_button name="wh_t3" flex_grow="1" width="107" height="30" style_bg_color="0x343a40" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_opa="179" style_text_align="center" style_bg_color:checked="0x343a40" style_border_width:checked="2" style_border_color:checked="0xffc107" style_border_side:checked="bottom" style_text_color:checked="0xffffff" style_text_opa:checked="255">
+          <lv_label name="wh_t3_2" align="center" text="Returns" />
+          <subject_set_int_event subject="tabs_appbar_appbar_tabs_selected" value="2" />
+          <bind_state_if_eq subject="tabs_appbar_appbar_tabs_selected" state="checked" ref_value="2" />
+        </lv_button>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="box" width="320" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="wh_p1" x="0" y="0" width="320" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="wh_p1_2" align="left_mid" x="12" text="412 items on the shelves." style_text_font="montserrat_12" style_text_color="0x495057" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_selected" flag="hidden" ref_value="0" />
+      </lv_obj>
+      <lv_obj name="wh_p2" x="0" y="0" width="320" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="wh_p2_2" align="left_mid" x="12" text="18 orders waiting to ship." style_text_font="montserrat_12" style_text_color="0x495057" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_selected" flag="hidden" ref_value="1" />
+      </lv_obj>
+      <lv_obj name="wh_p3" x="0" y="0" width="320" height="28" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="wh_p3_2" align="left_mid" x="12" text="3 returns to inspect." style_text_font="montserrat_12" style_text_color="0x495057" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_selected" flag="hidden" ref_value="2" />
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="box_2" width="320" height="106" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+      <lv_obj name="appbar_2" x="0" y="0" width="320" height="76" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_color="0x000000" style_shadow_opa="31" style_shadow_width="10" style_shadow_offset_y="1" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="column" style_pad_row="0" style_pad_column="0" scrollable="false">
+        <lv_obj name="toolbar" width="320" height="40" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="16" style_pad_right="16" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_flex_cross_place="center" style_flex_track_place="center" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_label name="appbar_title_3" text="Dashboard" style_text_font="montserrat_14" style_text_color="0xffffff" />
+        </lv_obj>
+        <lv_obj name="tabs" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+          <lv_obj name="tabs_scroller" flex_grow="1" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="true">
+            <lv_obj name="dashboard_sections" x="0" y="0" width="320" height="36" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_left="0" style_pad_right="0" style_pad_top="0" style_pad_bottom="0" flex_flow="row" style_pad_row="0" style_pad_column="0" scrollable="false">
+              <lv_button name="mui_tab_0" flex_grow="1" width="107" height="36" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_opa="153" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" style_bg_color:checked="0x1976d2" style_border_width:checked="2" style_text_color:checked="0xffffff" style_border_color:checked="0xff4081" style_border_side:checked="bottom" style_opa:checked="255">
+                <lv_label name="mui_tab_0_2" align="center" text="OVERVIEW" />
+                <subject_set_int_event subject="tabs_appbar_appbar_tabs_2_selected" value="0" />
+                <bind_state_if_eq subject="tabs_appbar_appbar_tabs_2_selected" state="checked" ref_value="0" />
+              </lv_button>
+              <lv_button name="mui_tab_1" flex_grow="1" width="107" height="36" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_opa="153" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" style_bg_color:checked="0x1976d2" style_border_width:checked="2" style_text_color:checked="0xffffff" style_border_color:checked="0xff4081" style_border_side:checked="bottom" style_opa:checked="255">
+                <lv_label name="mui_tab_1_2" align="center" text="SETTINGS" />
+                <subject_set_int_event subject="tabs_appbar_appbar_tabs_2_selected" value="1" />
+                <bind_state_if_eq subject="tabs_appbar_appbar_tabs_2_selected" state="checked" ref_value="1" />
+              </lv_button>
+              <lv_button name="mui_tab_2" flex_grow="1" width="107" height="36" style_bg_color="0x1976d2" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" style_opa="153" style_text_font="montserrat_12" style_text_color="0xffffff" style_text_align="center" style_bg_color:checked="0x1976d2" style_border_width:checked="2" style_text_color:checked="0xffffff" style_border_color:checked="0xff4081" style_border_side:checked="bottom" style_opa:checked="255">
+                <lv_label name="mui_tab_2_2" align="center" text="BILLING" />
+                <subject_set_int_event subject="tabs_appbar_appbar_tabs_2_selected" value="2" />
+                <bind_state_if_eq subject="tabs_appbar_appbar_tabs_2_selected" state="checked" ref_value="2" />
+              </lv_button>
+            </lv_obj>
+          </lv_obj>
+        </lv_obj>
+      </lv_obj>
+      <lv_obj name="mui_tabpanel_0" x="0" y="76" width="320" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="mui_tabpanel_0_2" align="left_mid" x="16" text="Charts and totals." style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_2_selected" flag="hidden" ref_value="0" />
+      </lv_obj>
+      <lv_obj name="mui_tabpanel_1" x="0" y="76" width="320" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="mui_tabpanel_1_2" align="left_mid" x="16" text="Theme, language and units." style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_2_selected" flag="hidden" ref_value="1" />
+      </lv_obj>
+      <lv_obj name="mui_tabpanel_2" x="0" y="76" width="320" height="30" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
+        <lv_label name="mui_tabpanel_2_2" align="left_mid" x="16" text="Plan and payment method." style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="222" />
+        <bind_flag_if_not_eq subject="tabs_appbar_appbar_tabs_2_selected" flag="hidden" ref_value="2" />
+      </lv_obj>
+    </lv_obj>
+  </view>
+</screen>
