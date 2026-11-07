@@ -226,6 +226,7 @@ These components already have an LVGL widget, so the converter emits the widget 
 | Component | Recognized from | LVGL widget and notes |
 |---|---|---|
 | `tabs` | `role="tablist"` with `tab` and `tabpanel`, `MuiTabs-root` | `lv_tabview`. Open tab from `aria-selected`; bar on any of four sides; switching is native. Tab icons are dropped. |
+| `appbar-tabs` | A `tablist` inside an AppBar (`MuiAppBar-root`, `role="banner"`, a page-level `<header>`) whose `tabpanel` elements are outside it | The AppBar stays an ordinary box, pinned if fixed. Tab buttons set an LVGL subject, the open tab has a checked look, and each panel hides unless it is open. Icons are kept. A scrollable strip is clipped, and unmounted panels show nothing. |
 | `bottom-navigation` | `MuiBottomNavigation-root`, a bottom-pinned `nav` of 3 to 5 icon-over-label actions | `lv_tabview` with the bar at the bottom. Selected action from `aria-current`; `data-lv-link` still navigates. |
 | `select` | `<select>`, `role="combobox"` with a listbox, `MuiSelect-root` | `lv_dropdown` with options and selected index from the DOM. A closed Material UI Select needs `keepMounted`. |
 | `menu` | An opener with `aria-haspopup`, `role="menu"`, `MuiMenu-root` | An opener plus a floating popup bound to a subject (the behavior IR). A press outside closes it. |
