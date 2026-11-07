@@ -25,13 +25,13 @@ import { createDiagnostics } from './diagnostics.mjs';
 import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
+import { assignLabelFonts, fitsBox } from './label-sizes.mjs';
 import { emitTabview } from './emit-tabview.mjs';
 import { emitCheckableTab } from './emit-appbar-tabs.mjs';
 import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml, animationsElement } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
 const UNSUPPORTED_TAGS = new Set(['canvas', 'svg', 'video', 'iframe', 'audio', 'object', 'embed']);
-const FIT_TOLERANCE = 2; // px of acceptable overflow before stepping down
 
 const JUSTIFY = {
   'flex-start': 'start', start: 'start', left: 'start', normal: 'start', stretch: 'start',
@@ -76,6 +76,11 @@ export function convert(input, { name = 'page', screens = null, screenMode = fal
   const ctx = { diagnostics, assets: [], names: new Map(), collapsed: removed, screens, fonts, page: name, subjects: new Map(), usedSubjects: new Map(), timelines: new Map() };
   hoistOverlays(tree);
   markOverhangAndClip(tree);
+  assignLabelFonts(tree, {
+    fonts: ctx.fonts,
+    displayText: (n) => (n.styles.textTransform && n.styles.textTransform !== 'none' ? applyTextTransform(n.text, n.styles.textTransform) : n.text),
+    isManaged: (n, parent) => TEXT_TAGS.has(n.tag) && n.children.length === 0 && isManaged(parent) && !outOfFlow(n),
+  });
 
   const rootAttrs = {
     width: tree.w,
@@ -472,9 +477,19 @@ function textStyles(node, font) {
  * A label's width is a hard wrap boundary in LVGL, so a kept width must never
  * be smaller than the measured text — flex-managed and left-aligned labels
  * simply auto-size, and centered labels get max(box, measured).
+ *
+ * Built-in Montserrat runs wider than the browser's font, so a label may need
+ * a smaller size. That is decided per GROUP of labels sharing CSS size,
+ * family, weight and style (assignLabelFonts, run once before emit): every
+ * label in the group gets one size, one step down at most, so "Cart",
+ * "Delivery" and "Pay" in a stepper no longer land on two sizes. Measured on
+ * 41 corpus pages against Chromium: mean fidelity 94.602 -> 94.603, labels
+ * that differ within a CSS-size group 5 -> 0 (page-wide, per-parent and
+ * no-step-down designs are compared in src/label-sizes.mjs).
  */
 function fitText(node, ctx, { managed = false } = {}) {
-  let font = ctx.fonts.for(node.styles);
+  // node.fitFont: the size shared by sibling labels (src/label-sizes.mjs).
+  let font = node.fitFont ?? ctx.fonts.for(node.styles);
   if (!node.text) return { font, width: managed ? null : node.w };
 
   const multiline = node.h >= node.styles.fontSize * 2;
@@ -485,9 +500,11 @@ function fitText(node, ctx, { managed = false } = {}) {
   // Absolute placement: honor the browser box. A converted font is already
   // the exact CSS size so it measures like the browser did; a built-in
   // substitute may run wider, and can try one size smaller.
-  if (font.measure(node.text) > node.w + FIT_TOLERANCE) {
+  // Labels in a size group were settled up front, so only ungrouped ones
+  // (custom fonts never reach here with a smaller size) step down alone.
+  if (!node.fitFont && !fitsBox(font, node.text, node.w)) {
     const smaller = font.stepDown();
-    if (smaller && smaller.measure(node.text) <= node.w + FIT_TOLERANCE) font = smaller;
+    if (smaller && fitsBox(smaller, node.text, node.w)) font = smaller;
   }
   const centered = node.styles.textAlign === 'center' || node.styles.textAlign === 'right';
   if (centered) return { font, width: Math.max(node.w, font.measure(node.text)) };

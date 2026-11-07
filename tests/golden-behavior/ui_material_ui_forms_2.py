@@ -376,7 +376,7 @@ def ui_material_ui_forms_2_create(parent):
     step_label_label_3.set_x(0)
     step_label_label_3.set_y(3)
     step_label_label_3.set_text("Pay")
-    step_label_label_3.set_style_text_font(lv.font_montserrat_12, 0)
+    step_label_label_3.set_style_text_font(lv.font_montserrat_10, 0)
     step_label_label_3.set_style_text_color(lv.color_hex(0x000000), 0)
     step_label_label_3.set_style_text_opa(153, 0)
 

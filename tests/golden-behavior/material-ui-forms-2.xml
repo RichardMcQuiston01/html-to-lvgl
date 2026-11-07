@@ -40,7 +40,7 @@
             </lv_obj>
           </lv_obj>
           <lv_obj name="step_label_labelcontainer_3" width="21" height="19" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-            <lv_label name="step_label_label_3" x="0" y="3" text="Pay" style_text_font="montserrat_12" style_text_color="0x000000" style_text_opa="153" />
+            <lv_label name="step_label_label_3" x="0" y="3" text="Pay" style_text_font="montserrat_10" style_text_color="0x000000" style_text_opa="153" />
           </lv_obj>
         </lv_obj>
       </lv_obj>

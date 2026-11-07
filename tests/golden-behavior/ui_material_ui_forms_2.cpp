@@ -373,7 +373,7 @@ lv_obj_t * ui_material_ui_forms_2_create(lv_obj_t * parent)
     lv_obj_set_x(step_label_label_3, 0);
     lv_obj_set_y(step_label_label_3, 3);
     lv_label_set_text(step_label_label_3, "Pay");
-    lv_obj_set_style_text_font(step_label_label_3, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(step_label_label_3, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(step_label_label_3, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(step_label_label_3, 153, 0);
 

@@ -7,13 +7,13 @@
           <lv_label name="label_2" x="0" y="0" text="Home" style_text_font="montserrat_10" style_text_color="0x2563eb" />
         </lv_obj>
         <lv_obj name="sep" width="4" height="15" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="sep_2" text="/" style_text_font="montserrat_12" style_text_color="0x9ca3af" />
+          <lv_label name="sep_2" text="/" style_text_font="montserrat_10" style_text_color="0x9ca3af" />
         </lv_obj>
         <lv_obj name="box_2" width="46" height="15" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="label_3" x="0" y="0" text="Devices" style_text_font="montserrat_12" style_text_color="0x2563eb" />
+          <lv_label name="label_3" x="0" y="0" text="Devices" style_text_font="montserrat_10" style_text_color="0x2563eb" />
         </lv_obj>
         <lv_obj name="sep_3" width="4" height="15" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="sep_4" text="/" style_text_font="montserrat_12" style_text_color="0x9ca3af" />
+          <lv_label name="sep_4" text="/" style_text_font="montserrat_10" style_text_color="0x9ca3af" />
         </lv_obj>
         <lv_obj name="box_3" width="71" height="15" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_label name="label_4" x="0" y="0" text="Thermostat" style_text_font="montserrat_12" style_text_color="0x111827" />
@@ -27,13 +27,13 @@
           <lv_label name="typography" x="0" y="3" text="Home" style_text_font="montserrat_14" style_text_color="0x1976d2" />
         </lv_obj>
         <lv_obj name="breadcrumbs_separator" style_margin_left="8" style_margin_right="8" width="5" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="breadcrumbs_separator_2" text="/" style_text_font="montserrat_16" style_text_color="0x000000" style_text_opa="153" />
+          <lv_label name="breadcrumbs_separator_2" text="/" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="153" />
         </lv_obj>
         <lv_obj name="breadcrumbs_li_2" width="59" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_label name="typography_2" x="0" y="3" text="Settings" style_text_font="montserrat_14" style_text_color="0x1976d2" />
         </lv_obj>
         <lv_obj name="breadcrumbs_separator_3" style_margin_left="8" style_margin_right="8" width="5" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="breadcrumbs_separator_4" text="/" style_text_font="montserrat_16" style_text_color="0x000000" style_text_opa="153" />
+          <lv_label name="breadcrumbs_separator_4" text="/" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="153" />
         </lv_obj>
         <lv_obj name="breadcrumbs_li_3" width="60" height="24" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_label name="typography_3" x="0" y="0" text="Network" style_text_font="montserrat_14" style_text_color="0x000000" style_text_opa="222" />
@@ -47,7 +47,7 @@
           <lv_label name="label_7" x="0" y="2" text="Home" style_text_font="montserrat_10" style_text_color="0x374151" />
         </lv_obj>
         <lv_obj name="box_6" width="46" height="18" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
-          <lv_label name="label_8" x="0" y="2" text="Devices" style_text_font="montserrat_12" style_text_color="0x374151" />
+          <lv_label name="label_8" x="0" y="2" text="Devices" style_text_font="montserrat_10" style_text_color="0x374151" />
         </lv_obj>
         <lv_obj name="box_7" width="34" height="18" style_bg_opa="0" style_border_width="0" style_radius="0" style_shadow_width="0" style_pad_all="0" scrollable="false">
           <lv_label name="label_9" x="0" y="2" text="About" style_text_font="montserrat_10" style_text_color="0x374151" />

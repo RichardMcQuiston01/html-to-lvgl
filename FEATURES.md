@@ -78,7 +78,9 @@ Each font is written twice, into `out/fonts/`:
 - `<name>.c` compiles with the generated C code.
 - `<name>.bin` loads at run time with `lv_binfont_create()`. The XML path uses this file.
 
-Labels are sized from the real widths of the font that draws them. Generated C includes `"lvgl.h"`. If your project needs another path, pass `--lv-include lvgl/lvgl.h`.
+Labels are sized from the real widths of the font that draws them. With the built-in Montserrat fonts, single-line labels placed at absolute coordinates are sized as a group: every label on a page that shares a CSS font size, family, weight and style gets the same LVGL size, so a stepper's "Cart", "Delivery" and "Pay" never split between two sizes. The group uses the nominal size, or one size smaller when at least one label would otherwise be wider than its browser box, and never goes more than one size below nominal. Custom fonts are exact-size and unaffected, as are flex-managed and multi-line labels. The smallest built-in size is montserrat_10, so very small text can still be wider than its box; a custom font or a smaller font fixes that.
+
+Generated C includes `"lvgl.h"`. If your project needs another path, pass `--lv-include lvgl/lvgl.h`.
 
 [Back to Top](#features)
 

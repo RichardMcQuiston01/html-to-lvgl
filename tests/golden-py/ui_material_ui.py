@@ -90,7 +90,7 @@ def ui_create(parent):
 
     label_2 = lv.label(box_2)
     label_2.set_text("/")
-    label_2.set_style_text_font(lv.font_montserrat_12, 0)
+    label_2.set_style_text_font(lv.font_montserrat_10, 0)
     label_2.set_style_text_color(lv.color_hex(0x000000), 0)
     label_2.set_style_text_opa(153, 0)
 
@@ -123,7 +123,7 @@ def ui_create(parent):
 
     label_4 = lv.label(box_4)
     label_4.set_text("/")
-    label_4.set_style_text_font(lv.font_montserrat_12, 0)
+    label_4.set_style_text_font(lv.font_montserrat_10, 0)
     label_4.set_style_text_color(lv.color_hex(0x000000), 0)
     label_4.set_style_text_opa(153, 0)
 
