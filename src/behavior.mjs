@@ -115,8 +115,18 @@
  *    the C/C++/MicroPython emitters (lv_anim_timeline_create + lv_anim_timeline_add
  *    and lv_obj_add_play_timeline_event, or hand-built equivalents).
  *
+ * 6. Object STATE binds (added with the AppBar tabs): `bindState(subject,
+ *    'checked', 'eq', i)` sets or clears an object STATE (not a flag) while
+ *    the comparison is true, so a row of buttons can show which one is open
+ *    with a style for the CHECKED state, exactly as lv_tabview does for its
+ *    own buttons. node.behavior.binds entries then have kind 'state':
+ *    { kind: 'state', subject, state, op, ref }. convert() emits
+ *    `<bind_state_if_eq subject=".." state="checked" ref_value="1"/>`
+ *    (verified in LVGL 9.4: lv_obj_xml_bind_state_apply), C emits
+ *    lv_obj_bind_state_if_<op>, MicroPython obj.bind_state_if_<op>.
+ *
  * Not covered yet (extend here, not in components): increment events,
- * bind_state_if_*, string/float subjects, include_timeline.
+ * string/float subjects, include_timeline.
  *
  * This module is pure: no browser, no file system.
  */
@@ -139,9 +149,10 @@ import { sanitize } from './names.mjs';
  * @property {string} [trigger]    LVGL event name; omitted = clicked.
  *
  * @typedef {object} BehaviorBind
- * @property {'flag'} kind
+ * @property {'flag' | 'state'} kind  flag: an LVGL object flag; state: an object state (see bindState).
  * @property {string} subject
- * @property {string} flag
+ * @property {string} [flag]         kind 'flag': the flag name ('hidden', 'clickable', ...).
+ * @property {string} [state]        kind 'state': 'checked' or another name from BIND_STATES.
  * @property {'eq' | 'not_eq' | 'gt' | 'ge' | 'lt' | 'le'} op
  * @property {number} ref
  *
@@ -187,12 +198,16 @@ export const TIMELINE_PROPS = Object.freeze(new Set([
 
 export const BIND_OPS = Object.freeze(['eq', 'not_eq', 'gt', 'ge', 'lt', 'le']);
 
+/** Object states a bind may drive (lv_xml_state_to_enum names that make sense for a bound state). */
+export const BIND_STATES = Object.freeze(['checked', 'disabled', 'focused']);
+
 const EVENT_TAGS = Object.freeze({ toggle: 'subject_toggle_event', set: 'subject_set_int_event', play: 'play_timeline_event' });
 
 /** Tags convert() emits for behavior, for emitters that need to skip them. */
 export const BEHAVIOR_TAGS = Object.freeze(new Set([
   ...Object.values(EVENT_TAGS),
   ...BIND_OPS.map((op) => `bind_flag_if_${op}`),
+  ...BIND_OPS.map((op) => `bind_state_if_${op}`),
 ]));
 
 /** @param {{ tag: string }} element  A node of the XML element tree. */
@@ -259,6 +274,14 @@ export function bindFlag(subject, flag, op, ref) {
   return { kind: 'flag', subject, flag, op, ref };
 }
 
+/** @returns {BehaviorBind} Set an object state (checked, ...) while `subject <op> ref`. */
+export function bindState(subject, state, op, ref) {
+  if (!BIND_OPS.includes(op)) throw new Error(`bindState: op must be one of ${BIND_OPS.join(', ')}, got "${op}"`);
+  if (!BIND_STATES.includes(state)) throw new Error(`bindState("${subject}"): state must be one of ${BIND_STATES.join(', ')}, got "${state}"`);
+  if (!Number.isInteger(ref)) throw new Error(`bindState("${subject}"): ref must be an integer, got ${ref}`);
+  return { kind: 'state', subject, state, op, ref };
+}
+
 /** Shorthand for bindFlag(subject, 'hidden', op, ref). */
 export const hiddenWhen = (subject, op, ref) => bindFlag(subject, 'hidden', op, ref);
 
@@ -320,7 +343,9 @@ export function behaviorElements(b) {
   const events = b.events.map((e) => el(EVENT_TAGS[e.kind], e.kind === 'play'
     ? { target: 'self', timeline: e.timeline, trigger: e.trigger }
     : { subject: e.subject, ...(e.kind === 'set' ? { value: e.value } : {}), trigger: e.trigger }));
-  const binds = b.binds.map((x) => el(`bind_flag_if_${x.op}`, { subject: x.subject, flag: x.flag, ref_value: x.ref }));
+  const binds = b.binds.map((x) => (x.kind === 'state'
+    ? el(`bind_state_if_${x.op}`, { subject: x.subject, state: x.state, ref_value: x.ref })
+    : el(`bind_flag_if_${x.op}`, { subject: x.subject, flag: x.flag, ref_value: x.ref })));
   return [...events, ...binds];
 }
 

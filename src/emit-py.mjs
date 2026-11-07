@@ -63,7 +63,9 @@
  * Checked against the PINNED binding (lv_micropython 44aa2b15, vendored
  * LVGL v9.3-era), which exposes `lv.subject_t()` with `.init_int()/.get_int()/
  * .set_int()` and `obj.bind_flag_if_{eq,not_eq,gt,ge,lt,le}(subject, flag,
- * ref)`, but NOT `lv_obj_add_subject_toggle_event` /
+ * ref)` and `obj.bind_state_if_{eq,...}(subject, lv.STATE.CHECKED, ref)` (the
+ * state binds the AppBar tabs use, probed in the pinned binary), but NOT
+ * `lv_obj_add_subject_toggle_event` /
  * `lv_obj_add_subject_set_int_event` (LVGL v9.4 additions; absent from
  * `dir(lv.obj)`). That gap is closed with ordinary event callbacks that do
  * exactly what the v9.4 helpers do (toggle: `set_int(not get_int())`; set:
@@ -220,7 +222,9 @@ export function emitPy(view, opts = {}) {
       }
     }
     for (const bind of behavior.binds ?? []) {
-      lines.push(`    ${v}.bind_flag_if_${bind.op}(subjects[${pystr(bind.subject)}], lv.obj.FLAG.${bind.flag.toUpperCase()}, ${bind.ref})`);
+      lines.push(bind.kind === 'state'
+        ? `    ${v}.bind_state_if_${bind.op}(subjects[${pystr(bind.subject)}], lv.STATE.${bind.state.toUpperCase()}, ${bind.ref})`
+        : `    ${v}.bind_flag_if_${bind.op}(subjects[${pystr(bind.subject)}], lv.obj.FLAG.${bind.flag.toUpperCase()}, ${bind.ref})`);
     }
   }
 
