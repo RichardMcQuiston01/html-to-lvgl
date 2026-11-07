@@ -85,7 +85,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * sep_2 = lv_label_create(sep);
     lv_label_set_text(sep_2, "/");
-    lv_obj_set_style_text_font(sep_2, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(sep_2, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(sep_2, lv_color_hex(0x9ca3af), 0);
 
     lv_obj_t * box_2 = lv_obj_create(box_4);
@@ -102,7 +102,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_x(label_3, 0);
     lv_obj_set_y(label_3, 0);
     lv_label_set_text(label_3, "Devices");
-    lv_obj_set_style_text_font(label_3, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(label_3, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(label_3, lv_color_hex(0x2563eb), 0);
 
     lv_obj_t * sep_3 = lv_obj_create(box_4);
@@ -117,7 +117,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * sep_4 = lv_label_create(sep_3);
     lv_label_set_text(sep_4, "/");
-    lv_obj_set_style_text_font(sep_4, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(sep_4, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(sep_4, lv_color_hex(0x9ca3af), 0);
 
     lv_obj_t * box_3 = lv_obj_create(box_4);
@@ -203,7 +203,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * breadcrumbs_separator_2 = lv_label_create(breadcrumbs_separator);
     lv_label_set_text(breadcrumbs_separator_2, "/");
-    lv_obj_set_style_text_font(breadcrumbs_separator_2, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(breadcrumbs_separator_2, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(breadcrumbs_separator_2, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(breadcrumbs_separator_2, 153, 0);
 
@@ -238,7 +238,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * breadcrumbs_separator_4 = lv_label_create(breadcrumbs_separator_3);
     lv_label_set_text(breadcrumbs_separator_4, "/");
-    lv_obj_set_style_text_font(breadcrumbs_separator_4, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(breadcrumbs_separator_4, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(breadcrumbs_separator_4, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(breadcrumbs_separator_4, 153, 0);
 
@@ -324,7 +324,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
     lv_obj_set_x(label_8, 0);
     lv_obj_set_y(label_8, 2);
     lv_label_set_text(label_8, "Devices");
-    lv_obj_set_style_text_font(label_8, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(label_8, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(label_8, lv_color_hex(0x374151), 0);
 
     lv_obj_t * box_7 = lv_obj_create(box_8);

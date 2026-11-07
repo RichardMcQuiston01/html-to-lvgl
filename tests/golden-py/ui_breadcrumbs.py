@@ -86,7 +86,7 @@ def ui_create(parent):
 
     sep_2 = lv.label(sep)
     sep_2.set_text("/")
-    sep_2.set_style_text_font(lv.font_montserrat_12, 0)
+    sep_2.set_style_text_font(lv.font_montserrat_10, 0)
     sep_2.set_style_text_color(lv.color_hex(0x9ca3af), 0)
 
     box_2 = lv.obj(box_4)
@@ -103,7 +103,7 @@ def ui_create(parent):
     label_3.set_x(0)
     label_3.set_y(0)
     label_3.set_text("Devices")
-    label_3.set_style_text_font(lv.font_montserrat_12, 0)
+    label_3.set_style_text_font(lv.font_montserrat_10, 0)
     label_3.set_style_text_color(lv.color_hex(0x2563eb), 0)
 
     sep_3 = lv.obj(box_4)
@@ -118,7 +118,7 @@ def ui_create(parent):
 
     sep_4 = lv.label(sep_3)
     sep_4.set_text("/")
-    sep_4.set_style_text_font(lv.font_montserrat_12, 0)
+    sep_4.set_style_text_font(lv.font_montserrat_10, 0)
     sep_4.set_style_text_color(lv.color_hex(0x9ca3af), 0)
 
     box_3 = lv.obj(box_4)
@@ -204,7 +204,7 @@ def ui_create(parent):
 
     breadcrumbs_separator_2 = lv.label(breadcrumbs_separator)
     breadcrumbs_separator_2.set_text("/")
-    breadcrumbs_separator_2.set_style_text_font(lv.font_montserrat_16, 0)
+    breadcrumbs_separator_2.set_style_text_font(lv.font_montserrat_14, 0)
     breadcrumbs_separator_2.set_style_text_color(lv.color_hex(0x000000), 0)
     breadcrumbs_separator_2.set_style_text_opa(153, 0)
 
@@ -239,7 +239,7 @@ def ui_create(parent):
 
     breadcrumbs_separator_4 = lv.label(breadcrumbs_separator_3)
     breadcrumbs_separator_4.set_text("/")
-    breadcrumbs_separator_4.set_style_text_font(lv.font_montserrat_16, 0)
+    breadcrumbs_separator_4.set_style_text_font(lv.font_montserrat_14, 0)
     breadcrumbs_separator_4.set_style_text_color(lv.color_hex(0x000000), 0)
     breadcrumbs_separator_4.set_style_text_opa(153, 0)
 
@@ -325,7 +325,7 @@ def ui_create(parent):
     label_8.set_x(0)
     label_8.set_y(2)
     label_8.set_text("Devices")
-    label_8.set_style_text_font(lv.font_montserrat_12, 0)
+    label_8.set_style_text_font(lv.font_montserrat_10, 0)
     label_8.set_style_text_color(lv.color_hex(0x374151), 0)
 
     box_7 = lv.obj(box_8)

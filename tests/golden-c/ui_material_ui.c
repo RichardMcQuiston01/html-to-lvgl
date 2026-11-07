@@ -89,7 +89,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * label_2 = lv_label_create(box_2);
     lv_label_set_text(label_2, "/");
-    lv_obj_set_style_text_font(label_2, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(label_2, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(label_2, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(label_2, 153, 0);
 
@@ -122,7 +122,7 @@ lv_obj_t * ui_create(lv_obj_t * parent)
 
     lv_obj_t * label_4 = lv_label_create(box_4);
     lv_label_set_text(label_4, "/");
-    lv_obj_set_style_text_font(label_4, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(label_4, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(label_4, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_opa(label_4, 153, 0);
 
