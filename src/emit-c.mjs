@@ -42,7 +42,8 @@
  *     inside `#if LV_USE_XML`, so a library XML component created with
  *     lv_xml_create can resolve a `subject` prop by name.
  *   - meta.behavior events become lv_obj_add_subject_toggle_event /
- *     lv_obj_add_subject_set_int_event and binds become lv_obj_bind_flag_if_<op>;
+ *     lv_obj_add_subject_set_int_event and binds become lv_obj_bind_flag_if_<op>
+ *     (lv_obj_bind_state_if_<op> for a state bind, e.g. a tab button's CHECKED);
  *     all exist in 9.4, so no substitute was needed. The XML child elements
  *     convert() also writes for them are skipped via isBehaviorElement().
  *   - An xmlComponent instance (any tag not starting with lv_) becomes
@@ -219,7 +220,9 @@ function emit(view, { name = 'page', symbol = 'ui_create', lvInclude = 'lvgl.h',
         : `    lv_obj_add_subject_toggle_event(${v}, &${subjectVar(e.subject)}, ${trigger});`);
     }
     for (const b of node.meta?.behavior?.binds ?? []) {
-      lines.push(`    lv_obj_bind_flag_if_${b.op}(${v}, &${subjectVar(b.subject)}, LV_OBJ_FLAG_${b.flag.toUpperCase()}, ${b.ref});`);
+      lines.push(b.kind === 'state'
+        ? `    lv_obj_bind_state_if_${b.op}(${v}, &${subjectVar(b.subject)}, LV_STATE_${b.state.toUpperCase()}, ${b.ref});`
+        : `    lv_obj_bind_flag_if_${b.op}(${v}, &${subjectVar(b.subject)}, LV_OBJ_FLAG_${b.flag.toUpperCase()}, ${b.ref});`);
     }
   }
 

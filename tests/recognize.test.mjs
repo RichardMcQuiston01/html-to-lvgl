@@ -224,6 +224,7 @@ test('the built-in registry lists the icon, every Phase 7 component, the Phase 8
     'stepper',
     'pagination',
     'tabs',
+    'appbar-tabs',
     'bottom-navigation',
     'switch',
     'textfield',

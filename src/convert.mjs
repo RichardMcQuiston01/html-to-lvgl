@@ -26,6 +26,7 @@ import { recognize, defaultRegistry } from './recognize.mjs';
 import { checkTouchTargets } from './touch-targets.mjs';
 import { sanitize, ownName } from './names.mjs';
 import { emitTabview } from './emit-tabview.mjs';
+import { emitCheckableTab } from './emit-appbar-tabs.mjs';
 import { hasBehavior, qualifyBehavior, behaviorElements, globalsXml, animationsElement } from './behavior.mjs';
 
 const TEXT_TAGS = new Set(['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'a', 'div', 'em', 'strong', 'small', 'b', 'i']);
@@ -511,6 +512,7 @@ function emit(node, parent, ctx, index = 0) {
   if (node.text && transform && transform !== 'none') node = { ...node, text: applyTextTransform(node.text, transform) };
   const out = node.xmlComponent ? emitLibraryComponent(node, parent, ctx, index)
     : node.tabview ? emitNativeTabview(node, parent, ctx, index)
+    : node.checkable ? emitNativeCheckableTab(node, parent, ctx, index)
     : node.native ? emitNativeWidget(node, parent, ctx, index)
     : emitByTag(node, parent, ctx, index);
   if (out && hasBehavior(node)) applyBehavior(node, out, ctx);
@@ -601,6 +603,14 @@ function emitLibraryComponent(node, parent, ctx, index) {
  */
 function emitNativeTabview(node, parent, ctx, index) {
   return emitTabview(node, parent, ctx, index, { uid, placement, boxStyles, containerLayout, textStyles, fitText, emit, applyTextTransform, resolveScreen, hex });
+}
+
+/**
+ * A tab button in an app bar (node.checkable, see src/components/appbar-tabs.mjs):
+ * a button with an unchecked and a CHECKED look. Built in src/emit-appbar-tabs.mjs.
+ */
+function emitNativeCheckableTab(node, parent, ctx, index) {
+  return emitCheckableTab(node, parent, ctx, index, { uid, placement, boxStyles, textStyles, fitText, buttonLabelPlacement, containerLayout, emit, hex });
 }
 
 /** Height of one text line in a font: measured for Montserrat, about 1.25 em for a converted font. */

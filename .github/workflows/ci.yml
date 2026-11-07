@@ -409,6 +409,7 @@ jobs:
           TARGET=py spike/subjects/run-components.sh | grep -E '^  (ok|FAIL)|^(Generated Modal|FAILED)'
           TARGET=py spike/subjects/run-menu-snackbar.sh | grep -E '^  (ok|FAIL)|^(Generated Menu|FAILED)'
           TARGET=py spike/subjects/run-tabs.sh | grep -E '^  (ok|FAIL)|^(Generated tabs|FAILED)'
+          TARGET=py spike/subjects/run-appbar-tabs.sh | grep -E '^  (ok|FAIL)|^(Generated tabs|FAILED)'
 
       - name: Convert fonts with lv_font_conv and render with them (--format py)
         run: |
@@ -692,6 +693,11 @@ jobs:
       # open tab comes from ARIA and a tap on a tab button switches the page.
       - name: Drive the generated tabs and bottom navigation XML
         run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-tabs.sh
+      # Tabs inside an app bar, panels outside it: the open tab is an LVGL
+      # subject, each tab button is bound to its CHECKED state and each panel
+      # to its hidden flag (src/components/appbar-tabs.mjs).
+      - name: Drive the generated tabs-in-an-app-bar XML
+        run: DRIVER="$GITHUB_WORKSPACE/build-subjects/driver" spike/subjects/run-appbar-tabs.sh
       # Phase 9 native-widget remaps: the first frame comes from ARIA, and a
       # click toggles a switch and moves a slider.
       - name: Drive the generated Switch, Slider and Progress XML

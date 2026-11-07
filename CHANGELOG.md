@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Tabs inside an AppBar now work.** The most common Material UI layout, `AppBar > Toolbar + Tabs` with the `tabpanel` elements further down the page, and a plain `<header role="banner">` holding a `tablist`, used to report `UNSUPPORTED_WIDGET` and keep plain boxes. A new `appbar-tabs` recognizer keeps the AppBar (pinning, elevation and toolbar included), the panels, and anything between them as ordinary boxes, and makes the tabs real: the open tab comes from `aria-selected` or `Mui-selected`, tapping a tab switches the panel, and icons in tabs are kept. The open tab is an LVGL subject: each tab button sets it and carries a checked look, and each panel hides unless it is the open one. It works in XML, C, C++ and MicroPython, and CI click-tests all four. Tabs outside an AppBar still use `lv_tabview`, unchanged.
+- The state-binding part of the behavior system gained `bindState`, emitted as `bind_state_if_*` in XML, `lv_obj_bind_state_if_*` in C and C++, and `obj.bind_state_if_*` in MicroPython.
+
+### Known limits
+
+- Tabs in an AppBar: a scrollable strip with more tabs than fit is clipped, the extra tabs are unreachable, and the scroll arrows are lost; a tab icon keeps its page-load colour in both states; and panels that React does not mount until selected (`{value === index && children}`) show nothing and report `UNSUPPORTED_WIDGET`, so render all panels (hidden) to convert them. A tab strip with no panels still reports `UNSUPPORTED_WIDGET`.
+
 ### Plugin packages
 
 - **`@richardmcquiston01/html-to-lvgl-vue` and `@richardmcquiston01/html-to-lvgl-mui` 0.1.1.** Both packages now declare the Ko-fi funding link (`https://ko-fi.com/P1V529Z7ZP`), so `npm fund` and the npm page show it. They are otherwise identical to 0.1.0, and still require core 0.8.0 or later. Plugin packages are versioned and tagged separately from the core (`vue-vX.Y.Z`, `mui-vX.Y.Z`); see [DEVELOPMENT.md](DEVELOPMENT.md#releasing).

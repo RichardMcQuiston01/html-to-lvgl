@@ -15,7 +15,7 @@ other drivers do with each other's options):
   --click=X,Y                    press, release, 30 frames of settle time
   --tap=X,Y                      press, release, 1 frame (catches an animation mid-flight)
   --frames=N                     run N frames of 16 ms
-  --report=<alias or path>       print "report <label>: hidden=0 x=.. y=.. w=.. h=.."
+  --report=<alias or path>       print "report <label>: hidden=0 x=.. y=.. w=.. h=.. checked=0"
   --subject=<name>               print the value from the module's `subjects` dict
   --say=<text>                   print "-- text"
   --snap=<file>                  accepted and ignored
@@ -117,9 +117,11 @@ def main():
                 continue
             area = lv.area_t()
             obj.get_coords(area)
-            print("report %s: hidden=%d x=%d y=%d w=%d h=%d" % (
+            # checked=0|1 is appended, as in the XML driver, so a tab button's open state can be asserted too.
+            print("report %s: hidden=%d x=%d y=%d w=%d h=%d checked=%d" % (
                 label, 1 if obj.has_flag(lv.obj.FLAG.HIDDEN) else 0,
-                area.x1, area.y1, area.x2 - area.x1 + 1, area.y2 - area.y1 + 1))
+                area.x1, area.y1, area.x2 - area.x1 + 1, area.y2 - area.y1 + 1,
+                1 if obj.has_state(lv.STATE.CHECKED) else 0))
 
 
 main()

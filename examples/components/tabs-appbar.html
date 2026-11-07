@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tabs in an app bar</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Roboto, Helvetica, Arial, sans-serif; }
+  body { width: 320px; height: 240px; background-color: #fafafa; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Plain HTML + ARIA: a banner holding a toolbar row and the tablist, then the
+     panels OUTSIDE the banner, in <main>. Tab to panel by aria-controls, the
+     open tab by aria-selected. */
+  .bar { background: #343a40; color: #ffffff; box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2); }
+  .bar-row { height: 32px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; font-weight: 500; }
+  .tablist { display: flex; }
+  .tab { flex: 1; height: 30px; background: transparent; border: none; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 500; }
+  .tab[aria-selected="true"] { color: #ffffff; border-bottom-color: #ffc107; }
+  .panel { padding: 8px 12px; height: 28px; font-size: 12px; color: #495057; }
+  .panel[hidden] { display: none; }
+
+  /* Material UI style (real class names, roles and structure; hand-written CSS):
+     <AppBar position="static"><Toolbar/><Tabs/></AppBar> then the tab panels. */
+  .MuiAppBar-root { background-color: #1976d2; color: #ffffff; box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12); display: flex; flex-direction: column; width: 100%; }
+  .MuiToolbar-root { min-height: 40px; display: flex; align-items: center; padding: 0 16px; }
+  .MuiTypography-root { font-size: 14px; font-weight: 500; line-height: 1.2; }
+  .MuiTabs-root { overflow: hidden; min-height: 36px; display: flex; }
+  .MuiTabs-scroller { position: relative; display: inline-block; flex: 1 1 auto; white-space: nowrap; overflow-x: hidden; width: 100%; }
+  .MuiTabs-flexContainer { display: flex; }
+  .MuiTabs-indicator { position: absolute; height: 2px; bottom: 0; width: 107px; left: 107px; background-color: #ff4081; }
+  .MuiTab-root { min-width: 90px; min-height: 36px; padding: 6px 12px; flex: 1 1 0; max-width: 360px; background: transparent; border: 0; color: #ffffff; opacity: 0.6; font-size: 12px; font-weight: 500; line-height: 1.25; letter-spacing: 0.02857em; text-transform: uppercase; }
+  .MuiTab-root.Mui-selected { opacity: 1; }
+  .MuiTabPanel-root { padding: 8px 16px; height: 30px; font-size: 12px; color: rgba(0,0,0,0.87); }
+  .MuiTabPanel-root[hidden] { display: none; }
+</style>
+</head>
+<body>
+  <header class="bar" role="banner">
+    <div class="bar-row">Warehouse</div>
+    <div class="tablist" role="tablist" aria-label="Warehouse sections">
+      <button class="tab" role="tab" id="wh-t1" aria-selected="false" aria-controls="wh-p1" tabindex="-1">Stock</button>
+      <button class="tab" role="tab" id="wh-t2" aria-selected="true" aria-controls="wh-p2">Orders</button>
+      <button class="tab" role="tab" id="wh-t3" aria-selected="false" aria-controls="wh-p3" tabindex="-1">Returns</button>
+    </div>
+  </header>
+  <main>
+    <div class="panel" role="tabpanel" id="wh-p1" aria-labelledby="wh-t1" hidden>412 items on the shelves.</div>
+    <div class="panel" role="tabpanel" id="wh-p2" aria-labelledby="wh-t2">18 orders waiting to ship.</div>
+    <div class="panel" role="tabpanel" id="wh-p3" aria-labelledby="wh-t3" hidden>3 returns to inspect.</div>
+  </main>
+
+  <div class="MuiBox-root">
+    <header class="MuiPaper-root MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionStatic">
+      <div class="MuiToolbar-root MuiToolbar-dense"><h6 class="MuiTypography-root MuiTypography-h6">Dashboard</h6></div>
+      <div class="MuiTabs-root">
+        <div class="MuiTabs-scroller">
+          <div class="MuiTabs-flexContainer" role="tablist" aria-label="Dashboard sections">
+            <button class="MuiButtonBase-root MuiTab-root" role="tab" id="mui-tab-0" aria-selected="false" aria-controls="mui-tabpanel-0" tabindex="-1">Overview</button>
+            <button class="MuiButtonBase-root MuiTab-root Mui-selected" role="tab" id="mui-tab-1" aria-selected="true" aria-controls="mui-tabpanel-1">Settings</button>
+            <button class="MuiButtonBase-root MuiTab-root" role="tab" id="mui-tab-2" aria-selected="false" aria-controls="mui-tabpanel-2" tabindex="-1">Billing</button>
+          </div>
+          <span class="MuiTabs-indicator"></span>
+        </div>
+      </div>
+    </header>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-0" aria-labelledby="mui-tab-0" hidden>Charts and totals.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-1" aria-labelledby="mui-tab-1">Theme, language and units.</div>
+    <div class="MuiTabPanel-root" role="tabpanel" id="mui-tabpanel-2" aria-labelledby="mui-tab-2" hidden>Plan and payment method.</div>
+  </div>
+</body>
+</html>
