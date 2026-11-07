@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sibling labels with the same CSS font size now share one built-in font size.** Before, each label stepped down one Montserrat size only if its own text was wider than its browser box, so two labels with the same CSS size could differ: a stepper's "Cart" and "Delivery" rendered at 10 and "Pay" at 12, and "Pay" clipped at the screen edge. Labels are now grouped page-wide by CSS size, family, weight and style, and a group steps down at most one size, only when one of its labels would otherwise overflow. Custom fonts, flex-managed labels and multi-line labels are unaffected. Measured over 41 example pages, mean fidelity against Chromium moves from 94.602 to 94.603 and the groups of mixed sizes per page go from 5 to 0; three pages change.
+
+### Changed
+
+- Label font sizes in the breadcrumbs, `material_ui` and `material-ui-forms-2` goldens moved to their group's shared size (breadcrumb separators now match their links, and the stepper's "Pay" matches "Cart" and "Delivery"). Regenerate checked-in output if you want the new sizes.
+
+### Known limits
+
+- A label that is still too wide at the smallest built-in size (montserrat_10) can clip; for example a text field's floating label "Device name" is 67 px wide in a 61 px box. Use a custom font (`--font-map`) or shorten the label.
+
 ### Plugin packages
 
 - **`@richardmcquiston01/html-to-lvgl-vue` and `@richardmcquiston01/html-to-lvgl-mui` 0.1.1.** Both packages now declare the Ko-fi funding link (`https://ko-fi.com/P1V529Z7ZP`), so `npm fund` and the npm page show it. They are otherwise identical to 0.1.0, and still require core 0.8.0 or later. Plugin packages are versioned and tagged separately from the core (`vue-vX.Y.Z`, `mui-vX.Y.Z`); see [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
