@@ -19,6 +19,7 @@ import datePicker from './date-picker.mjs';
 import stepper from './stepper.mjs';
 import pagination from './pagination.mjs';
 import tabs from './tabs.mjs';
+import appbarTabs from './appbar-tabs.mjs';
 import bottomNavigation from './bottom-navigation.mjs';
 import switchDef from './switch.mjs';
 import textfield from './textfield.mjs';
@@ -56,6 +57,7 @@ export const builtinComponents = [
   stepper,
   pagination,
   tabs,
+  appbarTabs,
   bottomNavigation,
   switchDef,
   textfield,

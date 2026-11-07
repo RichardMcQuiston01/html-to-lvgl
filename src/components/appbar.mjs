@@ -133,15 +133,26 @@ function fillTransparentButtons(node, behind) {
   };
 }
 
+/**
+ * How well a node matches as an app bar (the signals in the module comment),
+ * 0 for no match. Exported so a definition that must know whether an element
+ * WILL be recognized as the app bar (appbar-tabs) asks the same question
+ * instead of keeping a second copy of the rules.
+ * @param {UiNode} node
+ * @param {import('../recognize.mjs').RecognizeContext} ctx  `ctx.parent` must be the node's parent.
+ * @returns {number}
+ */
+export function appbarScore(node, ctx) {
+  if (node.role === 'banner') return SCORE_SEMANTIC;
+  if (isPageHeader(node, ctx)) return SCORE_SEMANTIC;
+  if (hasMuiRoot(node, 'AppBar')) return SCORE_MUI;
+  return 0;
+}
+
 /** @type {import('../recognize.mjs').ComponentDef} */
 const appbar = {
   name: 'appbar',
-  match(node, ctx) {
-    if (node.role === 'banner') return SCORE_SEMANTIC;
-    if (isPageHeader(node, ctx)) return SCORE_SEMANTIC;
-    if (hasMuiRoot(node, 'AppBar')) return SCORE_MUI;
-    return false;
-  },
+  match: (node, ctx) => appbarScore(node, ctx) || false,
   props: {
     title: { type: 'string', default: '' },
     position: { type: 'string', default: 'static' },
