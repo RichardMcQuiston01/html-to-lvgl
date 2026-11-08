@@ -98,6 +98,10 @@ import { builtinComponents } from './components/index.mjs';
  * @typedef {object} PropDef
  * @property {'string' | 'bool' | 'number' | 'color'} type
  * @property {unknown} default
+ * @property {string} [description]
+ *   Optional, for the editor's property panel (src/registry-export.mjs).
+ * @property {Array<string | number>} [enum]
+ *   Optional: the only values the prop takes, for a drop-down in the editor.
  */
 
 /**
@@ -129,6 +133,12 @@ import { builtinComponents } from './components/index.mjs';
  *   Return a replacement node (same shape as UiNode), or null to keep the
  *   node as it is. The replacement may carry `recognized.props`.
  * @property {boolean} [leaf]     True to skip recognizing inside this node.
+ * @property {string} [description]
+ *   Optional one-line summary for the editor's palette (src/registry-export.mjs).
+ * @property {Array<{ name: string, kind: 'subject' | 'timeline', type?: 'int', description: string }>} [signals]
+ *   Optional: the behavior subjects and timelines build() declares, named by
+ *   the suffix of the emitted name. Core definitions list theirs in
+ *   src/registry-meta.mjs instead.
  * @property {boolean} [override]
  *   Plugin definitions only. A plugin definition whose `name` equals a core
  *   definition is REJECTED (reported as PLUGIN_RECOGNIZER_REJECTED) unless it

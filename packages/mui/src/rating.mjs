@@ -27,6 +27,7 @@ import { backdropOf, findAll, hasClass, hasPart, muiScore, propsOf, shapeNode, s
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const rating = {
   name: 'mui-rating',
+  description: 'A Material UI star Rating, drawn as a row of filled and outlined discs.',
   match(node) {
     if (node.hidden || node.native) return false;
     return muiScore(node, 'Rating');

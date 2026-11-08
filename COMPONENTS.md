@@ -257,7 +257,7 @@ Deferred:
 
 ## Editor Constraints
 
-A drag-and-drop editor is planned. It is not built now, but these rules keep it possible:
+A drag-and-drop editor is planned. It is not built now, but these rules keep it possible. The design is in [EDITOR.md](EDITOR.md), and the registry export, IR export and import, and the preview API it relies on are described under [Editor Groundwork](FEATURES.md#editor-groundwork):
 
 1. **Declarative registry entries.** The editor's palette and property panel come from the same `props` and `slots` the converter uses.
 2. **Serializable IR with stable names.** Every node has a persistent `name`, and the IR is plain JSON.

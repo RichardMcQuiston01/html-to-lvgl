@@ -99,6 +99,7 @@ function fontFor(box) {
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const icon = {
   name: 'mui-icon',
+  description: "A @mui/icons-material icon that has a counterpart among LVGL's built-in symbols; becomes that symbol.",
   match(node) {
     if (node.hidden || node.native || node.tag !== 'svg') return false;
     return iconNameOf(node) ? 0.95 : false;

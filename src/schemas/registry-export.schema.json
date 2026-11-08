@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RichardMcQuiston01/html-to-lvgl/schemas/registry-export.schema.json",
+  "title": "html2lvgl registry export",
+  "description": "Every component definition's props, slots and signals, as produced by `html2lvgl --export-registry` (src/registry-export.mjs). Version 1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "components", "widgets"],
+  "properties": {
+    "schemaVersion": {
+      "description": "Bumped when the shape changes. A consumer should refuse a version it does not know.",
+      "const": 1
+    },
+    "components": {
+      "description": "In the registry's offer order (core first, then plugins in load order); that order breaks match-score ties. Names are unique.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "widgets": {
+      "description": "Names `data-lv-widget` accepts that the converter maps straight to one LVGL widget. A component of the same name, if any, is named in `component`.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/widget" }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source", "overrides", "description", "leaf", "props", "slots", "signals"],
+      "properties": {
+        "name": {
+          "description": "The value of `data-lv-widget` that forces this component.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "source": {
+          "description": "\"core\" for definitions that ship with html2lvgl; \"plugin:<name>\" for a loaded plugin's; \"custom\" for a registry built by hand.",
+          "type": "string",
+          "pattern": "^(core|custom|plugin:.+)$"
+        },
+        "overrides": {
+          "description": "True for a plugin definition that replaced the core definition of the same name (it sets `override: true`).",
+          "type": "boolean"
+        },
+        "description": { "type": ["string", "null"], "description": "One line for a palette tooltip; null when the definition has none." },
+        "leaf": { "type": "boolean", "description": "True when nothing inside the matched node is recognized separately." },
+        "props": {
+          "description": "In the order a property panel should show them. Names are unique.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/prop" }
+        },
+        "slots": {
+          "description": "Names of the places children can go. Unique.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "signals": {
+          "description": "Behavior state the component declares: LVGL subjects and animation timelines. Empty for a static component.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/signal" }
+        }
+      }
+    },
+    "prop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "default", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["string", "bool", "number", "color"] },
+        "default": {
+          "description": "A value of `type` (a color is a string); null only when the definition has no default.",
+          "type": ["string", "boolean", "number", "null"]
+        },
+        "enum": {
+          "description": "The only values the prop takes; absent when it is free-form.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": ["string", "number"] }
+        },
+        "description": { "type": ["string", "null"] }
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "description"],
+      "properties": {
+        "name": { "description": "The suffix of the emitted name: `<screen>_<key>_<name>`.", "type": "string", "minLength": 1 },
+        "kind": { "enum": ["subject", "timeline"] },
+        "type": { "description": "Subjects only.", "enum": ["int"] },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "widget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lvgl", "description", "component"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*$" },
+        "lvgl": { "description": "The LVGL XML tag the converter emits for it.", "type": "string", "pattern": "^lv_[a-z_]+$" },
+        "description": { "type": "string", "minLength": 1 },
+        "component": { "description": "The component with the same name, or null.", "type": ["string", "null"] }
+      }
+    }
+  }
+}

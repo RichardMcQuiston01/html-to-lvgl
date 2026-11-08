@@ -4,11 +4,16 @@
 
 ### Added
 
+- **Editor groundwork** (Phase 11). The pieces a future visual editor needs, tested and usable from the command line today. The editor itself is not built; its design is in [EDITOR.md](EDITOR.md). See [FEATURES.md](FEATURES.md#editor-groundwork).
+  - `html2lvgl --export-registry [file|-]` writes every component's props, slots and signals as JSON (27 core components, plus plugin components with `--plugin`), checked against a JSON Schema and a committed golden.
+  - `--export-ir <file|dir|->` writes the converted widget tree as stable JSON, and `--from-ir <file.json>` runs only the emitters on it, with no browser. Regenerating XML, C, C++ and MicroPython from an exported IR is byte-identical to converting the page directly, tested over every golden fixture.
+  - `html2lvgl --preview-api [--port 8787]` starts a local HTTP server: `POST /render` turns an IR into a PNG, `POST /ir/validate` checks one, `GET /registry` serves the palette data. Rendering sits behind a documented `Renderer` interface; the first implementation drives the native LVGL render program (find it with `--render-bin`, `$HTML2LVGL_RENDER_BIN` or `spike/build/render`) with a result cache, a concurrency queue, a 30 second timeout and clear error codes.
 - **Tabs inside an AppBar now work.** The most common Material UI layout, `AppBar > Toolbar + Tabs` with the `tabpanel` elements further down the page, and a plain `<header role="banner">` holding a `tablist`, used to report `UNSUPPORTED_WIDGET` and keep plain boxes. A new `appbar-tabs` recognizer keeps the AppBar (pinning, elevation and toolbar included), the panels, and anything between them as ordinary boxes, and makes the tabs real: the open tab comes from `aria-selected` or `Mui-selected`, tapping a tab switches the panel, and icons in tabs are kept. The open tab is an LVGL subject: each tab button sets it and carries a checked look, and each panel hides unless it is the open one. It works in XML, C, C++ and MicroPython, and CI click-tests all four. Tabs outside an AppBar still use `lv_tabview`, unchanged.
 - The state-binding part of the behavior system gained `bindState`, emitted as `bind_state_if_*` in XML, `lv_obj_bind_state_if_*` in C and C++, and `obj.bind_state_if_*` in MicroPython.
 
 ### Fixed
 
+- `--export-ir <dir>` for a single page crashed with `EISDIR`. A directory (existing, or a path ending in a separator) now gets `<name>.ir.json` inside it.
 - **Sibling labels with the same CSS font size now share one built-in font size.** Before, each label stepped down one Montserrat size only if its own text was wider than its browser box, so two labels with the same CSS size could differ: a stepper's "Cart" and "Delivery" rendered at 10 and "Pay" at 12, and "Pay" clipped at the screen edge. Labels are now grouped page-wide by CSS size, family, weight and style, and a group steps down at most one size, only when one of its labels would otherwise overflow. Custom fonts, flex-managed labels and multi-line labels are unaffected. Measured over 41 example pages, mean fidelity against Chromium moves from 94.602 to 94.603 and the groups of mixed sizes per page go from 5 to 0; three pages change.
 
 ### Changed
@@ -17,6 +22,7 @@
 
 ### Known limits
 
+- Editor groundwork: the stock render program is compiled at 320x240, so the preview API rejects other sizes with `size_unsupported`. The IR does not carry post-layout positions (in the committed example only 2 of 22 nodes have `x` and `y`), so a click on the canvas cannot yet be mapped to a widget, and the component palette cannot insert a new recognized component, only plain widgets. The sidecar can set or remove attributes and remove a node, but not rename, add or move one, so IR edits are lost when the source page is converted again. [EDITOR.md](EDITOR.md) lists these gaps and the plan.
 - Tabs in an AppBar: a scrollable strip with more tabs than fit is clipped, the extra tabs are unreachable, and the scroll arrows are lost; a tab icon keeps its page-load colour in both states; and panels that React does not mount until selected (`{value === index && children}`) show nothing and report `UNSUPPORTED_WIDGET`, so render all panels (hidden) to convert them. A tab strip with no panels still reports `UNSUPPORTED_WIDGET`.
 - A label that is still too wide at the smallest built-in size (montserrat_10) can clip; for example a text field's floating label "Device name" is 67 px wide in a 61 px box. Use a custom font (`--font-map`) or shorten the label.
 
