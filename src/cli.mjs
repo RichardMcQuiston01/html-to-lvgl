@@ -26,6 +26,7 @@ import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { exportRegistry, stringifyRegistryExport } from './registry-export.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
+import { exportIr, writeIrFile, runFromIr } from './ir.mjs';
 import { isUrlInput, urlScreenName, extractUrl, parseInputUrl, downloadAsset, localizeFontFaces, UrlInputError, DEFAULT_TIMEOUT_MS } from './url-input.mjs';
 
 // `--export-registry` takes an optional file; with none (last argument, or
@@ -52,6 +53,8 @@ const { values: opts, positionals } = parseArgs({
     'render-bin': { type: 'string' },
     plugin: { type: 'string', multiple: true, default: [] },
     overrides: { type: 'string' },
+    'export-ir': { type: 'string' },
+    'from-ir': { type: 'string', multiple: true, default: [] },
     'min-touch-target': { type: 'string', default: '30' },
     'wait-for': { type: 'string' },
     'wait-ms': { type: 'string' },
@@ -81,7 +84,7 @@ if (opts['export-registry'] !== undefined) {
   process.exit(0);
 }
 
-if (opts.help || positionals.length === 0) {
+if (opts.help || (positionals.length === 0 && opts['from-ir'].length === 0)) {
   console.error(
     'usage: html2lvgl <input.html|input.jsx> [more-pages.html ...]\n' +
     '                 [--size WxH] [-o outdir] [--name component]\n' +
@@ -89,6 +92,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--font-map "Family=path.ttf"] ...\n' +
     '                 [--plugin <package-or-path>] ...\n' +
     '                 [--overrides <file.lvgl.json>]\n' +
+    '                 [--export-ir <file.json|dir|->] [--from-ir <file.json>] ...\n' +
     '                 [--min-touch-target <px>] [--version]\n' +
     '                 [--wait-for <selector>] [--wait-ms <n>] [--timeout <ms>]\n' +
     '                 [--block-external]   (URL inputs)\n' +
@@ -124,6 +128,13 @@ if (opts.help || positionals.length === 0) {
     'page is picked up automatically; --overrides names one explicitly (single\n' +
     'page only). Target widgets by name, ideally via data-lv-name.\n' +
     '\n' +
+    '--export-ir also writes the editor IR (stable JSON of the converted widget\n' +
+    'tree): to a file for one page, into a directory as <page>.ir.json for\n' +
+    'several, or to stdout with "-" (progress messages then go to stderr).\n' +
+    '--from-ir <file.json> (repeatable) runs only the emitters on an IR file, no\n' +
+    'browser and no page needed; it applies <page>.lvgl.json next to the IR (or\n' +
+    '--overrides) and honors --format and -o. Fonts and images are not rebuilt.\n' +
+    '\n' +
     '--min-touch-target reports buttons, links, inputs and other pressable\n' +
     'elements smaller than <px> (default 30) in TODO.txt as TOUCH_TARGET_SMALL\n' +
     'notes. 0 turns the check off.\n' +
@@ -145,6 +156,31 @@ for (const f of formats) {
     console.error(`invalid --format "${opts.format}" (expected xml, c, cpp, py, or both, comma-separated)`);
     process.exit(1);
   }
+}
+
+if (opts['from-ir'].length) {
+  // Emitters only: no browser, fonts or page involved (see src/ir.mjs).
+  if (positionals.length) {
+    console.error('--from-ir takes IR files instead of pages; drop the page arguments');
+    process.exit(1);
+  }
+  try {
+    runFromIr({ files: opts['from-ir'], output: opts.output, formats, lvInclude: opts['lv-include'], overrides: opts.overrides });
+  } catch (err) {
+    console.error(`error: ${err.message}`);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+const exportIrTo = opts['export-ir'];
+if (exportIrTo === '-') {
+  if (positionals.length > 1) {
+    console.error('--export-ir - writes one IR document to stdout; use a directory for several pages');
+    process.exit(1);
+  }
+  // stdout carries only the IR; the usual progress lines move to stderr
+  console.log = console.error;
 }
 
 const m = opts.size.match(/^(\d+)x(\d+)$/);
@@ -405,6 +441,12 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
   const converted = convert(tree, { name, screens, screenMode, fonts, minTouchTarget, registry });
   const { diagnostics, assets, collapsed } = converted;
   subjects.push(...converted.subjects);
+  if (exportIrTo) {
+    // Before the sidecar: the IR is the converter's output and the sidecar stays a separate layer.
+    const ir = exportIr(converted, { screenMode });
+    if (exportIrTo === '-') process.stdout.write(`${JSON.stringify(ir, null, 2)}\n`);
+    else writeIrFile(ir, screenMode ? join(exportIrTo, `${name}.ir.json`) : exportIrTo);
+  }
   let { xml, view } = converted;
   const written = [];
 

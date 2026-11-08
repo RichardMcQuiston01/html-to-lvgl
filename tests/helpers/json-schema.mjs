@@ -2,11 +2,14 @@
  * A small JSON Schema validator for the subset the repo's own schemas use
  * (no dependency is added for it): $ref to "#/$defs/...", type (one or a
  * list), const, enum, properties, required, additionalProperties: false,
- * items, minItems, uniqueItems, minLength and pattern. An unknown keyword
- * throws, so a schema cannot silently use something this does not check.
+ * items, minItems, uniqueItems, minLength and pattern, plus propertyNames
+ * (a pattern for every key) and additionalProperties as a schema for keys not
+ * listed under properties. An unknown keyword throws, so a schema cannot
+ * silently use something this does not check. Shared by the registry export
+ * and IR tests.
  */
 const ANNOTATIONS = new Set(['$schema', '$id', 'title', 'description', '$defs']);
-const KEYWORDS = new Set([...ANNOTATIONS, '$ref', 'type', 'const', 'enum', 'properties', 'required', 'additionalProperties', 'items', 'minItems', 'uniqueItems', 'minLength', 'pattern']);
+const KEYWORDS = new Set([...ANNOTATIONS, '$ref', 'type', 'const', 'enum', 'properties', 'required', 'additionalProperties', 'propertyNames', 'items', 'minItems', 'uniqueItems', 'minLength', 'pattern']);
 
 /** @param {unknown} v */
 function typeOf(v) {
@@ -49,8 +52,16 @@ export function validateJsonSchema(value, schema, root = schema, path = '$') {
     for (const [key, sub] of Object.entries(schema.properties ?? {})) {
       if (key in obj) errors.push(...validateJsonSchema(obj[key], sub, root, `${path}.${key}`));
     }
-    if (schema.additionalProperties === false) {
-      for (const key of Object.keys(obj)) if (!(key in (schema.properties ?? {}))) errors.push(`${path}: unexpected property "${key}"`);
+    for (const key of Object.keys(obj)) {
+      if (key in (schema.properties ?? {})) continue;
+      if (schema.additionalProperties === false) errors.push(`${path}: unexpected property "${key}"`);
+      else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+        errors.push(...validateJsonSchema(obj[key], schema.additionalProperties, root, `${path}.${key}`));
+      }
+    }
+    if (schema.propertyNames?.pattern !== undefined) {
+      const re = new RegExp(schema.propertyNames.pattern);
+      for (const key of Object.keys(obj)) if (!re.test(key)) errors.push(`${path}: property name ${JSON.stringify(key)} does not match ${schema.propertyNames.pattern}`);
     }
   }
   if (actual === 'array') {
@@ -61,3 +72,6 @@ export function validateJsonSchema(value, schema, root = schema, path = '$') {
   }
   return errors;
 }
+
+/** Same checker under the name the IR tests use. */
+export const checkSchema = (value, schema) => validateJsonSchema(value, schema);

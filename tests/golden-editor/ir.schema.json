@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RichardMcQuiston01/html-to-lvgl/tests/golden-editor/ir.schema.json",
+  "title": "html2lvgl IR",
+  "description": "The post-convert widget tree plus the side data the emitters need. See src/ir.mjs for why this stage is the IR. Extra rules the schema cannot express are enforced by validateIr(): widget names (attrs.name) are unique per page.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "irVersion", "name", "screenMode", "view", "subjects", "timelines", "assets"],
+  "properties": {
+    "format": { "const": "html2lvgl-ir" },
+    "irVersion": { "const": 1 },
+    "name": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+    "screenMode": { "type": "boolean" },
+    "view": { "$ref": "#/$defs/node" },
+    "subjects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "initial"],
+        "properties": { "name": { "type": "string" }, "type": { "type": "string" }, "initial": { "type": "number" } }
+      }
+    },
+    "timelines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "animations"],
+        "properties": {
+          "name": { "type": "string" },
+          "animations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["prop", "target", "start", "end", "duration"],
+              "properties": {
+                "prop": { "type": "string" }, "target": { "type": "string" },
+                "start": { "type": "number" }, "end": { "type": "number" },
+                "duration": { "type": "number" }, "delay": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["src", "name"],
+        "properties": { "src": { "type": "string" }, "name": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "attrs", "children"],
+      "properties": {
+        "tag": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.:-]*$" },
+        "attrs": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*(:[a-z_]+)*$" },
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+        },
+        "meta": { "type": "object" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
+      }
+    }
+  }
+}
