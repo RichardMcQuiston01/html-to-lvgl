@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08
+
+AppBar tabs, page-wide label sizing and the editor groundwork (registry export, IR export/import, preview API) are new capabilities, so this is a minor bump. Generated output changes for pages with sibling labels of the same CSS size and for AppBar tab layouts, so regenerate any checked-in output.
+
 ### Added
 
 - **Editor groundwork** (Phase 11). The pieces a future visual editor needs, tested and usable from the command line today. The editor itself is not built; its design is in [EDITOR.md](EDITOR.md). See [FEATURES.md](FEATURES.md#editor-groundwork).
