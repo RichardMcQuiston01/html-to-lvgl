@@ -94,6 +94,7 @@ node src/cli.mjs examples/nav/home.html examples/nav/settings.html -o out/
 - [DEVELOPMENT.md](DEVELOPMENT.md) describes the project layout, tests, and how to release.
 - [ROADMAP.md](ROADMAP.md) shows what is done, what is planned, and what is blocked.
 - [COMPONENTS.md](COMPONENTS.md) is the design for converting complex components such as Accordion, Drawer, and Modal.
+- [EDITOR.md](EDITOR.md) is the design for the visual editor: scope, architecture, preview engine, and the first version.
 - [spike/README.md](spike/README.md) is the first proof of concept, with screenshots.
 
 [Back to Top](#table-of-contents)
