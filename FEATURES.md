@@ -258,6 +258,23 @@ In MicroPython XML output the pinned binding reads calendar attributes different
 
 [Back to Top](#features)
 
+## Editor Groundwork
+
+These are the pieces a visual editor needs. The editor is not built yet; [EDITOR.md](EDITOR.md) is its design, including what the first version can and cannot do.
+
+| Command | What it gives an editor |
+|---|---|
+| `html2lvgl --export-registry [file\|-] [--plugin ...]` | The palette and property panel data: each component's `props`, `slots` and `signals`, with its source (`core` or the plugin). Deterministic JSON, checked against `src/schemas/registry-export.schema.json`. |
+| `html2lvgl <page> --export-ir <file\|dir\|->` | The converted widget tree as stable JSON (`irVersion` 1): tag, attributes, children, meta, plus subjects, timelines and assets. Names are unique per page. Schema in `tests/golden-editor/ir.schema.json`. |
+| `html2lvgl --from-ir <file.json> -o out --format xml,c,cpp,py` | Runs only the emitters on an IR file, with no browser. Output is byte-identical to converting the page directly. A `<page>.lvgl.json` sidecar still applies. |
+| `html2lvgl --preview-api [--port 8787] [--render-bin <path>]` | A local server: `POST /render` (IR in, PNG out), `POST /ir/validate`, `GET /registry`, `GET /health`. |
+
+The preview API is built to be safe to run next to a browser editor. It binds to 127.0.0.1, answers only localhost origins (add more with `--allow-origin`), checks the Host header, caps the request body at 2 MiB, accepts IR JSON only (never a file path), and rejects an IR whose image or font attributes name a file on disk. Rendering has a 30 second timeout, a concurrency limit, a bounded queue and a result cache. Errors are JSON with a stable `code`.
+
+Rendering goes through a `Renderer` interface (`src/render-api.mjs`), so another renderer, such as an LVGL WebAssembly build, can replace the native render program later. The render program is found with `--render-bin`, then `$HTML2LVGL_RENDER_BIN`, then `spike/build/render`. It is compiled at 320x240, so other sizes are rejected until it is rebuilt.
+
+[Back to Top](#features)
+
 ## Sidecar Overrides
 
 A **sidecar** file changes the generated UI without editing your HTML, and the changes survive the next conversion. Put `<page>.lvgl.json` next to the page (for `home.html`, that is `home.lvgl.json`), or pass `--overrides <file>` for one page.
