@@ -11,7 +11,7 @@
  * --debug also writes the extracted UI tree JSON.
  */
 import { parseArgs } from 'node:util';
-import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync, existsSync, rmSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { extractPage } from './extract.mjs';
 import { loadPlugins, selectPlugin, extractWithPlugin, registryFor, frameworkDataWanted } from './plugin-loader.mjs';
@@ -199,6 +199,11 @@ if (opts['from-ir'].length) {
 }
 
 const exportIrTo = opts['export-ir'];
+// For one page, --export-ir accepts a file (ir/page.json) or a directory (an
+// existing one, or any path ending in a separator): a directory gets
+// <name>.ir.json inside it, the same as for several pages.
+const exportIrIsDir = Boolean(exportIrTo) && exportIrTo !== '-'
+  && (/[\\/]$/.test(exportIrTo) || (existsSync(exportIrTo) && statSync(exportIrTo).isDirectory()));
 if (exportIrTo === '-') {
   if (positionals.length > 1) {
     console.error('--export-ir - writes one IR document to stdout; use a directory for several pages');
@@ -470,7 +475,7 @@ async function emitPage({ input, name, tree }, fonts, subjects = []) {
     // Before the sidecar: the IR is the converter's output and the sidecar stays a separate layer.
     const ir = exportIr(converted, { screenMode });
     if (exportIrTo === '-') process.stdout.write(`${JSON.stringify(ir, null, 2)}\n`);
-    else writeIrFile(ir, screenMode ? join(exportIrTo, `${name}.ir.json`) : exportIrTo);
+    else writeIrFile(ir, screenMode || exportIrIsDir ? join(exportIrTo, `${name}.ir.json`) : exportIrTo);
   }
   let { xml, view } = converted;
   const written = [];
