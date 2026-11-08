@@ -23,6 +23,7 @@ import { backdropOf, findAll, findFirst, hasClass, muiScore, propsOf, shapeNode,
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const radio = {
   name: 'mui-radio',
+  description: 'A Material UI Radio, drawn as a ring with an optional dot.',
   match(node) {
     if (node.hidden || node.native) return false;
     return muiScore(node, 'Radio');

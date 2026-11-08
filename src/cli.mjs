@@ -23,13 +23,22 @@ import { emitC, emitCpp } from './emit-c.mjs';
 import { emitPy } from './emit-py.mjs';
 import { globalsXml } from './behavior.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
+import { exportRegistry, stringifyRegistryExport } from './registry-export.mjs';
 import { createDiagnostics, formatTodo, formatJson, formatSummary } from './diagnostics.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
 import { isUrlInput, urlScreenName, extractUrl, parseInputUrl, downloadAsset, localizeFontFaces, UrlInputError, DEFAULT_TIMEOUT_MS } from './url-input.mjs';
 
+// `--export-registry` takes an optional file; with none (last argument, or
+// followed by another option) it writes to stdout, the same as `-`.
+const cliArgs = process.argv.slice(2);
+const exportAt = cliArgs.indexOf('--export-registry');
+if (exportAt >= 0 && (cliArgs[exportAt + 1] === undefined || cliArgs[exportAt + 1].startsWith('--'))) cliArgs.splice(exportAt + 1, 0, '-');
+
 const { values: opts, positionals } = parseArgs({
+  args: cliArgs,
   allowPositionals: true,
   options: {
+    'export-registry': { type: 'string' },
     size: { type: 'string', default: '320x240' },
     output: { type: 'string', short: 'o', default: '.' },
     name: { type: 'string' },
@@ -59,6 +68,19 @@ if (opts.version) {
   process.exit(0);
 }
 
+// Editor palette data: needs no input page. Plugins (--plugin, config file)
+// are loaded exactly as for a conversion, so their components are included.
+if (opts['export-registry'] !== undefined) {
+  const { plugins } = await loadPlugins({ specs: opts.plugin });
+  const text = stringifyRegistryExport(exportRegistry(registryFor(plugins), { plugins }));
+  if (opts['export-registry'] === '-') process.stdout.write(text);
+  else {
+    writeFileSync(opts['export-registry'], text);
+    console.error(`wrote ${opts['export-registry']}`);
+  }
+  process.exit(0);
+}
+
 if (opts.help || positionals.length === 0) {
   console.error(
     'usage: html2lvgl <input.html|input.jsx> [more-pages.html ...]\n' +
@@ -71,6 +93,7 @@ if (opts.help || positionals.length === 0) {
     '                 [--wait-for <selector>] [--wait-ms <n>] [--timeout <ms>]\n' +
     '                 [--block-external]   (URL inputs)\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
+    '       html2lvgl --export-registry [file|-] [--plugin <package-or-path>] ...\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
     'them (<a href="other.html">) become navigation buttons.\n' +

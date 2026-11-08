@@ -61,16 +61,17 @@ const darken = (color, amount) => color.slice(0, 3).map((v) => Math.round(v * (1
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const button = {
   name: 'mui-button',
+  description: 'A Material UI Button, IconButton, Fab or ToggleButton: named after its component and typed by variant, color and size.',
   match(node) {
     if (node.hidden || node.native || node.tag !== 'button') return false;
     const kind = kindOf(node);
     return kind ? muiScore(node, kind[0]) : false;
   },
   props: {
-    label: { type: 'string', default: '' },
-    variant: { type: 'string', default: 'text' },
-    color: { type: 'string', default: 'primary' },
-    size: { type: 'string', default: 'medium' },
+    label: { type: 'string', default: '', description: 'The button text.' },
+    variant: { type: 'string', default: 'text', description: 'The Material UI variant (contained, outlined, text, ...); free-form because the React prop is passed through.' },
+    color: { type: 'string', default: 'primary', description: 'The Material UI color (primary, secondary, error, ...); free-form because the React prop is passed through.' },
+    size: { type: 'string', default: 'medium', description: 'small, medium or large.' },
     disabled: { type: 'bool', default: false },
   },
   slots: ['startIcon', 'endIcon'],

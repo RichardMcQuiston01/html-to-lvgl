@@ -41,6 +41,7 @@ const labelOf = (node) => findFirst(node, (n) => n !== node && hasPart(n, 'FormC
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const formControlLabel = {
   name: 'mui-form-control-label',
+  description: 'A Material UI FormControlLabel; with a Checkbox it becomes one lv_checkbox carrying the label.',
   match(node) {
     if (node.hidden || node.native) return false;
     const score = muiScore(node, 'FormControlLabel');

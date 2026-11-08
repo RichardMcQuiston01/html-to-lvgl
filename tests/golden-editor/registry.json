@@ -1,0 +1,907 @@
+{
+  "schemaVersion": 1,
+  "components": [
+    {
+      "name": "icon",
+      "source": "core",
+      "overrides": false,
+      "description": "An SVG, icon-font glyph or Material Icons ligature, drawn as a named, fixed-size placeholder box because the glyph itself cannot become a label.",
+      "leaf": true,
+      "props": [
+        {
+          "name": "hint",
+          "type": "string",
+          "default": "icon",
+          "description": "Name taken from the icon (class, test id or ligature text); the placeholder is called icon_<hint>."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "card",
+      "source": "core",
+      "overrides": false,
+      "description": "A container with a raised or outlined surface (Material UI Card, Bootstrap card).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "elevation",
+          "enum": [
+            "elevation",
+            "outlined"
+          ],
+          "description": "Outlined when the surface has a visible border and no shadow, otherwise elevation."
+        }
+      ],
+      "slots": [
+        "header",
+        "body",
+        "actions"
+      ],
+      "signals": []
+    },
+    {
+      "name": "paper",
+      "source": "core",
+      "overrides": false,
+      "description": "A plain surface (Material UI Paper that is not part of a Card, Alert, AppBar or Accordion).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "elevation",
+          "enum": [
+            "elevation",
+            "outlined"
+          ],
+          "description": "Outlined when the surface has a visible border and no shadow, otherwise elevation."
+        }
+      ],
+      "slots": [
+        "body"
+      ],
+      "signals": []
+    },
+    {
+      "name": "divider",
+      "source": "core",
+      "overrides": false,
+      "description": "A thin separator line (hr, role=separator, Material UI Divider).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "orientation",
+          "type": "string",
+          "default": "horizontal",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "Direction of the line."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "chip",
+      "source": "core",
+      "overrides": false,
+      "description": "A compact pill with a label and an optional leading icon, avatar or delete control.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "default": "",
+          "description": "The chip text."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "filled",
+          "enum": [
+            "filled",
+            "outlined"
+          ],
+          "description": "Outlined when the chip has a border and no fill."
+        }
+      ],
+      "slots": [
+        "icon",
+        "delete"
+      ],
+      "signals": []
+    },
+    {
+      "name": "avatar",
+      "source": "core",
+      "overrides": false,
+      "description": "A circle (or rounded square) holding a photo or initials.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "shape",
+          "type": "string",
+          "default": "circular",
+          "enum": [
+            "circular",
+            "rounded",
+            "square"
+          ],
+          "description": "Read from the corner radius."
+        },
+        {
+          "name": "initials",
+          "type": "string",
+          "default": "",
+          "description": "The text shown when there is no image."
+        },
+        {
+          "name": "src",
+          "type": "string",
+          "default": "",
+          "description": "Image source when the avatar holds a photo."
+        }
+      ],
+      "slots": [
+        "image",
+        "fallback"
+      ],
+      "signals": []
+    },
+    {
+      "name": "badge",
+      "source": "core",
+      "overrides": false,
+      "description": "A small count or dot pinned to a corner of another element, or an inline pill label (Bootstrap).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "content",
+          "type": "string",
+          "default": "",
+          "description": "The text of the count; empty for a dot."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "standard",
+          "enum": [
+            "standard",
+            "dot"
+          ],
+          "description": "A dot has no content."
+        }
+      ],
+      "slots": [
+        "anchor"
+      ],
+      "signals": []
+    },
+    {
+      "name": "alert",
+      "source": "core",
+      "overrides": false,
+      "description": "A status message with an optional icon and action.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "severity",
+          "type": "string",
+          "default": "info",
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "success"
+          ],
+          "description": "Read from the Material UI class (standardError, colorWarning, ...)."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "standard",
+          "enum": [
+            "standard",
+            "filled",
+            "outlined"
+          ],
+          "description": "Read from the Material UI filled / outlined class."
+        }
+      ],
+      "slots": [
+        "icon",
+        "message",
+        "action"
+      ],
+      "signals": []
+    },
+    {
+      "name": "appbar",
+      "source": "core",
+      "overrides": false,
+      "description": "The top bar of a screen (header with role=banner, Material UI AppBar), pinned while the page scrolls.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "default": "",
+          "description": "The bar title text."
+        },
+        {
+          "name": "position",
+          "type": "string",
+          "default": "static",
+          "enum": [
+            "fixed",
+            "sticky",
+            "static",
+            "absolute",
+            "relative"
+          ],
+          "description": "The computed CSS position; fixed and sticky pin the bar."
+        }
+      ],
+      "slots": [
+        "leading",
+        "title",
+        "actions"
+      ],
+      "signals": []
+    },
+    {
+      "name": "toolbar",
+      "source": "core",
+      "overrides": false,
+      "description": "A row of controls, usually inside an app bar (role=toolbar, Material UI Toolbar).",
+      "leaf": false,
+      "props": [],
+      "slots": [
+        "items"
+      ],
+      "signals": []
+    },
+    {
+      "name": "breadcrumbs",
+      "source": "core",
+      "overrides": false,
+      "description": "A navigation trail (nav aria-label=breadcrumb, Material UI Breadcrumbs, Bootstrap .breadcrumb).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "separator",
+          "type": "string",
+          "default": "/",
+          "description": "The separator text between items."
+        }
+      ],
+      "slots": [
+        "items"
+      ],
+      "signals": []
+    },
+    {
+      "name": "accordion",
+      "source": "core",
+      "overrides": false,
+      "description": "A header that opens and closes a body; the content below moves out of the way.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "expanded",
+          "type": "bool",
+          "default": false,
+          "description": "Whether the body is shown when the page loads (aria-expanded of the trigger)."
+        }
+      ],
+      "slots": [
+        "header",
+        "body"
+      ],
+      "signals": [
+        {
+          "name": "open",
+          "kind": "subject",
+          "type": "int",
+          "description": "1 while the body is shown, 0 while it is hidden; the trigger toggles it."
+        }
+      ]
+    },
+    {
+      "name": "modal",
+      "source": "core",
+      "overrides": false,
+      "description": "A dialog that blocks the page until it is dismissed (role=dialog or alertdialog, Material UI Dialog, Bootstrap .modal).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "default": "",
+          "description": "The dialog title text."
+        },
+        {
+          "name": "modal",
+          "type": "bool",
+          "default": true,
+          "description": "Whether the dialog blocks the page behind it: a backdrop layer is drawn. false gives a floating dialog with no backdrop."
+        },
+        {
+          "name": "open",
+          "type": "bool",
+          "default": false,
+          "description": "Whether the dialog is shown when the page loads."
+        }
+      ],
+      "slots": [
+        "title",
+        "content",
+        "actions"
+      ],
+      "signals": [
+        {
+          "name": "open",
+          "kind": "subject",
+          "type": "int",
+          "description": "1 while the dialog is shown; an opener sets it to 1, a button inside the dialog (and the backdrop, when the dialog is dismissible) sets it to 0."
+        }
+      ]
+    },
+    {
+      "name": "drawer",
+      "source": "core",
+      "overrides": false,
+      "description": "A panel that slides in from a screen edge over a dimmed page (Material UI Drawer, a navigation side sheet).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "anchor",
+          "type": "string",
+          "default": "left",
+          "enum": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ],
+          "description": "The screen edge the panel is docked to."
+        },
+        {
+          "name": "open",
+          "type": "bool",
+          "default": false,
+          "description": "Whether the drawer is shown when the page loads."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "default": "",
+          "description": "The panel title text."
+        }
+      ],
+      "slots": [
+        "header",
+        "body"
+      ],
+      "signals": [
+        {
+          "name": "open",
+          "kind": "subject",
+          "type": "int",
+          "description": "1 while the drawer is shown; an opener sets it to 1 and a closer sets it to 0."
+        },
+        {
+          "name": "slide_in",
+          "kind": "timeline",
+          "description": "Slides the panel in from its edge; played when the opener is pressed."
+        },
+        {
+          "name": "slide_out",
+          "kind": "timeline",
+          "description": "Slides the panel back out; played when a closer is pressed."
+        }
+      ]
+    },
+    {
+      "name": "select",
+      "source": "core",
+      "overrides": false,
+      "description": "A closed field that opens a list of options and shows the chosen one; maps to lv_dropdown (native select, role=combobox, Material UI Select).",
+      "leaf": true,
+      "props": [
+        {
+          "name": "selected",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the selected option."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "default": "",
+          "description": "Text shown by the closed field when no option is selected; it becomes the first option."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "menu",
+      "source": "core",
+      "overrides": false,
+      "description": "A button that opens a floating list of commands (role=menu, Material UI Menu, Bootstrap dropdown menu).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "open",
+          "type": "bool",
+          "default": false,
+          "description": "Whether the menu is shown when the page loads."
+        }
+      ],
+      "slots": [
+        "opener",
+        "items"
+      ],
+      "signals": [
+        {
+          "name": "open",
+          "kind": "subject",
+          "type": "int",
+          "description": "1 while the menu is shown; the opener sets it to 1 and pressing an item or outside the popup sets it to 0."
+        }
+      ]
+    },
+    {
+      "name": "snackbar",
+      "source": "core",
+      "overrides": false,
+      "description": "A short message bar that floats over the page, usually at the bottom, with an optional action (Material UI Snackbar, Bootstrap toast).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "message",
+          "type": "string",
+          "default": "",
+          "description": "The message text."
+        },
+        {
+          "name": "open",
+          "type": "bool",
+          "default": true,
+          "description": "Whether the snackbar is shown when the page loads."
+        }
+      ],
+      "slots": [
+        "message",
+        "action"
+      ],
+      "signals": [
+        {
+          "name": "open",
+          "kind": "subject",
+          "type": "int",
+          "description": "1 while the snackbar is shown; an opener sets it to 1 and a button inside the snackbar sets it to 0."
+        }
+      ]
+    },
+    {
+      "name": "date-picker",
+      "source": "core",
+      "overrides": false,
+      "description": "A month grid of days (ARIA date picker, Material UI DateCalendar); maps to lv_calendar.",
+      "leaf": true,
+      "props": [
+        {
+          "name": "shownYear",
+          "type": "number",
+          "default": 2024,
+          "description": "Year of the month the grid shows."
+        },
+        {
+          "name": "shownMonth",
+          "type": "number",
+          "default": 1,
+          "description": "Month (1 to 12) the grid shows."
+        },
+        {
+          "name": "selectedDay",
+          "type": "number",
+          "default": 0,
+          "description": "Day of the shown month that is selected; 0 when none."
+        },
+        {
+          "name": "today",
+          "type": "number",
+          "default": 0,
+          "description": "Day of the shown month marked as today; 0 when none."
+        },
+        {
+          "name": "header",
+          "type": "bool",
+          "default": true,
+          "description": "Whether lv_calendar draws its own month header with arrows (false for a grid that has its own)."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "stepper",
+      "source": "core",
+      "overrides": false,
+      "description": "A row or column of numbered steps with labels and connectors (Material UI Stepper, ol of steps).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "orientation",
+          "type": "string",
+          "default": "horizontal",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "Direction the steps run."
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "default": 0,
+          "description": "Number of steps."
+        },
+        {
+          "name": "active",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the step marked active (aria-current=step or a Mui-active class); the converter reports -1 when none is marked."
+        },
+        {
+          "name": "completed",
+          "type": "number",
+          "default": 0,
+          "description": "Number of completed steps."
+        }
+      ],
+      "slots": [
+        "steps"
+      ],
+      "signals": []
+    },
+    {
+      "name": "pagination",
+      "source": "core",
+      "overrides": false,
+      "description": "A row of page buttons with previous and next, the current page highlighted (Material UI Pagination, Bootstrap .pagination).",
+      "leaf": false,
+      "props": [
+        {
+          "name": "count",
+          "type": "number",
+          "default": 0,
+          "description": "Number of items in the list, the previous and next arrows included."
+        },
+        {
+          "name": "current",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the item marked aria-current (or Mui-selected / active) in that list; the converter reports -1 when none is marked."
+        }
+      ],
+      "slots": [
+        "items"
+      ],
+      "signals": []
+    },
+    {
+      "name": "tabs",
+      "source": "core",
+      "overrides": false,
+      "description": "A tab bar plus one panel per tab (role=tablist / tab / tabpanel, Material UI Tabs); maps to lv_tabview.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "active",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the open tab."
+        },
+        {
+          "name": "position",
+          "type": "string",
+          "default": "top",
+          "enum": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "description": "Side of the panels the tab bar sits on."
+        }
+      ],
+      "slots": [
+        "tabs",
+        "panels"
+      ],
+      "signals": []
+    },
+    {
+      "name": "appbar-tabs",
+      "source": "core",
+      "overrides": false,
+      "description": "Working tabs whose strip sits inside an app bar and whose panels are elsewhere on the page.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "active",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the open tab."
+        }
+      ],
+      "slots": [
+        "appbar",
+        "panels"
+      ],
+      "signals": [
+        {
+          "name": "selected",
+          "kind": "subject",
+          "type": "int",
+          "description": "Index of the open tab; pressing a tab sets it and the panels bind their visibility to it."
+        }
+      ]
+    },
+    {
+      "name": "bottom-navigation",
+      "source": "core",
+      "overrides": false,
+      "description": "A bar of 3 to 5 icon-over-label actions pinned to the bottom edge of the screen (Material UI BottomNavigation); maps to an lv_tabview with the tab bar at the bottom.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "active",
+          "type": "number",
+          "default": 0,
+          "description": "Index of the selected action."
+        }
+      ],
+      "slots": [
+        "actions"
+      ],
+      "signals": []
+    },
+    {
+      "name": "switch",
+      "source": "core",
+      "overrides": false,
+      "description": "An on/off toggle (role=switch, Material UI Switch); maps to lv_switch.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "checked",
+          "type": "bool",
+          "default": false,
+          "description": "The state the page shows (aria-checked, the checkbox behind it, or Mui-checked)."
+        },
+        {
+          "name": "disabled",
+          "type": "bool",
+          "default": false,
+          "description": "aria-disabled, disabled or Mui-disabled."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "textfield",
+      "source": "core",
+      "overrides": false,
+      "description": "A labelled text box (textbox, input and textarea with a label, Material UI TextField); maps to lv_textarea with the label and helper text as labels.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "default": "",
+          "description": "The field label text."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "default": "",
+          "description": "The text in the field."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "default": "",
+          "description": "The placeholder text."
+        },
+        {
+          "name": "helperText",
+          "type": "string",
+          "default": "",
+          "description": "The helper or error text under the field."
+        },
+        {
+          "name": "multiline",
+          "type": "bool",
+          "default": false,
+          "description": "A textarea, aria-multiline, or a multiline Material UI input."
+        },
+        {
+          "name": "password",
+          "type": "bool",
+          "default": false,
+          "description": "type=password: the text is masked."
+        },
+        {
+          "name": "error",
+          "type": "bool",
+          "default": false,
+          "description": "aria-invalid or a Material UI error state."
+        },
+        {
+          "name": "disabled",
+          "type": "bool",
+          "default": false,
+          "description": "The field is disabled."
+        }
+      ],
+      "slots": [
+        "label",
+        "helper"
+      ],
+      "signals": []
+    },
+    {
+      "name": "slider",
+      "source": "core",
+      "overrides": false,
+      "description": "Pick a value on a line (role=slider, Material UI Slider); maps to lv_slider.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "min",
+          "type": "number",
+          "default": 0,
+          "description": "aria-valuemin."
+        },
+        {
+          "name": "max",
+          "type": "number",
+          "default": 100,
+          "description": "aria-valuemax."
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "default": 0,
+          "description": "aria-valuenow (the first thumb of a range slider)."
+        },
+        {
+          "name": "disabled",
+          "type": "bool",
+          "default": false,
+          "description": "The slider is disabled."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    },
+    {
+      "name": "progress",
+      "source": "core",
+      "overrides": false,
+      "description": "How far a task has got (role=progressbar, Material UI LinearProgress and CircularProgress); maps to lv_bar or lv_arc.",
+      "leaf": false,
+      "props": [
+        {
+          "name": "variant",
+          "type": "string",
+          "default": "linear",
+          "enum": [
+            "linear",
+            "circular"
+          ],
+          "description": "A bar or a ring."
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "default": 0,
+          "description": "aria-valuenow, clamped to the range; 40 percent of it when indeterminate."
+        },
+        {
+          "name": "min",
+          "type": "number",
+          "default": 0,
+          "description": "aria-valuemin."
+        },
+        {
+          "name": "max",
+          "type": "number",
+          "default": 100,
+          "description": "aria-valuemax."
+        },
+        {
+          "name": "indeterminate",
+          "type": "bool",
+          "default": false,
+          "description": "No value: drawn as a static 40 percent bar or arc (LVGL XML has no animated progress)."
+        }
+      ],
+      "slots": [],
+      "signals": []
+    }
+  ],
+  "widgets": [
+    {
+      "name": "button",
+      "lvgl": "lv_button",
+      "description": "A button; the element's text becomes a label inside it.",
+      "component": null
+    },
+    {
+      "name": "label",
+      "lvgl": "lv_label",
+      "description": "A text label.",
+      "component": null
+    },
+    {
+      "name": "dropdown",
+      "lvgl": "lv_dropdown",
+      "description": "A drop-down list; the options come from the element's options attribute.",
+      "component": null
+    },
+    {
+      "name": "bar",
+      "lvgl": "lv_bar",
+      "description": "A progress bar.",
+      "component": null
+    },
+    {
+      "name": "table",
+      "lvgl": "lv_table",
+      "description": "A table.",
+      "component": null
+    },
+    {
+      "name": "image",
+      "lvgl": "lv_image",
+      "description": "An image.",
+      "component": null
+    },
+    {
+      "name": "switch",
+      "lvgl": "lv_switch",
+      "description": "An on/off switch.",
+      "component": "switch"
+    },
+    {
+      "name": "checkbox",
+      "lvgl": "lv_checkbox",
+      "description": "A checkbox.",
+      "component": null
+    },
+    {
+      "name": "slider",
+      "lvgl": "lv_slider",
+      "description": "A slider.",
+      "component": "slider"
+    },
+    {
+      "name": "textarea",
+      "lvgl": "lv_textarea",
+      "description": "A text area.",
+      "component": null
+    }
+  ]
+}

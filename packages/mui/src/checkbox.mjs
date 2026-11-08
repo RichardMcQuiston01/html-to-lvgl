@@ -112,6 +112,7 @@ export function checkboxAttrs(d, { markerFont, markerLineHeight }) {
 /** @type {import('../../../src/recognize.mjs').ComponentDef} */
 const checkbox = {
   name: 'mui-checkbox',
+  description: 'A Material UI Checkbox; maps to a native lv_checkbox.',
   match(node) {
     if (node.hidden || node.native) return false;
     return muiScore(node, 'Checkbox');

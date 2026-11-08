@@ -257,7 +257,7 @@ function build(node, ctx) {
       children: withHeader ? [{ tag: 'lv_calendar-header_arrow', props: {} }] : [],
       textStyles: true,
     },
-    recognized: { component: 'date-picker', props: { shownYear: shown.year, shownMonth: shown.month, selectedDay: selected, today: today, header: withHeader } },
+    recognized: { component: 'date-picker', props: { shownYear: shown.year, shownMonth: shown.month, selectedDay: selected ?? 0, today: today ?? 0, header: withHeader } },
   };
 }
 
@@ -269,6 +269,7 @@ const datePicker = {
     shownYear: { type: 'number', default: 2024 },
     shownMonth: { type: 'number', default: 1 },
     selectedDay: { type: 'number', default: 0 },
+    today: { type: 'number', default: 0 },
     header: { type: 'bool', default: true },
   },
   slots: [],
