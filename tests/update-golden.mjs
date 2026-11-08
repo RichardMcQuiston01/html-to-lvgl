@@ -14,6 +14,7 @@ import { componentize } from '../src/componentize.mjs';
 import { emitC, emitCpp } from '../src/emit-c.mjs';
 import { emitPy } from '../src/emit-py.mjs';
 import { render } from '../src/emit-xml.mjs';
+import { exportIr, stringifyIr } from '../src/ir.mjs';
 import { demoRegistry } from './helpers/disclosure-demo.mjs';
 import { convertInstances } from './helpers/xml-instance-demo.mjs';
 
@@ -133,3 +134,11 @@ for (const [screen, { view, subjects }] of behaviorUnits) {
   writeFileSync(join(goldenBehaviorDir, `${cpp.unit}.hpp`), cpp.h);
   console.log(`updated golden-behavior/${c.unit}.c/.h and .cpp/.hpp`);
 }
+
+// Editor IR (src/ir.mjs): one committed example of the stable JSON an editor
+// edits; tests/ir.test.mjs checks it is still what exportIr produces.
+const goldenEditorDir = join(here, 'golden-editor');
+mkdirSync(goldenEditorDir, { recursive: true });
+const dashboardTree = JSON.parse(readFileSync(join(fixtureDir, 'dashboard.json'), 'utf8'));
+writeFileSync(join(goldenEditorDir, 'ir_dashboard.json'), stringifyIr(exportIr(convert(dashboardTree, { name: 'dashboard' }))));
+console.log('updated golden-editor/ir_dashboard.json');
