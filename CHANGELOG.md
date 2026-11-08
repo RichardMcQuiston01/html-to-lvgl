@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08
+
+AppBar tabs, page-wide label sizing and the editor groundwork (registry export, IR export/import, preview API) are new capabilities, so this is a minor bump. Generated output changes for pages with sibling labels of the same CSS size and for AppBar tab layouts, so regenerate any checked-in output.
+
 ### Added
 
 - **Editor groundwork** (Phase 11). The pieces a future visual editor needs, tested and usable from the command line today. The editor itself is not built; its design is in [EDITOR.md](EDITOR.md). See [FEATURES.md](FEATURES.md#editor-groundwork).
@@ -22,7 +26,7 @@
 
 ### Known limits
 
-- Editor groundwork: the stock render program is compiled at 320x240, so the preview API rejects other sizes with `size_unsupported`. The IR does not carry post-layout positions (in the committed example only 2 of 22 nodes have `x` and `y`), so a click on the canvas cannot yet be mapped to a widget, and the component palette cannot insert a new recognized component, only plain widgets. The sidecar can set or remove attributes and remove a node, but not rename, add or move one, so IR edits are lost when the source page is converted again. [EDITOR.md](EDITOR.md) lists these gaps and the plan.
+- Editor groundwork: the native render program is not shipped in the npm package. `--preview-api` serves `/registry` and `/ir/validate` from an npm install, but `POST /render` answers `render_binary_missing` until you build the render program from a repository checkout (`spike/`) and pass it with `--render-bin` or `$HTML2LVGL_RENDER_BIN`. The stock render program is compiled at 320x240, so the preview API rejects other sizes with `size_unsupported`. The IR does not carry post-layout positions (in the committed example only 2 of 22 nodes have `x` and `y`), so a click on the canvas cannot yet be mapped to a widget, and the component palette cannot insert a new recognized component, only plain widgets. The sidecar can set or remove attributes and remove a node, but not rename, add or move one, so IR edits are lost when the source page is converted again. [EDITOR.md](EDITOR.md) lists these gaps and the plan.
 - Tabs in an AppBar: a scrollable strip with more tabs than fit is clipped, the extra tabs are unreachable, and the scroll arrows are lost; a tab icon keeps its page-load colour in both states; and panels that React does not mount until selected (`{value === index && children}`) show nothing and report `UNSUPPORTED_WIDGET`, so render all panels (hidden) to convert them. A tab strip with no panels still reports `UNSUPPORTED_WIDGET`.
 - A label that is still too wide at the smallest built-in size (montserrat_10) can clip; for example a text field's floating label "Device name" is 67 px wide in a 61 px box. Use a custom font (`--font-map`) or shorten the label.
 
