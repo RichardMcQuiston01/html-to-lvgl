@@ -108,7 +108,7 @@ The preview shows:
 - Converter warnings.
 - The generated XML.
 
-The LVGL side needs the render program. It is `spike/build/render` by default. Use `--render-bin` to point at another build. Without it, the preview still shows the browser page and the XML.
+The LVGL side needs the render program. Run `html2lvgl --build-render` once to build it (see [Render program](#render-program)); `--render-bin` points at another build. Without it, the preview still shows the browser page and the XML.
 
 Watch mode loads input through the same plugin system as a normal run, so `--plugin` and `html2lvgl.config.mjs` plugins work there too. A plugin that fails to load shows its errors in the preview, and the server keeps running.
 
@@ -271,7 +271,19 @@ These are the pieces a visual editor needs. The editor is not built yet; [EDITOR
 
 The preview API is built to be safe to run next to a browser editor. It binds to 127.0.0.1, answers only localhost origins (add more with `--allow-origin`), checks the Host header, caps the request body at 2 MiB, accepts IR JSON only (never a file path), and rejects an IR whose image or font attributes name a file on disk. Rendering has a 30 second timeout, a concurrency limit, a bounded queue and a result cache. Errors are JSON with a stable `code`.
 
-Rendering goes through a `Renderer` interface (`src/render-api.mjs`), so another renderer, such as an LVGL WebAssembly build, can replace the native render program later. The render program is found with `--render-bin`, then `$HTML2LVGL_RENDER_BIN`, then `spike/build/render`. It is compiled at 320x240, so other sizes are rejected until it is rebuilt.
+Rendering goes through a `Renderer` interface (`src/render-api.mjs`), so another renderer, such as an LVGL WebAssembly build, can replace the native render program later. The render program is found with `--render-bin`, then `$HTML2LVGL_RENDER_BIN`, then `spike/build/render`, then the cache `--build-render` fills. It is compiled at 320x240, so other sizes are rejected until it is rebuilt.
+
+### Render program
+
+The render program turns LVGL XML into a picture; `--watch` and `--preview-api` use it. A binary is specific to one operating system and CPU, so the npm package ships its C sources (`spike/render/`, about 14 kB) instead, and you build it once on your machine:
+
+```bash
+html2lvgl --build-render            # clones LVGL v9.4.0, runs CMake, prints the binary's path
+html2lvgl --build-render --lvgl-dir ~/src/lvgl   # use your own v9.4.0 checkout, no clone
+html2lvgl --build-render --rebuild  # build again even if one exists
+```
+
+It needs `git` (unless you pass `--lvgl-dir`), `cmake` and a C compiler, and takes about a minute. The result is installed under `$HTML2LVGL_CACHE_DIR`, else `$XDG_CACHE_HOME/html2lvgl`, else `~/.cache/html2lvgl`, in a folder named for the LVGL version, and is found automatically afterwards. Each failure names the missing tool or the step that failed.
 
 [Back to Top](#features)
 

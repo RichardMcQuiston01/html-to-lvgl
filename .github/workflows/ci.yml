@@ -30,7 +30,11 @@ jobs:
       # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD keeps `npm ci` from fetching this on
       # its own; extract.test.mjs needs a real Chromium to launch.
       - run: npx playwright install --with-deps chromium
+      # Builds the render program from the shipped sources (clones LVGL) and
+      # renders through it, so the --build-render path cannot rot unseen.
       - run: npm test
+        env:
+          HTML2LVGL_TEST_BUILD_RENDER: '1'
 
   validate-xml:
     name: Validate golden XML against LVGL v9.4

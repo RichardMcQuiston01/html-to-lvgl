@@ -76,9 +76,12 @@ function inScratch(code) {
   return r.stdout.trim();
 }
 
-test('the packed core contains only src/, and the packed plugins only their src/', () => {
+test('the packed core contains only src/ and the render program sources, and the packed plugins only their src/', () => {
   const core = readdirSync(join(modules, SCOPE, 'html-to-lvgl'));
-  assert.deepEqual(core.filter((f) => !['src', 'package.json', 'README.md', 'LICENSE', 'CHANGELOG.md'].includes(f)), []);
+  assert.deepEqual(core.filter((f) => !['src', 'spike', 'package.json', 'README.md', 'LICENSE', 'CHANGELOG.md'].includes(f)), []);
+  // --build-render compiles these; nothing else of spike/ (samples, ESP32, MicroPython) ships.
+  assert.deepEqual(readdirSync(join(modules, SCOPE, 'html-to-lvgl', 'spike')), ['render']);
+  assert.deepEqual(readdirSync(join(modules, SCOPE, 'html-to-lvgl', 'spike', 'render')).sort(), ['CMakeLists.txt', 'lv_conf.h', 'main.c']);
   assert.ok(!existsSync(join(modules, SCOPE, 'html-to-lvgl', 'packages')), 'plugins are not inside the core tarball');
   for (const name of ['html-to-lvgl-vue', 'html-to-lvgl-mui']) {
     const files = readdirSync(join(modules, SCOPE, name));

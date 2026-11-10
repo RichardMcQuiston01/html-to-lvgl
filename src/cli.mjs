@@ -41,6 +41,9 @@ const { values: opts, positionals } = parseArgs({
   options: {
     'export-registry': { type: 'string' },
     'preview-api': { type: 'boolean', default: false },
+    'build-render': { type: 'boolean', default: false },
+    'lvgl-dir': { type: 'string' },
+    rebuild: { type: 'boolean', default: false },
     'allow-origin': { type: 'string', multiple: true, default: [] },
     size: { type: 'string', default: '320x240' },
     output: { type: 'string', short: 'o', default: '.' },
@@ -86,6 +89,25 @@ if (opts['export-registry'] !== undefined) {
   process.exit(0);
 }
 
+// Build the native render program from the shipped sources (needs git, cmake
+// and a C compiler), so --preview-api and --watch can draw LVGL output.
+if (opts['build-render']) {
+  const { buildRenderProgram, RenderBuildError } = await import('./render-build.mjs');
+  try {
+    const result = buildRenderProgram({
+      lvglDir: opts['lvgl-dir'],
+      force: opts.rebuild,
+      log: (msg) => console.error(msg),
+    });
+    console.log(result.binary);
+    process.exit(0);
+  } catch (err) {
+    if (!(err instanceof RenderBuildError)) throw err;
+    console.error(`--build-render failed (${err.code}): ${err.message}`);
+    process.exit(1);
+  }
+}
+
 // Editor preview server: takes IR over HTTP, needs no input page.
 if (opts['preview-api']) {
   const { startPreviewApi, createRenderProgramRenderer, findRenderBinary } = await import('./render-api.mjs');
@@ -103,7 +125,7 @@ if (opts['preview-api']) {
   });
   console.log(`preview API at ${api.url}  (POST /render, POST /ir/validate, GET /registry, GET /health)`);
   if (!findRenderBinary({ binary: opts['render-bin'] })) {
-    console.log('no render program found: /render answers 503 until you build one with: cmake -S spike/render -B spike/build -DLVGL_DIR=<lvgl-9.4.0> && cmake --build spike/build -j (or pass --render-bin or set HTML2LVGL_RENDER_BIN)');
+    console.log('no render program found: /render answers 503 until you run html2lvgl --build-render (or pass --render-bin or set HTML2LVGL_RENDER_BIN)');
   }
   await new Promise(() => {}); // the server keeps the process alive; nothing below applies
 }
@@ -121,6 +143,7 @@ if (opts.help || (positionals.length === 0 && opts['from-ir'].length === 0)) {
     '                 [--wait-for <selector>] [--wait-ms <n>] [--timeout <ms>]\n' +
     '                 [--block-external]   (URL inputs)\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
+    '       html2lvgl --build-render [--lvgl-dir <lvgl-9.4.0 checkout>] [--rebuild]\n' +
     '       html2lvgl --preview-api [--port 8787] [--render-bin path] [--allow-origin <origin>] [--plugin ...]\n' +
     '       html2lvgl --export-registry [file|-] [--plugin <package-or-path>] ...\n' +
     '\n' +

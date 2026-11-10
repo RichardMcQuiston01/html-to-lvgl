@@ -126,7 +126,7 @@ Decision, already made: the first version previews with the LVGL render program,
 
 ### What exists
 
-`src/preview.mjs` runs `execFile(renderBin, [xmlPath, bmpPath, ...fontArgs, ...componentPaths])` with a 30 second timeout and serves `/lvgl.bmp`, `/state` and `/events` (server-sent events). The default binary is `spike/build/render`, built from `spike/render/` with CMake.
+`src/preview.mjs` runs `execFile(renderBin, [xmlPath, bmpPath, ...fontArgs, ...componentPaths])` with a 30 second timeout and serves `/lvgl.bmp`, `/state` and `/events` (server-sent events). The default binary is `spike/build/render`, built from `spike/render/` with CMake; `html2lvgl --build-render` builds the same sources into a per-user cache for npm installs (FEATURES.md, Render program).
 
 Facts read from `spike/render/main.c` and `spike/render/lv_conf.h`:
 
