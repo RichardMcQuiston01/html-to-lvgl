@@ -40,6 +40,7 @@ import { deflateSync, crc32 } from 'node:zlib';
 import { importIr, emitFromIr, validateIr, IrError } from './ir.mjs';
 import { defaultRegistry } from './recognize.mjs';
 import { exportRegistry } from './registry-export.mjs';
+import { cachedRenderBinary, BUILD_HINT } from './render-build.mjs';
 
 /* ------------------------------------------------------------------ types */
 
@@ -98,17 +99,17 @@ export const DEFAULT_RENDER_BINARY = 'spike/build/render';
 export const RENDER_BINARY_ENV = 'HTML2LVGL_RENDER_BIN';
 /** The size the stock render program (spike/render/main.c HOR_RES x VER_RES) is compiled for. */
 export const DEFAULT_DISPLAY_SIZE = Object.freeze({ width: 320, height: 240 });
-const BUILD_COMMAND = 'cmake -S spike/render -B spike/build -DLVGL_DIR=<lvgl-9.4.0> && cmake --build spike/build -j';
+const BUILD_COMMAND = BUILD_HINT;
 
 /**
  * Find the render program: explicit path, then $HTML2LVGL_RENDER_BIN, then
- * `spike/build/render` under `cwd` (the same default `--watch` uses).
- * Returns null when none exists.
+ * `spike/build/render` under `cwd`, then the per-user cache that
+ * `html2lvgl --build-render` fills. Returns null when none exists.
  *
  * @param {{ binary?: string, cwd?: string, env?: Record<string, string | undefined> }} [options]
  */
 export function findRenderBinary({ binary, cwd = process.cwd(), env = process.env } = {}) {
-  const candidates = [binary, env[RENDER_BINARY_ENV], join(cwd, DEFAULT_RENDER_BINARY)].filter(Boolean);
+  const candidates = [binary, env[RENDER_BINARY_ENV], join(cwd, DEFAULT_RENDER_BINARY), cachedRenderBinary({ env })].filter(Boolean);
   for (const c of candidates) {
     const p = resolve(cwd, c);
     if (existsSync(p)) return p;
@@ -265,7 +266,7 @@ const safeParse = (text) => { try { return JSON.parse(text); } catch { return te
 function classifyFailure(err, binary, timeoutMs) {
   const stderr = String(err.stderr ?? '').trim();
   if (err.code === 'ENOENT') {
-    return new RenderError('render_binary_missing', `render program not found at ${binary}; build it with: ${BUILD_COMMAND}`);
+    return new RenderError('render_binary_missing', `render program not found at ${binary}; ${BUILD_COMMAND}`);
   }
   if (err.killed && (err.signal === 'SIGKILL' || err.signal === 'SIGTERM')) {
     return new RenderError('render_timeout', `render program did not finish within ${timeoutMs} ms and was killed`);
@@ -315,7 +316,7 @@ export function createRenderProgramRenderer({
     const path = findRenderBinary({ binary, cwd });
     if (!path) {
       throw new RenderError('render_binary_missing',
-        `render program not found${binary ? ` at ${resolve(cwd, binary)}` : ` (looked at $${RENDER_BINARY_ENV} and ${join(cwd, DEFAULT_RENDER_BINARY)})`}; build it with: ${BUILD_COMMAND}`);
+        `render program not found${binary ? ` at ${resolve(cwd, binary)}` : ` (looked at $${RENDER_BINARY_ENV}, ${join(cwd, DEFAULT_RENDER_BINARY)} and ${cachedRenderBinary()})`}; ${BUILD_COMMAND}`);
     }
     let ir;
     try {

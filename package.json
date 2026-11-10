@@ -24,7 +24,10 @@
     "access": "public"
   },
   "files": [
-    "src"
+    "src",
+    "spike/render/CMakeLists.txt",
+    "spike/render/lv_conf.h",
+    "spike/render/main.c"
   ],
   "exports": {
     "./extract": "./src/extract.mjs",

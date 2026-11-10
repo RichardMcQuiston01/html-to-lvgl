@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **`html2lvgl --build-render` builds the native render program from an npm install.** Before, `--preview-api` and `--watch` needed a repository checkout, because the package did not ship the render program and `POST /render` answered `render_binary_missing`. The package now includes the render program's C sources (`spike/render/`, about 14 kB). `--build-render` clones LVGL v9.4.0 (or uses `--lvgl-dir`), runs CMake, and installs the binary in a per-user cache (`$HTML2LVGL_CACHE_DIR`, `$XDG_CACHE_HOME/html2lvgl` or `~/.cache/html2lvgl`) that is searched after `--render-bin`, `$HTML2LVGL_RENDER_BIN` and `spike/build/render`. It needs `git`, `cmake` and a C compiler. `--rebuild` forces a rebuild. Error messages and the preview server's "no render program" notice now point to it. A prebuilt binary is not shipped, since it would be specific to one platform. See [FEATURES.md](FEATURES.md#render-program).
+
 ## [0.9.0] - 2026-11-08
 
 AppBar tabs, page-wide label sizing and the editor groundwork (registry export, IR export/import, preview API) are new capabilities, so this is a minor bump. Generated output changes for pages with sibling labels of the same CSS size and for AppBar tab layouts, so regenerate any checked-in output.

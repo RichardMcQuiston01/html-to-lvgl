@@ -23,13 +23,14 @@ import { applySidecar, sidecarFor } from './overrides.mjs';
 import { render as renderXml } from './emit-xml.mjs';
 import { planFonts, buildFonts, fontDiagnostics } from './fonts-build.mjs';
 import { builtinFonts, customFonts } from './fonts.mjs';
+import { findRenderBinary } from './render-api.mjs';
+import { BUILD_HINT } from './render-build.mjs';
 
 const execFileAsync = promisify(execFile);
 
 /** Source edits trigger rebuilds — generated .xml/.c/.bmp must not (see the watcher for the extra cases). */
 const SOURCE_EXT = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.ts', '.tsx']);
 const DEBOUNCE_MS = 150;
-const DEFAULT_RENDER_BIN = 'spike/build/render';
 /** A hung harness must not wedge the rebuild loop forever. */
 const RENDER_TIMEOUT_MS = 30_000;
 
@@ -291,7 +292,7 @@ export async function startPreview(input, options) {
   log(`preview at http://localhost:${boundPort}  (watching ${watchDir})`);
   if (!renderBin) {
     log('no render harness found — showing the web reference and XML only.');
-    log('build one with: cmake -S spike/render -B spike/build -DLVGL_DIR=<lvgl-9.4.0> && cmake --build spike/build -j');
+    log(`build one: ${BUILD_HINT}`);
   }
 
   return {
@@ -310,8 +311,7 @@ export async function startPreview(input, options) {
 /* ------------------------------------------------------------------ util */
 
 function resolveRenderBin(explicit) {
-  if (explicit) return existsSync(explicit) ? explicit : null;
-  return existsSync(DEFAULT_RENDER_BIN) ? DEFAULT_RENDER_BIN : null;
+  return findRenderBinary({ binary: explicit });
 }
 
 const log = (msg) => console.log(`[preview] ${msg}`);
@@ -481,7 +481,7 @@ async function refresh() {
     lvgl.removeAttribute('src');
     fidelity.textContent = s.hasRenderBin
       ? 'No render for this build — see the message above.'
-      : 'No render harness — build spike/build/render to enable the LVGL pane.';
+      : 'No render harness — run html2lvgl --build-render to enable the LVGL pane.';
   }
 }
 

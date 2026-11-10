@@ -230,9 +230,9 @@ test('render program failures map to stable codes with the harness message', asy
   }
 });
 
-test('a missing render program is render_binary_missing with the build command', async () => {
+test('a missing render program is render_binary_missing and names --build-render', async () => {
   const renderer = createRenderProgramRenderer({ binary: join(freshDir(), 'nope') });
-  await assert.rejects(renderer.render({ ir: dashboard }), (e) => e.code === 'render_binary_missing' && /cmake -S spike\/render -B spike\/build/.test(e.message));
+  await assert.rejects(renderer.render({ ir: dashboard }), (e) => e.code === 'render_binary_missing' && /--build-render/.test(e.message));
 });
 
 test('bad IR is invalid_ir with every problem listed; the program is not started', async () => {
@@ -459,7 +459,7 @@ test('startPreviewApi requires a renderer with render()', async () => {
 
 const realBinary = findRenderBinary();
 test('real render of the exported dashboard IR (needs the LVGL render program)', {
-  skip: realBinary ? false : `no render program: set ${RENDER_BINARY_ENV} or build one (cmake -S spike/render -B spike/build -DLVGL_DIR=<lvgl-9.4.0> && cmake --build spike/build -j)`,
+  skip: realBinary ? false : `no render program: set ${RENDER_BINARY_ENV} or run html2lvgl --build-render`,
 }, async () => {
   const renderer = createRenderProgramRenderer({ binary: realBinary });
   await withServer({ renderer }, async (api) => {
