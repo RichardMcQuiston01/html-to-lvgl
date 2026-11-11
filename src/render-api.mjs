@@ -48,11 +48,12 @@ import { cachedRenderBinary, BUILD_HINT } from './render-build.mjs';
  * @typedef {{ width: number, height: number }} Size
  * @typedef {{ key: string, path: string }} FontFile  A converted LVGL binary font and the name the XML refers to it by (render program `--font=key=path`).
  * @typedef {{ level: 'info' | 'warning' | 'error', message: string }} RenderDiagnostic
- * @typedef {{ png: Buffer, width: number, height: number, diagnostics: RenderDiagnostic[] }} RenderResult
+ * @typedef {{ name: string, x: number, y: number, width: number, height: number, depth: number, hidden: boolean }} WidgetBox  Final screen rectangle of one named widget (after layout). `name` is the IR node's `name` attribute.
+ * @typedef {{ png: Buffer, width: number, height: number, diagnostics: RenderDiagnostic[], boxes: WidgetBox[] | null }} RenderResult  `boxes` is in tree order (parents before children), limited to widgets whose name is an IR node's name; null when the render program is too old to report boxes.
  *
  * @typedef {object} RenderRequest
  * @property {object | string} ir          IR document (parsed object or JSON text), validated with importIr().
- * @property {Size} [size]                 Wanted display size; defaults to the IR's root view width/height, else the renderer's display size.
+ * @property {Size} [size]                 Wanted display size; defaults to the IR's root view width/height, else the renderer's default size (320x240).
  * @property {FontFile[]} [fonts]          Extra fonts, for trusted in-process callers only (never taken from HTTP requests).
  * @property {Record<string, string>} [components]  Extra component XML by component name, registered before the page.
  *
@@ -283,6 +284,55 @@ function classifyFailure(err, binary, timeoutMs) {
   return new RenderError('render_failed', `render program exited with code ${err.code}${stderr ? `: ${stderr}` : ''}`);
 }
 
+/** Every `name` attribute in an IR view, depth first. */
+function irNames(node, names = new Set()) {
+  if (node?.attrs && typeof node.attrs.name === 'string') names.add(node.attrs.name);
+  for (const child of node?.children ?? []) irNames(child, names);
+  return names;
+}
+
+/**
+ * Read the render program's `--boxes` file. Returns null when it is missing or
+ * unreadable (an older render program), otherwise the boxes whose name is an
+ * IR node's name, in tree order. LVGL also names the component's own root
+ * wrapper (for example `dashboard_#`); that is not an IR node, so it is dropped.
+ *
+ * @param {string} path
+ * @param {object} view  The IR root node.
+ * @returns {WidgetBox[] | null}
+ */
+function readBoxes(path, view) {
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(doc?.boxes)) return null;
+  const names = irNames(view);
+  return doc.boxes.filter((b) => b && typeof b.name === 'string' && names.has(b.name));
+}
+
+/**
+ * The widget under a point: the deepest visible box that contains it. Boxes are
+ * in tree order, so a later box at the same depth is drawn on top and wins.
+ * Returns null when the point hits no named widget.
+ *
+ * @param {WidgetBox[] | null | undefined} boxes
+ * @param {number} x
+ * @param {number} y
+ * @returns {WidgetBox | null}
+ */
+export function hitTest(boxes, x, y) {
+  let best = null;
+  for (const box of boxes ?? []) {
+    if (box.hidden) continue;
+    if (x < box.x || y < box.y || x >= box.x + box.width || y >= box.y + box.height) continue;
+    if (best === null || box.depth >= best.depth) best = box;
+  }
+  return best;
+}
+
 /**
  * The first Renderer: IR -> XML -> native LVGL render program -> PNG.
  *
@@ -294,7 +344,7 @@ function classifyFailure(err, binary, timeoutMs) {
  * @param {number} [options.maxQueue]     Waiting renders before render_queue_full (default 32).
  * @param {number} [options.cacheSize]    Cached results kept in memory, 0 disables (default 64).
  * @param {FontFile[]} [options.fonts]    Fonts always passed to the render program.
- * @param {Size} [options.displaySize]    What the binary is compiled for (default 320x240).
+ * @param {Size} [options.displaySize]    Size used when neither the request nor the IR gives one (default 320x240).
  * @returns {Renderer}
  */
 export function createRenderProgramRenderer({
@@ -341,9 +391,10 @@ export function createRenderProgramRenderer({
         if (fileName !== `${ir.name}.xml`) componentPaths.push(p);
       }
       const bmpPath = join(dir, 'out.bmp');
+      const boxesPath = join(dir, 'boxes.json');
       const fontArgs = [...defaultFonts, ...(request.fonts ?? [])].map((f) => `--font=${f.key}=${resolve(cwd, f.path)}`);
       const stdout = await new Promise((ok, fail) => {
-        execFile(path, [join(dir, `${ir.name}.xml`), bmpPath, ...fontArgs, ...componentPaths],
+        execFile(path, [join(dir, `${ir.name}.xml`), bmpPath, `--size=${size.width}x${size.height}`, `--boxes=${boxesPath}`, ...fontArgs, ...componentPaths],
           { timeout: timeoutMs, killSignal: 'SIGKILL', cwd: dir, maxBuffer: 1 << 20 },
           (err, out, errOut) => (err ? fail(classifyFailure(Object.assign(err, { stderr: errOut }), path, timeoutMs)) : ok({ out, errOut })));
       });
@@ -354,9 +405,18 @@ export function createRenderProgramRenderer({
         throw new RenderError('render_output_invalid', 'render program exited successfully but wrote no image', { cause: err });
       }
       const { png, width, height } = bmpToPng(bmp);
+      // A render program built before --size existed ignores it and draws at
+      // its compiled size. Say so, rather than return a picture that does not
+      // match the boxes and the size the caller asked for.
+      if (width !== size.width || height !== size.height) {
+        throw new RenderError('size_unsupported',
+          `the render program drew ${width}x${height} but ${size.width}x${size.height} was requested; it predates --size (rebuild it with html2lvgl --build-render --rebuild)`);
+      }
       /** @type {RenderDiagnostic[]} */
       const diagnostics = String(stdout.errOut ?? '').split('\n').map((l) => l.trim()).filter(Boolean).map((message) => ({ level: 'warning', message }));
-      return { png, width, height, diagnostics };
+      const boxes = readBoxes(boxesPath, ir.view);
+      if (boxes === null) diagnostics.push({ level: 'info', message: 'this render program does not report widget boxes (canvas selection is unavailable); rebuild it with html2lvgl --build-render --rebuild' });
+      return { png, width, height, diagnostics, boxes };
     } finally {
       rmSync(dir, { recursive: true, force: true }); // success and failure alike
     }
@@ -378,9 +438,8 @@ export function createRenderProgramRenderer({
       const rootW = Number(parsed.view.attrs?.width);
       const rootH = Number(parsed.view.attrs?.height);
       const size = request.size ?? (Number.isInteger(rootW) && Number.isInteger(rootH) && rootW > 0 && rootH > 0 ? { width: rootW, height: rootH } : { ...displaySize });
-      if (size.width !== displaySize.width || size.height !== displaySize.height) {
-        throw new RenderError('size_unsupported',
-          `this render program is compiled for ${displaySize.width}x${displaySize.height}; ${size.width}x${size.height} was requested (change HOR_RES/VER_RES in spike/render/main.c and rebuild, or use a renderer that supports the size)`);
+      if (!Number.isInteger(size.width) || !Number.isInteger(size.height) || size.width < 1 || size.height < 1 || size.width > 4096 || size.height > 4096) {
+        throw new RenderError('size_unsupported', `size ${size.width}x${size.height} is outside 1..4096 in each dimension`);
       }
       const key = renderCacheKey({ ir: parsed, size, fonts: [...defaultFonts, ...(request.fonts ?? [])], components: request.components });
       const hit = cache.get(key);
@@ -584,6 +643,7 @@ export async function startPreviewApi({ port = 8787, host = '127.0.0.1', rendere
           height: result.height,
           cached: Boolean(result.cached),
           diagnostics: result.diagnostics,
+          boxes: result.boxes,
           png: result.png.toString('base64'),
         }, cors);
       }

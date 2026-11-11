@@ -6,7 +6,12 @@
  * framebuffer out as a 24-bit BMP for visual comparison with the Chromium
  * screenshot of the source HTML page.
  *
- * Usage: render <page.xml> <out.bmp>
+ * Usage: render <page.xml> <out.bmp> [--size=WxH] [--boxes=<out.json>]
+ *               [--click=<name>] [--font=<name>=<path.bin>] [component.xml ...]
+ *
+ * --size sets the display size (default 320x240). --boxes writes the final
+ * rectangle of every named widget on the active screen as JSON, so a visual
+ * editor can map a click on the picture back to a widget.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +20,17 @@
 #include <stdbool.h>
 #include "lvgl.h"
 
-#define HOR_RES 320
-#define VER_RES 240
+#define DEFAULT_HOR_RES 320
+#define DEFAULT_VER_RES 240
+#define MAX_RES 4096
 
-/* ARGB8888 framebuffer; in LVGL's memory layout each pixel is B,G,R,A */
-static uint8_t framebuffer[HOR_RES * VER_RES * 4];
+/* Display size, set from --size before the display is created. */
+static int HOR_RES = DEFAULT_HOR_RES;
+static int VER_RES = DEFAULT_VER_RES;
+
+/* ARGB8888 framebuffer; in LVGL's memory layout each pixel is B,G,R,A.
+ * Allocated for the requested size. */
+static uint8_t * framebuffer;
 
 static void flush_cb(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
 {
@@ -121,6 +132,51 @@ static lv_obj_t * find_by_name(lv_obj_t * parent, const char * name)
     return NULL;
 }
 
+/** Write `s` as a JSON string (quotes included), escaping what JSON requires. */
+static void write_json_string(FILE * f, const char * s)
+{
+    fputc('"', f);
+    for(const unsigned char * p = (const unsigned char *)s; *p; p++) {
+        if(*p == '"' || *p == '\\') { fputc('\\', f); fputc(*p, f); }
+        else if(*p < 0x20) fprintf(f, "\\u%04x", *p);
+        else fputc(*p, f);
+    }
+    fputc('"', f);
+}
+
+/** Depth-first walk, writing one JSON object per named widget, in tree order. */
+static void write_boxes_walk(FILE * f, lv_obj_t * obj, int depth, bool * first)
+{
+    const char * name = lv_obj_get_name(obj);
+    if(name && name[0] != '\0') {
+        lv_area_t a;
+        lv_obj_get_coords(obj, &a);
+        if(!*first) fputs(",\n", f);
+        *first = false;
+        fputs("    {\"name\": ", f);
+        write_json_string(f, name);
+        fprintf(f, ", \"x\": %d, \"y\": %d, \"width\": %d, \"height\": %d, \"depth\": %d, \"hidden\": %s}",
+                (int)a.x1, (int)a.y1, (int)lv_area_get_width(&a), (int)lv_area_get_height(&a), depth,
+                lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) ? "true" : "false");
+    }
+    uint32_t count = lv_obj_get_child_count(obj);
+    for(uint32_t i = 0; i < count; i++) write_boxes_walk(f, lv_obj_get_child(obj, i), depth + 1, first);
+}
+
+/** The final rectangle of every named widget on the active screen, as JSON. */
+static int write_boxes(const char * path)
+{
+    lv_obj_t * screen = lv_screen_active();
+    lv_obj_update_layout(screen);   /* coordinates are only final after layout */
+    FILE * f = fopen(path, "wb");
+    if(!f) return -1;
+    fprintf(f, "{\n  \"width\": %d,\n  \"height\": %d,\n  \"boxes\": [\n", HOR_RES, VER_RES);
+    bool first = true;
+    write_boxes_walk(f, screen, 0, &first);
+    fputs("\n  ]\n}\n", f);
+    return fclose(f) == 0 ? 0 : -1;
+}
+
 /* LVGL's built-in heap (LV_MEM_SIZE in lv_conf.h) is fixed. When it runs
  * out, lv_malloc() logs this line and returns NULL, and the caller then
  * dereferences it: a bare segfault. Exiting here, before that happens, tells
@@ -171,8 +227,8 @@ int main(int argc, char ** argv)
 {
     if(argc < 3) {
         fprintf(stderr,
-                "usage: %s <page.xml> <out.bmp> [--click=<widget-name>]\n"
-                "          [--font=<name>=<path.bin>] [component.xml ...]\n",
+                "usage: %s <page.xml> <out.bmp> [--size=WxH] [--boxes=<out.json>]\n"
+                "          [--click=<widget-name>] [--font=<name>=<path.bin>] [component.xml ...]\n",
                 argv[0]);
         return 1;
     }
@@ -180,8 +236,20 @@ int main(int argc, char ** argv)
     /* --click=<name> sends LV_EVENT_CLICKED to that widget before capturing,
      * which is how screen navigation gets exercised without an input device. */
     const char * click_name = NULL;
+    const char * boxes_path = NULL;
     for(int i = 3; i < argc; i++) {
         if(strncmp(argv[i], "--click=", 8) == 0) click_name = argv[i] + 8;
+        else if(strncmp(argv[i], "--boxes=", 8) == 0) boxes_path = argv[i] + 8;
+        else if(strncmp(argv[i], "--size=", 7) == 0) {
+            int w = 0, h = 0;
+            char extra = '\0';
+            if(sscanf(argv[i] + 7, "%dx%d%c", &w, &h, &extra) != 2 || w < 1 || h < 1 || w > MAX_RES || h > MAX_RES) {
+                fprintf(stderr, "expected --size=<width>x<height> with each between 1 and %d, got `%s`\n", MAX_RES, argv[i] + 7);
+                return 1;
+            }
+            HOR_RES = w;
+            VER_RES = h;
+        }
     }
 
     char * xml = read_file(argv[1]);
@@ -193,8 +261,14 @@ int main(int argc, char ** argv)
     lv_log_register_print_cb(log_cb);
     lv_init();
 
+    const size_t framebuffer_size = (size_t)HOR_RES * (size_t)VER_RES * 4;
+    framebuffer = calloc(1, framebuffer_size);
+    if(!framebuffer) {
+        fprintf(stderr, "cannot allocate a %dx%d framebuffer (%zu bytes)\n", HOR_RES, VER_RES, framebuffer_size);
+        return 1;
+    }
     lv_display_t * disp = lv_display_create(HOR_RES, VER_RES);
-    lv_display_set_buffers(disp, framebuffer, NULL, sizeof(framebuffer),
+    lv_display_set_buffers(disp, framebuffer, NULL, (uint32_t)framebuffer_size,
                            LV_DISPLAY_RENDER_MODE_DIRECT);
     lv_display_set_flush_cb(disp, flush_cb);
 
@@ -308,6 +382,10 @@ int main(int argc, char ** argv)
 
     if(write_bmp(argv[2]) != 0) {
         fprintf(stderr, "cannot write %s\n", argv[2]);
+        return 1;
+    }
+    if(boxes_path && write_boxes(boxes_path) != 0) {
+        fprintf(stderr, "cannot write %s\n", boxes_path);
         return 1;
     }
     printf("rendered %s -> %s\n", argv[1], argv[2]);

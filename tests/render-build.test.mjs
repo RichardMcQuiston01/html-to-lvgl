@@ -11,7 +11,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import {
-  buildRenderProgram, cacheDir, cachedRenderBinary, renderBinaryName, renderSourceDir, packageFiles,
+  buildRenderProgram, cacheDir, cachedRenderBinary, renderBinaryName, renderSourceDir, renderSourceHash, lvglCloneDir, packageFiles,
   RenderBuildError, LVGL_VERSION, CACHE_DIR_ENV,
 } from '../src/render-build.mjs';
 import { findRenderBinary } from '../src/render-api.mjs';
@@ -62,10 +62,29 @@ test('cacheDir honours $HTML2LVGL_CACHE_DIR, then XDG, then the home directory',
   assert.equal(cacheDir({ env: { LOCALAPPDATA: 'C:\\L' }, platform: 'win32' }), join('C:\\L', 'html2lvgl'));
 });
 
-test('the installed binary path carries the LVGL version', () => {
+test('the installed binary path carries the LVGL version and a hash of the render sources', () => {
   const path = cachedRenderBinary({ env: { [CACHE_DIR_ENV]: '/x/c' }, platform: 'linux' });
-  assert.equal(path, join('/x/c', `render-lvgl-${LVGL_VERSION}`, 'build', 'render'));
+  assert.equal(path, join('/x/c', `render-lvgl-${LVGL_VERSION}-${renderSourceHash(root)}`, 'build', 'render'));
+  assert.match(renderSourceHash(root), /^[0-9a-f]{10}$/);
   assert.equal(renderBinaryName('win32'), 'render.exe');
+  assert.equal(lvglCloneDir({ env: { [CACHE_DIR_ENV]: '/x/c' } }), join('/x/c', `lvgl-${LVGL_VERSION}`));
+});
+
+test('a changed render source gives a different install directory, so an old binary is not reused', () => {
+  const copy = (mutate) => {
+    const dir = freshDir();
+    mkdirSync(join(dir, 'spike', 'render'), { recursive: true });
+    for (const f of ['CMakeLists.txt', 'lv_conf.h', 'main.c']) {
+      const text = readFileSync(join(renderSourceDir(root), f), 'utf8');
+      writeFileSync(join(dir, 'spike', 'render', f), f === 'main.c' ? mutate(text) : text);
+    }
+    return dir;
+  };
+  const same = renderSourceHash(copy((t) => t));
+  const changed = renderSourceHash(copy((t) => `${t}\n/* edit */\n`));
+  assert.equal(same, renderSourceHash(root));
+  assert.notEqual(changed, same);
+  assert.equal(renderSourceHash(freshDir()), 'unknown');
 });
 
 test('builds by cloning LVGL v9.4.0, configuring and compiling', () => {
@@ -73,7 +92,7 @@ test('builds by cloning LVGL v9.4.0, configuring and compiling', () => {
   const { deps, commands } = fakeDeps({ outDir });
   const result = buildRenderProgram({ outDir, deps });
   assert.equal(result.built, true);
-  assert.equal(result.binary, join(outDir, `render-lvgl-${LVGL_VERSION}`, 'build', 'render'));
+  assert.equal(result.binary, join(outDir, `render-lvgl-${LVGL_VERSION}-${renderSourceHash(root)}`, 'build', 'render'));
   const [clone, configure, build] = commands;
   assert.deepEqual(clone.slice(0, 5), ['git', 'clone', '--depth', '1', '--branch']);
   assert.equal(clone[5], `v${LVGL_VERSION}`);
@@ -167,4 +186,8 @@ test('real build from the shipped sources renders the dashboard IR (needs git, c
   assert.equal(Buffer.from(out.png).subarray(1, 4).toString('latin1'), 'PNG');
   assert.equal(out.width, 320);
   assert.equal(out.height, 240);
+  // The editor's canvas selection depends on these two options of the shipped main.c.
+  assert.ok(Array.isArray(out.boxes) && out.boxes.length > 10, 'the render program reports widget boxes');
+  const big = await renderer.render({ ir, size: { width: 480, height: 320 } });
+  assert.deepEqual([big.width, big.height], [480, 320]);
 });

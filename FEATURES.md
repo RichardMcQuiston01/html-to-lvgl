@@ -271,7 +271,9 @@ These are the pieces a visual editor needs. The editor is not built yet; [EDITOR
 
 The preview API is built to be safe to run next to a browser editor. It binds to 127.0.0.1, answers only localhost origins (add more with `--allow-origin`), checks the Host header, caps the request body at 2 MiB, accepts IR JSON only (never a file path), and rejects an IR whose image or font attributes name a file on disk. Rendering has a 30 second timeout, a concurrency limit, a bounded queue and a result cache. Errors are JSON with a stable `code`.
 
-Rendering goes through a `Renderer` interface (`src/render-api.mjs`), so another renderer, such as an LVGL WebAssembly build, can replace the native render program later. The render program is found with `--render-bin`, then `$HTML2LVGL_RENDER_BIN`, then `spike/build/render`, then the cache `--build-render` fills. It is compiled at 320x240, so other sizes are rejected until it is rebuilt.
+Rendering goes through a `Renderer` interface (`src/render-api.mjs`), so another renderer, such as an LVGL WebAssembly build, can replace the native render program later. The render program is found with `--render-bin`, then `$HTML2LVGL_RENDER_BIN`, then `spike/build/render`, then the cache `--build-render` fills. `POST /render` accepts any size from 1 to 4096 (default: the IR root's width and height).
+
+The render response also lists where every named widget ended up, for a canvas editor: `POST /render?format=json` returns `boxes`, an array of `{ name, x, y, width, height, depth, hidden }` in tree order, limited to widgets whose name is an IR node's name. `hitTest(boxes, x, y)` (exported from `src/render-api.mjs`) returns the deepest visible box under a point. A render program built before this release returns `boxes: null`; run `html2lvgl --build-render --rebuild` to update it.
 
 ### Render program
 

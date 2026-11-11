@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- **The render program reports where every widget is, and renders at any size.** The editor needs to turn a click on the picture into a widget. The render program has two new options: `--size=WxH` (1 to 4096 in each dimension, default 320x240) and `--boxes=<file.json>`, which writes the final rectangle of every named widget after layout. The preview API passes both: `POST /render` takes any size, and `POST /render?format=json` returns `boxes` (`{ name, x, y, width, height, depth, hidden }` in tree order, limited to widgets the IR names). `hitTest(boxes, x, y)` in `src/render-api.mjs` returns the deepest visible widget under a point. Checked against the real render program on the dashboard example: LVGL gives every IR node its name and a rectangle inside the screen. A render program built from an older release is detected: a wrong-sized picture answers `size_unsupported`, and a missing boxes file gives `boxes: null` and an info diagnostic, both with the rebuild command. See [EDITOR.md](EDITOR.md) and [FEATURES.md](FEATURES.md#editor-groundwork).
+
+### Fixed
+
+- A render program built by `--build-render` is now installed under a name that includes a hash of its sources, and the LVGL clone is kept separately. Before, an upgrade that changed the render program's C code would silently keep using the binary built by the previous version. Now the next `--build-render` builds a new binary without cloning LVGL again.
+
 ## [0.10.0] - 2026-11-10
 
 The render program can now be built from an npm install, which makes `--preview-api` and `--watch` usable without a repository checkout. It is a new command and a larger package (the render sources, about 14 kB), so this is a minor bump. Generated output does not change.
