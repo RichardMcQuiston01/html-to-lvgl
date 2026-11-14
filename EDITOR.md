@@ -130,7 +130,8 @@ Decision, already made: the first version previews with the LVGL render program,
 
 Facts read from `spike/render/main.c` and `spike/render/lv_conf.h`:
 
-- The display size is a compile-time constant: `#define HOR_RES 320` and `VER_RES 240`. The CLI's `--size` does not reach it. **Gap:** the editor's "device-size canvas" needs a size argument.
+- The display size defaults to 320x240 and `--size=WxH` sets it (1 to 4096 in each dimension), so the editor's device-size canvas works. The framebuffer is allocated for the requested size.
+- `--boxes=<file.json>` writes the final rectangle (after layout) of every named widget on the active screen, in tree order, with its depth and whether it is hidden. Verified on the dashboard golden: LVGL names every widget the IR names, with the same names, and the coordinates are stable after the last frame. It also names the component's own root wrapper (`dashboard_#`), which is not an IR node, so the render API drops names the IR does not contain.
 - It loads XML with the XML runtime (`LV_USE_XML 1`), registers `montserrat_10` through `_32` built in, takes `--font=<name>=<path.bin>`, and loads component XML files from its arguments.
 - It supports `--click=<widget-name>` and finds widgets by name (`find_by_name`).
 - It writes one BMP, and prints nothing about widget positions.
@@ -233,8 +234,8 @@ If any criterion fails, record why and keep the render program. If all pass, add
 
 | Gap | Why the editor needs it | Proposed answer |
 |---|---|---|
-| Pixel to node map (hit-testing) | Click on the canvas must select a node. | See below. |
-| Render size argument | Canvas at the device size (`--size`). `HOR_RES` is fixed at 320x240 in `spike/render/main.c`. | Add `--size=WxH`, a small change to the harness. |
+| Pixel to node map (hit-testing) | Click on the canvas must select a node. | **Done.** The render program's `--boxes` and the render API's `boxes` (below); `hitTest(boxes, x, y)` in `src/render-api.mjs` returns the deepest visible box under a point. |
+| Render size argument | Canvas at the device size (`--size`). | **Done.** `--size=WxH` in the render program; `POST /render` accepts any `size` from 1 to 4096. A render program built before `--size` is detected (its picture has the wrong size) and answers `size_unsupported` with the rebuild command. |
 | Read and write endpoints for `<page>.ir.json` and `<page>.lvgl.json` | Save and reopen. | Two JSON endpoints on the local server, each validating before writing. |
 | Sidecar from an edit list | The editor holds edits; the sidecar is a diff against the converted view. | A pure function: `diffViewToSidecar(baseView, editedView)` returning a sidecar and a list of edits it cannot express. |
 | Name provenance | Warn about unstable names. | Optionally add `meta.nameSource: "author" \| "derived"` to the IR; changes the schema, so it needs an `irVersion` decision. |
@@ -251,6 +252,8 @@ Verified against `tests/golden-editor/ir_dashboard.json` (screen 320x240):
 
 So a click position cannot be mapped to a node from the IR alone. A partial answer: walk `x`, `y`, `width` and `height` for absolutely placed nodes. It fails for everything in a flex container, which is most of a page.
 
+The fix is a layout dump from the engine, now built (see the table above); the rest of this section is the reasoning that led to it.
+
 The honest fix is a layout dump from the engine. After the final frame, the render program walks the widget tree and prints, for each named widget, `lv_obj_get_coords()` (absolute x1, y1, x2, y2). `find_by_name` already exists in `spike/render/main.c`, so the walk is a small addition. The render API returns the PNG and a `boxes` list `[{ name, x, y, width, height }]`. Hit-testing is then a client-side search for the deepest box containing the point. **Unverified:** that the XML runtime sets `name` on every widget (the harness already looks widgets up by name, which suggests yes for named ones) and that coordinates are stable after the last tick. A test on the golden pages would verify both.
 
 [Back to Top](#editor)
@@ -261,7 +264,7 @@ The honest fix is a layout dump from the engine. After the final frame, the rend
 
 | Item | Note |
 |---|---|
-| Hit-testing needs a harness change | Without the boxes list, canvas clicks cannot work. Selection by tree still works. |
+| Hit-testing needs a harness change | Done in M0. A render program built before `--boxes` returns `boxes: null` and an info diagnostic; canvas selection is unavailable until `--build-render --rebuild`, and selection by tree still works. Boxes exist only for named widgets, so a click on an unnamed part (a tabview's internals) selects the nearest named ancestor. |
 | Render latency is unmeasured | If one render takes over a second, live editing will feel slow. Mitigation: render on pause or on commit, not on every keystroke. |
 | IR edits and re-conversion diverge | A user who edits the IR and later changes the HTML loses the edits. The editor must say so before the first structural edit. A real merge is a research item. |
 | Unstable class-derived names | The sidecar can silently hit the wrong widget. Mitigated by warnings, not solved. |
@@ -277,7 +280,7 @@ The honest fix is a layout dump from the engine. After the final frame, the rend
 
 | Milestone | Work | Exit criteria |
 |---|---|---|
-| M0: Contracts | Re-read lane C code. Write the TypeScript types for the registry export, IR and sidecar. Add `--size` and the `boxes` dump to the render harness (separate change). | Types generated from the JSON schemas; a test renders a golden page at 480x320 and returns boxes for every named widget. |
+| M0: Contracts | Re-read lane C code. Write the TypeScript types for the registry export, IR and sidecar. Add `--size` and the `boxes` dump to the render harness. | Types generated from the JSON schemas; a test renders a golden page at 480x320 and returns boxes for every named widget. **Harness half done** (`--size`, `--boxes`, `boxes` in the render API, `hitTest`, tested against the real render program). The TypeScript types are still to do. |
 | M1: Read-only viewer | Vite SPA, tree panel, canvas showing the render, diagnostics list. | Opens `ir_dashboard.json`, shows the tree and the render at 320x240. Selection by tree works. |
 | M2: Property editing | Property panel from the registry and IR attrs, validation, sidecar writer, undo and redo, save endpoints. | Editing `width` of a named node writes a sidecar; `html2lvgl --overrides` on the source gives the same XML as the editor's export. |
 | M3: Canvas | Click to select from boxes, selection overlay, resize handles, move for absolute nodes. | Clicking each named widget in the golden pages selects it. |

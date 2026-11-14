@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import {
-  RenderError, createRenderProgramRenderer, startPreviewApi, bmpToPng, findRenderBinary, renderCacheKey, findFileReferences, RENDER_BINARY_ENV,
+  RenderError, createRenderProgramRenderer, startPreviewApi, bmpToPng, findRenderBinary, renderCacheKey, findFileReferences, hitTest, RENDER_BINARY_ENV,
 } from '../src/render-api.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -455,6 +455,109 @@ test('startPreviewApi requires a renderer with render()', async () => {
   await assert.rejects(startPreviewApi({ port: 0 }), /renderer/);
 });
 
+/* ------------------------------------------------------ size and boxes */
+
+/**
+ * A fake that honours `--size=WxH` and `--boxes=<file>` the way the real render
+ * program does: the BMP has the requested size, and the boxes file lists what
+ * `boxes` says (it adds the root wrapper LVGL names `<page>_#`, which is not an
+ * IR node).
+ */
+function sizedProgram({ boxes, writeBoxes = true } = {}) {
+  const defaultBoxes = [
+    { name: 'dashboard_#', x: 0, y: 0, width: 320, height: 240, depth: 1, hidden: false },
+    { name: 'topbar', x: 0, y: 0, width: 320, height: 32, depth: 2, hidden: false },
+    { name: 'start', x: 65, y: 160, width: 90, height: 30, depth: 3, hidden: false },
+  ];
+  const p = fakeProgram('', { writeBmp: false });
+  writeFileSync(p.file, `#!/usr/bin/env node
+const fs = require('fs');
+fs.appendFileSync(${JSON.stringify(p.log)}, process.argv.slice(2).join(' ') + '\\n');
+const sizeArg = process.argv.find((a) => a.startsWith('--size='));
+const [w, h] = sizeArg ? sizeArg.slice(7).split('x').map(Number) : [320, 240];
+const boxesArg = process.argv.find((a) => a.startsWith('--boxes='));
+if (boxesArg && ${writeBoxes}) fs.writeFileSync(boxesArg.slice(8), JSON.stringify({ width: w, height: h, boxes: ${JSON.stringify(boxes ?? defaultBoxes)} }));
+const stride = Math.ceil(w * 3 / 4) * 4, buf = Buffer.alloc(54 + stride * h);
+buf.write('BM'); buf.writeUInt32LE(buf.length, 2); buf.writeUInt32LE(54, 10); buf.writeUInt32LE(40, 14);
+buf.writeInt32LE(w, 18); buf.writeInt32LE(h, 22); buf.writeUInt16LE(1, 26); buf.writeUInt16LE(24, 28);
+fs.writeFileSync(process.argv[3], buf);
+`);
+  return p;
+}
+
+test('the render program is given --size and --boxes, and boxes come back limited to IR node names', async () => {
+  const p = sizedProgram();
+  const renderer = createRenderProgramRenderer({ binary: p.file });
+  const result = await renderer.render({ ir: dashboard });
+  const args = readFileSync(p.log, 'utf8');
+  assert.match(args, /--size=320x240/);
+  assert.match(args, /--boxes=\S+boxes\.json/);
+  assert.deepEqual(result.boxes.map((b) => b.name), ['topbar', 'start'], 'the root wrapper dashboard_# is not an IR node and is dropped');
+  assert.deepEqual(result.boxes[1], { name: 'start', x: 65, y: 160, width: 90, height: 30, depth: 3, hidden: false });
+  assert.ok(!result.diagnostics.some((d) => /widget boxes/.test(d.message)));
+});
+
+test('any size is passed to the render program: no more fixed 320x240', async () => {
+  const p = sizedProgram();
+  const renderer = createRenderProgramRenderer({ binary: p.file });
+  const result = await renderer.render({ ir: dashboard, size: { width: 480, height: 320 } });
+  assert.deepEqual([result.width, result.height], [480, 320]);
+  assert.match(readFileSync(p.log, 'utf8'), /--size=480x320/);
+  for (const bad of [{ width: 0, height: 10 }, { width: 5000, height: 10 }, { width: 1.5, height: 10 }]) {
+    await assert.rejects(renderer.render({ ir: dashboard, size: bad }), (e) => e.code === 'size_unsupported' && /1\.\.4096/.test(e.message));
+  }
+});
+
+test('a render program that predates --size is size_unsupported with the fix, not a wrong-sized picture', async () => {
+  const old = fakeProgram(''); // ignores every option and always draws 320x240
+  const renderer = createRenderProgramRenderer({ binary: old.file });
+  await assert.rejects(renderer.render({ ir: dashboard, size: { width: 480, height: 320 } }),
+    (e) => e.code === 'size_unsupported' && /320x240/.test(e.message) && /--build-render --rebuild/.test(e.message));
+});
+
+test('a render program that predates --boxes gives boxes: null and an info diagnostic', async () => {
+  const p = sizedProgram({ writeBoxes: false });
+  const result = await createRenderProgramRenderer({ binary: p.file }).render({ ir: dashboard });
+  assert.equal(result.boxes, null);
+  assert.ok(result.diagnostics.some((d) => d.level === 'info' && /--build-render --rebuild/.test(d.message)));
+});
+
+test('a garbage boxes file is treated as no boxes, never a crash', async () => {
+  const p = fakeProgram(`
+    const a = process.argv.find((x) => x.startsWith('--boxes='));
+    fs.writeFileSync(a.slice(8), '{not json');
+  `);
+  const result = await createRenderProgramRenderer({ binary: p.file }).render({ ir: dashboard });
+  assert.equal(result.boxes, null);
+});
+
+test('hitTest picks the deepest visible box under a point, and null outside every box', () => {
+  const boxes = [
+    { name: 'screen', x: 0, y: 0, width: 100, height: 100, depth: 1, hidden: false },
+    { name: 'card', x: 10, y: 10, width: 50, height: 50, depth: 2, hidden: false },
+    { name: 'label', x: 20, y: 20, width: 10, height: 10, depth: 3, hidden: false },
+    { name: 'overlay', x: 20, y: 20, width: 10, height: 10, depth: 3, hidden: true },
+    { name: 'badge', x: 20, y: 20, width: 10, height: 10, depth: 3, hidden: false },
+  ];
+  assert.equal(hitTest(boxes, 5, 5).name, 'screen');
+  assert.equal(hitTest(boxes, 15, 15).name, 'card');
+  assert.equal(hitTest(boxes, 25, 25).name, 'badge', 'same depth: the later (drawn on top) box wins; hidden boxes never match');
+  assert.equal(hitTest(boxes, 60, 60).name, 'screen', 'the far edge is exclusive');
+  assert.equal(hitTest(boxes, 100, 100), null);
+  assert.equal(hitTest(boxes, -1, 5), null);
+  assert.equal(hitTest(null, 1, 1), null);
+  assert.equal(hitTest([], 1, 1), null);
+});
+
+test('POST /render?format=json includes boxes', async () => {
+  const p = sizedProgram();
+  await withServer({ renderer: createRenderProgramRenderer({ binary: p.file }) }, async (api) => {
+    const res = await postJson(api, '/render?format=json', { ir: dashboard });
+    assert.equal(res.status, 200);
+    assert.deepEqual(json(res).boxes.map((b) => b.name), ['topbar', 'start']);
+  });
+});
+
 /* ---------------------------------------------------------- real render */
 
 const realBinary = findRenderBinary();
@@ -476,4 +579,34 @@ test('real render of the exported dashboard IR (needs the LVGL render program)',
     assert.equal(again.headers['x-render-cached'], 'hit');
     assert.deepEqual(again.body, res.body);
   });
+});
+
+test('real render reports a box for every named widget, inside the screen, and clicks map back to nodes (needs a current render program)', {
+  skip: realBinary ? false : 'no render program',
+}, async () => {
+  const renderer = createRenderProgramRenderer({ binary: realBinary });
+  const result = await renderer.render({ ir: dashboard });
+  if (result.boxes === null) {
+    // A render program built before --boxes: nothing to check, but say so loudly.
+    assert.fail(`${realBinary} does not report boxes; rebuild it (html2lvgl --build-render --rebuild)`);
+  }
+  const irNames = [];
+  (function walk(n) { if (typeof n.attrs?.name === 'string') irNames.push(n.attrs.name); (n.children ?? []).forEach(walk); })(dashboard.view);
+  assert.deepEqual(result.boxes.map((b) => b.name).sort(), [...irNames].sort(), 'LVGL names every widget the IR names, and no others after filtering');
+  for (const b of result.boxes) {
+    assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.width <= result.width && b.y + b.height <= result.height, `${b.name} lies inside the screen`);
+    assert.ok(b.width > 0 && b.height > 0, `${b.name} has an area`);
+  }
+  // Every widget can be selected: the centre of each box hits that widget or a
+  // descendant drawn above it (a child that covers the centre), never nothing.
+  const byName = new Map(result.boxes.map((b) => [b.name, b]));
+  for (const b of result.boxes) {
+    const hit = hitTest(result.boxes, b.x + Math.floor(b.width / 2), b.y + Math.floor(b.height / 2));
+    assert.ok(hit && hit.depth >= b.depth, `centre of ${b.name} hits ${hit?.name}`);
+  }
+  const card = byName.get('card');
+  assert.equal(hitTest(result.boxes, card.x + 2, card.y + 2).name, 'card', 'the padding of a card selects the card, not a child');
+  // The render program accepts any size, and the boxes follow the size.
+  const big = await renderer.render({ ir: dashboard, size: { width: 480, height: 320 } });
+  assert.deepEqual([big.width, big.height], [480, 320]);
 });

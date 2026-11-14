@@ -12,6 +12,7 @@
  * toolchain or a network.
  */
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -42,6 +43,25 @@ export function renderSourceDir(packageRoot = PACKAGE_ROOT) {
   return join(packageRoot, 'spike', 'render');
 }
 
+/** The render program's source files, in a fixed order (the hash covers exactly these). */
+const SOURCE_FILES = ['CMakeLists.txt', 'lv_conf.h', 'main.c'];
+
+/**
+ * Short hash of the render program's sources. The installed binary is keyed by
+ * it, so a new package version whose `main.c` changed (say, a new option the
+ * preview API relies on) builds a fresh binary instead of silently reusing an
+ * older one. `unknown` when the sources cannot be read.
+ */
+export function renderSourceHash(packageRoot = PACKAGE_ROOT) {
+  try {
+    const hash = createHash('sha256');
+    for (const file of SOURCE_FILES) hash.update(`${file}\0`).update(readFileSync(join(renderSourceDir(packageRoot), file)));
+    return hash.digest('hex').slice(0, 10);
+  } catch {
+    return 'unknown';
+  }
+}
+
 /**
  * Per-user cache directory: `$HTML2LVGL_CACHE_DIR`, else `$XDG_CACHE_HOME/html2lvgl`,
  * else `~/.cache/html2lvgl` (`%LOCALAPPDATA%\html2lvgl` on Windows).
@@ -58,12 +78,18 @@ export function cacheDir({ env = process.env, home = homedir(), platform = proce
 /** Name of the compiled program on this platform. */
 export const renderBinaryName = (platform = process.platform) => (platform === 'win32' ? 'render.exe' : 'render');
 
+/** Where the shallow LVGL clone lives. Shared by every build of the render program. */
+export function lvglCloneDir(options = {}) {
+  return join(options.outDir ? resolve(options.outDir) : cacheDir(options), `lvgl-${LVGL_VERSION}`);
+}
+
 /**
- * Where the built render program is installed. The directory carries the LVGL
- * version so a future LVGL bump never reuses a stale binary.
+ * Where the built render program is installed. The directory is named for the
+ * LVGL version and a hash of the render sources, so neither an LVGL bump nor a
+ * change to `main.c` reuses a stale binary.
  */
 export function cachedRenderBinary(options = {}) {
-  return join(cacheDir(options), `render-lvgl-${LVGL_VERSION}`, 'build', renderBinaryName(options.platform));
+  return join(cacheDir(options), `render-lvgl-${LVGL_VERSION}-${renderSourceHash(options.packageRoot)}`, 'build', renderBinaryName(options.platform));
 }
 
 /** Default command runner: inherits stdio so the user sees git and CMake output. */
@@ -104,17 +130,17 @@ export function buildRenderProgram(options = {}) {
   const platform = deps.platform ?? process.platform;
   const env = deps.env ?? process.env;
   const root = options.outDir ? resolve(options.outDir) : cacheDir({ env, platform });
-  const installDir = join(root, `render-lvgl-${LVGL_VERSION}`);
+  const installDir = join(root, `render-lvgl-${LVGL_VERSION}-${renderSourceHash(deps.packageRoot)}`);
   const buildDir = join(installDir, 'build');
   const binary = join(buildDir, renderBinaryName(platform));
 
   if (!options.force && exists(binary)) {
     log(`render program already built: ${binary}`);
-    return { binary, built: false, lvglDir: join(installDir, 'lvgl') };
+    return { binary, built: false, lvglDir: join(root, `lvgl-${LVGL_VERSION}`) };
   }
 
   const sourceDir = renderSourceDir(deps.packageRoot);
-  for (const file of ['CMakeLists.txt', 'lv_conf.h', 'main.c']) {
+  for (const file of SOURCE_FILES) {
     if (!exists(join(sourceDir, file))) {
       throw new RenderBuildError('sources_missing',
         `the render program source ${join(sourceDir, file)} is missing. Reinstall the package, or run this from a repository checkout.`);
@@ -135,9 +161,9 @@ export function buildRenderProgram(options = {}) {
       throw new RenderBuildError('lvgl_fetch_failed', `--lvgl-dir ${lvglDir} has no CMakeLists.txt; point it at an LVGL v${LVGL_VERSION} checkout.`);
     }
   } else {
-    lvglDir = join(installDir, 'lvgl');
+    lvglDir = join(root, `lvgl-${LVGL_VERSION}`);
     if (!exists(join(lvglDir, 'CMakeLists.txt'))) {
-      mkdirSync(installDir, { recursive: true });
+      mkdirSync(root, { recursive: true });
       // A failed earlier clone can leave a partial directory; start clean.
       if (exists(lvglDir)) rmSync(lvglDir, { recursive: true, force: true });
       log(`fetching LVGL v${LVGL_VERSION} (shallow clone of ${LVGL_REPO})`);
