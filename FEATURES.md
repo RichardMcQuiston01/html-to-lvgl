@@ -260,7 +260,7 @@ In MicroPython XML output the pinned binding reads calendar attributes different
 
 ## Editor Groundwork
 
-These are the pieces a visual editor needs. The editor is not built yet; [EDITOR.md](EDITOR.md) is its design, including what the first version can and cannot do.
+These are the pieces a visual editor needs, and the first, read-only version of the editor itself (`editor/`: a widget tree, the LVGL render, click-to-select, a properties panel; see [Running the editor](EDITOR.md#running-the-editor)). Editing is not built yet; [EDITOR.md](EDITOR.md) is the design, including what the first version can and cannot do.
 
 | Command | What it gives an editor |
 |---|---|

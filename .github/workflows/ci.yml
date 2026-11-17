@@ -36,6 +36,39 @@ jobs:
         env:
           HTML2LVGL_TEST_BUILD_RENDER: '1'
 
+  editor:
+    name: Editor (types, unit tests, build, browser smoke test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            editor/package-lock.json
+      # The root install provides the converter's CLI and Playwright.
+      - run: npm ci
+      - run: npm ci
+        working-directory: editor
+      - name: Typecheck, unit-test and build the editor
+        working-directory: editor
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+      # The smoke test drives the built editor against the real preview API and
+      # the real LVGL render program, built from the shipped sources.
+      - name: Build the render program
+        run: echo "HTML2LVGL_RENDER_BIN=$(node src/cli.mjs --build-render)" >> "$GITHUB_ENV"
+      - run: npx playwright install --with-deps chromium
+      - name: Browser smoke test
+        working-directory: editor
+        run: npm run e2e
+
   validate-xml:
     name: Validate golden XML against LVGL v9.4
     runs-on: ubuntu-latest
