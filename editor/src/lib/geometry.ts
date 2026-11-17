@@ -38,7 +38,7 @@ export type DragPlan =
 const asNumber = (value: AttrValue | undefined): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
 /** The parent lays its children out with flex (so x and y mean nothing to them). */
-function isFlex(parent: IrNode | null): boolean {
+export function isFlex(parent: IrNode | null): boolean {
   const flow = parent?.attrs['flex_flow'];
   return typeof flow === 'string' && flow !== '' && flow !== 'none';
 }

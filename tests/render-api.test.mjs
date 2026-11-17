@@ -204,16 +204,27 @@ test('timeout kills the render program and reports render_timeout', async () => 
 });
 
 test('the per-call temp directory is removed after success and after failure', async () => {
-  const before = () => readdirSync(tmpdir()).filter((n) => n.startsWith('html2lvgl-render-')).length;
-  const base = before();
-  const ok = loggingProgram();
-  await createRenderProgramRenderer({ binary: ok.file }).render({ ir: dashboard });
-  const pageDir = dirname(calls(ok.log)[0]);
-  assert.equal(existsSync(pageDir), false);
-  const bad = loggingProgram('process.exit(3);');
-  await assert.rejects(createRenderProgramRenderer({ binary: bad.file }).render({ ir: dashboard }));
-  assert.equal(existsSync(dirname(calls(bad.log)[0])), false);
-  assert.equal(before(), base);
+  // Count in a private temp directory: test files run in parallel, and renders in
+  // other files create and remove html2lvgl-render-* directories in the shared one.
+  const isolated = mkdtempSync(join(scratch, 'tmp-'));
+  const savedTmp = process.env.TMPDIR;
+  process.env.TMPDIR = isolated;
+  try {
+    const before = () => readdirSync(isolated).filter((n) => n.startsWith('html2lvgl-render-')).length;
+    const base = before();
+    const ok = loggingProgram();
+    await createRenderProgramRenderer({ binary: ok.file }).render({ ir: dashboard });
+    const pageDir = dirname(calls(ok.log)[0]);
+    assert.ok(pageDir.startsWith(isolated), 'the render used the private temp directory');
+    assert.equal(existsSync(pageDir), false);
+    const bad = loggingProgram('process.exit(3);');
+    await assert.rejects(createRenderProgramRenderer({ binary: bad.file }).render({ ir: dashboard }));
+    assert.equal(existsSync(dirname(calls(bad.log)[0])), false);
+    assert.equal(before(), base);
+  } finally {
+    if (savedTmp === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = savedTmp;
+  }
 });
 
 test('render program failures map to stable codes with the harness message', async () => {

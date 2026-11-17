@@ -1,4 +1,4 @@
-import type { IrNode, SidecarOverrides } from './types';
+import type { IrNode, SidecarOverrides, StructureOperation } from './types';
 import type { TreeRow } from './irTree';
 import { nodeName } from './irTree';
 
@@ -14,7 +14,7 @@ export function emptySidecar(): SidecarOverrides {
 
 /** Does the sidecar change nothing? */
 export function isEmptySidecar(sidecar: SidecarOverrides): boolean {
-  return Object.keys(sidecar.nodes).length === 0;
+  return Object.keys(sidecar.nodes).length === 0 && (sidecar.structure?.length ?? 0) === 0;
 }
 
 /** JSON with object keys in sorted order, so two sidecars that mean the same compare equal. */
@@ -42,7 +42,15 @@ function normalized(sidecar: SidecarOverrides): SidecarOverrides {
     if (attrs === undefined && remove === undefined) continue;
     nodes[name] = { ...(attrs !== undefined ? { attrs } : {}), ...(remove !== undefined ? { remove } : {}) };
   }
-  return { ...sidecar, nodes };
+  // The lowest version that fits: only a sidecar with structure operations needs version 2, so one without them stays readable by older converters.
+  const { structure: operations, ...rest } = sidecar;
+  const structure = operations !== undefined && operations.length > 0 ? operations : undefined;
+  return { ...rest, version: structure === undefined ? 1 : 2, nodes, ...(structure === undefined ? {} : { structure }) };
+}
+
+/** Replace the structure list (an empty list removes it) and tidy the rest. */
+export function withStructure(sidecar: SidecarOverrides, structure: readonly StructureOperation[]): SidecarOverrides {
+  return normalized({ ...sidecar, structure: [...structure] });
 }
 
 /** A copy of the sidecar with one node's entry replaced (or dropped when `entry` is empty). */
@@ -80,7 +88,7 @@ export function countEdits(sidecar: SidecarOverrides): number {
   for (const spec of Object.values(sidecar.nodes)) {
     count += Object.keys(spec.attrs ?? {}).length + (spec.remove === true ? 1 : 0);
   }
-  return count;
+  return count + (sidecar.structure?.length ?? 0);
 }
 
 /** The single changes (an attribute override, a removal) in a sidecar, as `node:key` strings with their value. */
@@ -90,6 +98,7 @@ function flatEdits(sidecar: SidecarOverrides): Map<string, string> {
     for (const [key, value] of Object.entries(spec.attrs ?? {})) edits.set(`${name}\u0000attr\u0000${key}`, JSON.stringify(value));
     if (spec.remove === true) edits.set(`${name}\u0000remove`, 'true');
   }
+  (sidecar.structure ?? []).forEach((operation, position) => edits.set(`structure\u0000${position}`, JSON.stringify(operation)));
   return edits;
 }
 

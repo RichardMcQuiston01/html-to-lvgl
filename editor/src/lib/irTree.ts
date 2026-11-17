@@ -8,6 +8,8 @@ export interface TreeRow {
   node: IrNode;
   /** The node's `name` attribute, or null when it has none (it cannot be picked on the canvas). */
   name: string | null;
+  /** What identifies the row across edits: the name when there is one (it survives a move), else the id. Collapsed state is kept by key. */
+  key: string;
   hasChildren: boolean;
 }
 
@@ -28,7 +30,8 @@ export function nodeLabel(node: IrNode): string {
 export function flattenTree(root: IrNode): TreeRow[] {
   const rows: TreeRow[] = [];
   const visit = (node: IrNode, id: string, depth: number): void => {
-    rows.push({ id, depth, node, name: nodeName(node), hasChildren: node.children.length > 0 });
+    const name = nodeName(node);
+    rows.push({ id, depth, node, name, key: name ?? id, hasChildren: node.children.length > 0 });
     node.children.forEach((child, index) => visit(child, `${id}.${index}`, depth + 1));
   };
   visit(root, ROOT_ID, 0);
@@ -44,7 +47,7 @@ export function idsByName(rows: readonly TreeRow[]): Map<string, string> {
   return ids;
 }
 
-/** The rows whose ancestors are all expanded. `collapsed` holds the ids of collapsed rows. */
+/** The rows whose ancestors are all expanded. `collapsed` holds the keys of collapsed rows. */
 export function visibleRows(rows: readonly TreeRow[], collapsed: ReadonlySet<string>): TreeRow[] {
   const visible: TreeRow[] = [];
   let hiddenBelowDepth: number | null = null;
@@ -54,7 +57,7 @@ export function visibleRows(rows: readonly TreeRow[], collapsed: ReadonlySet<str
       hiddenBelowDepth = null;
     }
     visible.push(row);
-    if (collapsed.has(row.id)) hiddenBelowDepth = row.depth;
+    if (collapsed.has(row.key)) hiddenBelowDepth = row.depth;
   }
   return visible;
 }
