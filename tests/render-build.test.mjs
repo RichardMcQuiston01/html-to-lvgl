@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -190,4 +190,31 @@ test('real build from the shipped sources renders the dashboard IR (needs git, c
   assert.ok(Array.isArray(out.boxes) && out.boxes.length > 10, 'the render program reports widget boxes');
   const big = await renderer.render({ ir, size: { width: 480, height: 320 } });
   assert.deepEqual([big.width, big.height], [480, 320]);
+});
+
+/* ------------------------------------------------ stdout is the path only */
+
+test('CLI: --build-render prints only the binary path on stdout, so $(html2lvgl --build-render) works in scripts', {
+  skip: process.platform === 'win32' ? 'uses shell-script stand-ins for cmake' : false,
+}, () => {
+  // A cmake that writes build noise to stdout (as the real one does) and creates the program.
+  const bin = freshDir();
+  const fakeCmake = join(bin, 'cmake');
+  writeFileSync(fakeCmake, `#!/bin/sh
+echo "-- Detecting C compiler ABI info"
+if [ "$1" = "--build" ]; then mkdir -p "$2" && : > "$2/render"; fi
+exit 0
+`);
+  chmodSync(fakeCmake, 0o755);
+  const lvgl = freshDir();
+  writeFileSync(join(lvgl, 'CMakeLists.txt'), '');
+  const cache = freshDir();
+  const result = spawnSync(process.execPath, [join(root, 'src', 'cli.mjs'), '--build-render', '--lvgl-dir', lvgl], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, [CACHE_DIR_ENV]: cache },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const expected = join(cache, `render-lvgl-${LVGL_VERSION}-${renderSourceHash(root)}`, 'build', 'render');
+  assert.equal(result.stdout, `${expected}\n`, 'stdout must be exactly the path');
+  assert.match(result.stderr, /Detecting C compiler ABI info/, 'the build output goes to stderr');
 });

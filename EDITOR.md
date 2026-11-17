@@ -280,12 +280,28 @@ The honest fix is a layout dump from the engine. After the final frame, the rend
 
 | Milestone | Work | Exit criteria |
 |---|---|---|
-| M0: Contracts | Re-read lane C code. Write the TypeScript types for the registry export, IR and sidecar. Add `--size` and the `boxes` dump to the render harness. | Types generated from the JSON schemas; a test renders a golden page at 480x320 and returns boxes for every named widget. **Harness half done** (`--size`, `--boxes`, `boxes` in the render API, `hitTest`, tested against the real render program). The TypeScript types are still to do. |
-| M1: Read-only viewer | Vite SPA, tree panel, canvas showing the render, diagnostics list. | Opens `ir_dashboard.json`, shows the tree and the render at 320x240. Selection by tree works. |
+| M0: Contracts | Re-read lane C code. Write the TypeScript types for the registry export, IR and sidecar. Add `--size` and the `boxes` dump to the render harness. | Types generated from the JSON schemas; a test renders a golden page at 480x320 and returns boxes for every named widget. **Done.** The harness half is `--size`, `--boxes`, `boxes` in the render API and `hitTest`. The types are generated into `editor/src/generated/` from the three JSON Schemas (IR, registry export and a new sidecar schema, `src/schemas/sidecar.schema.json`, kept in step with `validateOverrides()` by a test), and a test fails when they are stale. |
+| M1: Read-only viewer | Vite SPA, tree panel, canvas showing the render, diagnostics list. | Opens `ir_dashboard.json`, shows the tree and the render at 320x240. Selection by tree works. **Done** (`editor/`, see Running the editor). It also does what M3 lists for selection: a click on the canvas selects the widget, using the boxes. |
 | M2: Property editing | Property panel from the registry and IR attrs, validation, sidecar writer, undo and redo, save endpoints. | Editing `width` of a named node writes a sidecar; `html2lvgl --overrides` on the source gives the same XML as the editor's export. |
 | M3: Canvas | Click to select from boxes, selection overlay, resize handles, move for absolute nodes. | Clicking each named widget in the golden pages selects it. |
 | M4: Structure | Reorder, delete, add plain widgets, IR save, "this page is now IR" marker. | `validateIr()` passes after each edit; `--from-ir` output equals the editor's export in all four formats. |
 | M5: Spike | Time-boxed WebAssembly spike against the criteria above. | A written pass or fail report; decision recorded in this file. |
+
+### Running the editor
+
+The editor is a Vite, React and Tailwind single-page app in `editor/`, separate from the published package (it has its own `package.json` and lockfile and is not part of the npm workspaces). It needs the preview API and a render program:
+
+```bash
+html2lvgl --build-render            # once: builds the LVGL render program (git, cmake, a C compiler)
+html2lvgl --preview-api             # terminal 1: the preview API on 127.0.0.1:8787
+cd editor && npm ci && npm run dev  # terminal 2: the editor, with /api proxied to the preview API
+```
+
+Set `HTML2LVGL_PREVIEW_URL` if the preview API runs elsewhere. The editor opens on the committed dashboard example. **Open IR file** loads one made with `html2lvgl page.html --export-ir ir.json`.
+
+What it does today (M1, read only): a tree of the widgets (collapsible; unnamed nodes are shown dimmed because a click on the canvas cannot reach them), the LVGL render at 1x to 4x, a click on the picture selects the deepest named widget under the pointer and a click on a tree row outlines it on the picture, a panel with the selected node's attributes and its final on-screen rectangle (which differs from the `width` attribute when layout resizes it), and a diagnostics panel that shows the preview API's problems (an invalid IR lists every one). It does not edit anything yet; that is M2.
+
+Commands in `editor/`: `npm run typecheck`, `npm test` (Vitest: hit-testing, tree, IR file checks, API client, and a check that the generated types are current), `npm run generate:types` (after changing a schema), `npm run build`, and `npm run e2e` (a headless-Chromium smoke test of the built editor against a real preview API and render program). CI runs all of them.
 
 [Back to Top](#editor)
 

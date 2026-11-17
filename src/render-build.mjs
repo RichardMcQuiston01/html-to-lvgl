@@ -92,9 +92,14 @@ export function cachedRenderBinary(options = {}) {
   return join(cacheDir(options), `render-lvgl-${LVGL_VERSION}-${renderSourceHash(options.packageRoot)}`, 'build', renderBinaryName(options.platform));
 }
 
-/** Default command runner: inherits stdio so the user sees git and CMake output. */
+/**
+ * Default command runner. The user sees git's and CMake's output, but all of it
+ * goes to stderr (the child's stdout is pointed at fd 2): the command's stdout
+ * is the path of the built program and nothing else, so scripts can use
+ * `RENDER_BIN=$(html2lvgl --build-render)`.
+ */
 function runCommand(command, args, { cwd } = {}) {
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit' });
+  const result = spawnSync(command, args, { cwd, stdio: ['inherit', 2, 2] });
   return { status: result.status, error: result.error };
 }
 

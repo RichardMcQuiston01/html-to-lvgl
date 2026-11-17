@@ -98,7 +98,7 @@ Angular is deferred until URL mode exists.
 
 ### Phase 11 — Editor groundwork (done)
 
-Delivered after 0.8.0: registry export, IR export and import with a byte-identical round trip, the preview render API behind a `Renderer` interface, and the design doc [EDITOR.md](EDITOR.md). The open question is answered: the preview runs on the LVGL render program first, and an LVGL WebAssembly build is a time-boxed spike afterwards. Left over, before an editor can be built: a render `--size` option and a per-widget box dump (for click-to-select), file endpoints for IR and sidecar, a view-to-sidecar diff, name provenance in the IR, and a props-to-IR builder for the palette. See EDITOR.md for the milestone plan.
+Delivered after 0.8.0: registry export, IR export and import with a byte-identical round trip, the preview render API behind a `Renderer` interface, and the design doc [EDITOR.md](EDITOR.md). The open question is answered: the preview runs on the LVGL render program first, and an LVGL WebAssembly build is a time-boxed spike afterwards. Left over, before an editor can be built: file endpoints for IR and sidecar, a view-to-sidecar diff, name provenance in the IR, and a props-to-IR builder for the palette. The render `--size` option and the per-widget box dump (for click-to-select) are done, and so are editor milestones M0 and M1: generated TypeScript types and a read-only editor in `editor/`. Next is M2, property editing. See EDITOR.md for the milestone plan.
 
 Goal: not the editor itself. The pieces it needs, ready and tested.
 
