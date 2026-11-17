@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkHealth, fetchRegistry, renderIr } from '../src/lib/api';
+import { checkHealth, fetchRegistry, fetchSidecar, renderIr, saveSidecar } from '../src/lib/api';
 import type { IrDocument } from '../src/lib/types';
 
 const ir = { format: 'html2lvgl-ir', irVersion: 1, name: 'x', view: { tag: 'view', attrs: {}, children: [] } } as unknown as IrDocument;
@@ -60,5 +60,41 @@ describe('fetchRegistry and checkHealth', () => {
   it('fetch the registry and the health', async () => {
     expect(await fetchRegistry({ fetchFn: fakeFetch(200, { schemaVersion: 1, components: [], widgets: [] }) })).toMatchObject({ ok: true });
     expect(await checkHealth({ fetchFn: fakeFetch(200, { ok: true }) })).toEqual({ ok: true, value: { ok: true } });
+  });
+});
+
+describe('sidecar calls', () => {
+  const sidecar = { version: 1 as const, nodes: { card: { attrs: { width: 200 } } } };
+
+  it('renderIr sends the sidecar only when there is one', async () => {
+    const seen: { init?: RequestInit } = {};
+    const body = { ok: true, width: 1, height: 1, cached: false, diagnostics: [], boxes: [], png: 'A' };
+    await renderIr(ir, undefined, { sidecar, fetchFn: fakeFetch(200, body, seen) });
+    expect(JSON.parse(String(seen.init?.body))).toEqual({ ir, sidecar });
+    await renderIr(ir, undefined, { fetchFn: fakeFetch(200, body, seen) });
+    expect(JSON.parse(String(seen.init?.body))).toEqual({ ir });
+  });
+
+  it('fetchSidecar returns the stored sidecar, or null when there is no file yet', async () => {
+    const seen: { url?: string } = {};
+    expect(await fetchSidecar('my page', { fetchFn: fakeFetch(200, { ok: true, exists: true, sidecar }, seen) })).toEqual({ ok: true, value: { exists: true, sidecar } });
+    expect(seen.url).toBe('/api/sidecar/my%20page');
+    expect(await fetchSidecar('p', { fetchFn: fakeFetch(200, { ok: true, exists: false, sidecar: null }) })).toEqual({ ok: true, value: { exists: false, sidecar: null } });
+  });
+
+  it('fetchSidecar passes on workspace_not_configured so the editor can turn saving off', async () => {
+    const body = { ok: false, code: 'workspace_not_configured', message: 'start with --workspace' };
+    const result = await fetchSidecar('p', { fetchFn: fakeFetch(501, body) });
+    expect(result.ok === false && result.failure.code).toBe('workspace_not_configured');
+  });
+
+  it('saveSidecar PUTs the sidecar and keeps the API problems on failure', async () => {
+    const seen: { url?: string; init?: RequestInit } = {};
+    expect(await saveSidecar('page', sidecar, { fetchFn: fakeFetch(200, { ok: true, file: 'page.lvgl.json', bytes: 9 }, seen) })).toEqual({ ok: true, value: { file: 'page.lvgl.json' } });
+    expect(seen.init?.method).toBe('PUT');
+    expect(JSON.parse(String(seen.init?.body))).toEqual({ sidecar });
+    const bad = { ok: false, code: 'sidecar_invalid', message: 'not a valid sidecar', errors: ['nodes.card.remove must be a boolean'] };
+    const result = await saveSidecar('page', sidecar, { fetchFn: fakeFetch(422, bad) });
+    expect(result.ok === false && result.failure.errors).toEqual(['nodes.card.remove must be a boolean']);
   });
 });

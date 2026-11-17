@@ -2,16 +2,32 @@ import { useRef } from 'react';
 
 export type ApiState = 'checking' | 'online' | 'offline';
 
+/** `off`: the preview API has no workspace, so there is nowhere to save. */
+export type SaveState = 'off' | 'idle' | 'saving' | 'saved' | 'error';
+
 export const ZOOM_LEVELS: readonly number[] = [1, 2, 3, 4];
 
 interface ToolbarProps {
   fileName: string;
   apiState: ApiState;
   zoom: number;
+  canUndo: boolean;
+  canRedo: boolean;
+  /** Separate changes in the sidecar. */
+  editCount: number;
+  /** The sidecar differs from the saved one. */
+  dirty: boolean;
+  saveState: SaveState;
+  onUndo: () => void;
+  onRedo: () => void;
+  onSave: () => void;
+  onRevert: () => void;
   onOpenFile: (file: File) => void;
   onLoadExample: () => void;
   onZoomChange: (zoom: number) => void;
 }
+
+const buttonClass = 'rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800';
 
 const API_BADGE: Record<ApiState, { label: string; className: string }> = {
   checking: { label: 'Preview API: checking', className: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
@@ -19,7 +35,7 @@ const API_BADGE: Record<ApiState, { label: string; className: string }> = {
   offline: { label: 'Preview API: offline', className: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200' },
 };
 
-export function Toolbar({ fileName, apiState, zoom, onOpenFile, onLoadExample, onZoomChange }: ToolbarProps) {
+export function Toolbar({ fileName, apiState, zoom, canUndo, canRedo, editCount, dirty, saveState, onUndo, onRedo, onSave, onRevert, onOpenFile, onLoadExample, onZoomChange }: ToolbarProps) {
   const fileInput = useRef<HTMLInputElement>(null);
   const badge = API_BADGE[apiState];
   return (
@@ -28,6 +44,32 @@ export function Toolbar({ fileName, apiState, zoom, onOpenFile, onLoadExample, o
       <span className="text-xs text-slate-500 dark:text-slate-400" data-testid="file-name">
         {fileName}
       </span>
+      <div className="flex items-center gap-1" role="group" aria-label="Edit">
+        <button type="button" className={buttonClass} onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" data-testid="undo">
+          Undo
+        </button>
+        <button type="button" className={buttonClass} onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" data-testid="redo">
+          Redo
+        </button>
+        <span className="text-xs text-slate-500 dark:text-slate-400" data-testid="edit-count">
+          {editCount === 0 ? 'no edits' : `${editCount} edit${editCount === 1 ? '' : 's'}`}
+          {dirty ? ' · unsaved' : ''}
+        </span>
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={onSave}
+          disabled={saveState === 'off' || saveState === 'saving' || !dirty}
+          title={saveState === 'off' ? 'Saving is off: start the preview API with --workspace <dir>' : 'Save the edits to the sidecar file (Ctrl+S)'}
+          data-testid="save"
+        >
+          {saveState === 'saving' ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" className={buttonClass} onClick={onRevert} disabled={!dirty} title="Discard the edits made since the last save" data-testid="revert">
+          Revert
+        </button>
+        {saveState === 'saved' && !dirty && <span className="text-xs text-emerald-700 dark:text-emerald-300" data-testid="save-status">Saved</span>}
+      </div>
       <div className="ml-auto flex items-center gap-2">
         <input
           ref={fileInput}
@@ -41,10 +83,10 @@ export function Toolbar({ fileName, apiState, zoom, onOpenFile, onLoadExample, o
             event.target.value = ''; // choosing the same file again must still fire
           }}
         />
-        <button type="button" className="rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800" onClick={() => fileInput.current?.click()}>
+        <button type="button" className={buttonClass} onClick={() => fileInput.current?.click()}>
           Open IR file…
         </button>
-        <button type="button" className="rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800" onClick={onLoadExample}>
+        <button type="button" className={buttonClass} onClick={onLoadExample}>
           Load example
         </button>
         <label className="flex items-center gap-1 text-xs">

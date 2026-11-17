@@ -1,4 +1,4 @@
-import type { ApiFailure, ApiResult, IrDocument, RegistryExport, RenderResponse, Size } from './types';
+import type { ApiFailure, ApiResult, IrDocument, RegistryExport, RenderResponse, SidecarOverrides, Size } from './types';
 
 /** Where the preview API is reached: the dev server proxies this to `html2lvgl --preview-api`. */
 export const DEFAULT_API_BASE = '/api';
@@ -65,14 +65,19 @@ export interface ApiOptions {
   signal?: AbortSignal;
 }
 
+export interface RenderOptions extends ApiOptions {
+  /** Overrides applied to the IR before it is rendered (the page's own `.lvgl.json`, edited). */
+  sidecar?: SidecarOverrides;
+}
+
 /** Render an IR to a picture plus the box of every named widget. */
-export async function renderIr(ir: IrDocument, size: Size | undefined, options: ApiOptions = {}): Promise<ApiResult<RenderResponse>> {
+export async function renderIr(ir: IrDocument, size: Size | undefined, options: RenderOptions = {}): Promise<ApiResult<RenderResponse>> {
   const result = await call(
     '/render?format=json',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(size === undefined ? { ir } : { ir, size }),
+      body: JSON.stringify({ ir, ...(size === undefined ? {} : { size }), ...(options.sidecar === undefined ? {} : { sidecar: options.sidecar }) }),
       signal: options.signal ?? null,
     },
     options.baseUrl ?? DEFAULT_API_BASE,
@@ -98,4 +103,34 @@ export async function checkHealth(options: ApiOptions = {}): Promise<ApiResult<{
   const result = await call('/health', { signal: options.signal ?? null }, options.baseUrl ?? DEFAULT_API_BASE, options.fetchFn ?? fetch);
   if (!result.ok) return result;
   return { ok: true, value: { ok: isRecord(result.value) && result.value['ok'] === true } };
+}
+
+/** A sidecar read from the workspace. `exists` is false when there is no file yet (not an error). */
+export interface StoredSidecar {
+  exists: boolean;
+  sidecar: SidecarOverrides | null;
+}
+
+/** Load `<name>.lvgl.json` from the preview API's workspace. A 501 (`workspace_not_configured`) means saving is off. */
+export async function fetchSidecar(name: string, options: ApiOptions = {}): Promise<ApiResult<StoredSidecar>> {
+  const result = await call(`/sidecar/${encodeURIComponent(name)}`, { signal: options.signal ?? null }, options.baseUrl ?? DEFAULT_API_BASE, options.fetchFn ?? fetch);
+  if (!result.ok) return result;
+  const body = result.value;
+  if (!isRecord(body) || typeof body['exists'] !== 'boolean') {
+    return { ok: false, failure: { code: 'invalid_response', message: 'the sidecar response does not say whether the file exists', errors: [], status: 200 } };
+  }
+  return { ok: true, value: { exists: body['exists'], sidecar: body['exists'] ? (body['sidecar'] as SidecarOverrides) : null } };
+}
+
+/** Save `<name>.lvgl.json` in the workspace. The API validates it first and lists every problem on failure. */
+export async function saveSidecar(name: string, sidecar: SidecarOverrides, options: ApiOptions = {}): Promise<ApiResult<{ file: string }>> {
+  const result = await call(
+    `/sidecar/${encodeURIComponent(name)}`,
+    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sidecar }), signal: options.signal ?? null },
+    options.baseUrl ?? DEFAULT_API_BASE,
+    options.fetchFn ?? fetch,
+  );
+  if (!result.ok) return result;
+  const body = result.value;
+  return { ok: true, value: { file: isRecord(body) && typeof body['file'] === 'string' ? body['file'] : `${name}.lvgl.json` } };
 }

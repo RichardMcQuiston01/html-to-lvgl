@@ -41,6 +41,9 @@ import { importIr, emitFromIr, validateIr, IrError } from './ir.mjs';
 import { defaultRegistry } from './recognize.mjs';
 import { exportRegistry } from './registry-export.mjs';
 import { cachedRenderBinary, BUILD_HINT } from './render-build.mjs';
+import { applyOverrides, validateOverrides } from './overrides.mjs';
+import { createDiagnostics } from './diagnostics.mjs';
+import { readSidecar, writeSidecar, SIDECAR_NAME } from './sidecar-store.mjs';
 
 /* ------------------------------------------------------------------ types */
 
@@ -53,6 +56,7 @@ import { cachedRenderBinary, BUILD_HINT } from './render-build.mjs';
  *
  * @typedef {object} RenderRequest
  * @property {object | string} ir          IR document (parsed object or JSON text), validated with importIr().
+ * @property {object} [sidecar]           Sidecar overrides (`{ version: 1, nodes: {...} }`) applied to the IR's view before it is rendered, exactly as `--from-ir` applies a `<page>.lvgl.json`. Validated; an invalid one is `invalid_sidecar`.
  * @property {Size} [size]                 Wanted display size; defaults to the IR's root view width/height, else the renderer's default size (320x240).
  * @property {FontFile[]} [fonts]          Extra fonts, for trusted in-process callers only (never taken from HTTP requests).
  * @property {Record<string, string>} [components]  Extra component XML by component name, registered before the page.
@@ -75,7 +79,7 @@ import { cachedRenderBinary, BUILD_HINT } from './render-build.mjs';
 
 /**
  * Stable error codes (HTTP status in parentheses when served):
- *  invalid_ir (422), unsafe_file_reference (422), size_unsupported (422),
+ *  invalid_ir (422), invalid_sidecar (422), unsafe_file_reference (422), size_unsupported (422),
  *  render_binary_missing (503), render_queue_full (503),
  *  render_timeout (504), render_out_of_memory (500), render_assertion (500),
  *  render_failed (500), render_crashed (500), render_output_invalid (500).
@@ -255,9 +259,9 @@ function canonicalJson(value) {
  * Hash of everything that decides the picture: IR, size, fonts, extra components.
  * @param {RenderRequest & { size: Size }} request
  */
-export function renderCacheKey({ ir, size, fonts = [], components = {} }) {
+export function renderCacheKey({ ir, size, fonts = [], components = {}, sidecar = null }) {
   const parsed = typeof ir === 'string' ? safeParse(ir) : ir;
-  return createHash('sha256').update(canonicalJson({ ir: parsed, size, fonts, components })).digest('hex');
+  return createHash('sha256').update(canonicalJson({ ir: parsed, size, fonts, components, sidecar })).digest('hex');
 }
 const safeParse = (text) => { try { return JSON.parse(text); } catch { return text; } };
 
@@ -375,8 +379,12 @@ export function createRenderProgramRenderer({
       if (err instanceof IrError) throw new RenderError('invalid_ir', err.message, { errors: err.errors, cause: err });
       throw err;
     }
-    assertNoFileReferences(ir.view);
-    const { files, components } = emitFromIr(ir, { formats: ['xml'] });
+    // The sidecar is applied first and the safety check runs on the result: an
+    // override attribute (`src`, `file`, ...) must not be a way around it.
+    const overrideDiagnostics = createDiagnostics();
+    const view = request.sidecar ? applyOverrides(ir.view, request.sidecar, { diagnostics: overrideDiagnostics }) : ir.view;
+    assertNoFileReferences(view);
+    const { files, components } = emitFromIr(ir, { formats: ['xml'], view });
     const extra = request.components ?? {};
     const dir = mkdtempSync(join(tmpdir(), 'html2lvgl-render-'));
     try {
@@ -414,7 +422,8 @@ export function createRenderProgramRenderer({
       }
       /** @type {RenderDiagnostic[]} */
       const diagnostics = String(stdout.errOut ?? '').split('\n').map((l) => l.trim()).filter(Boolean).map((message) => ({ level: 'warning', message }));
-      const boxes = readBoxes(boxesPath, ir.view);
+      for (const d of overrideDiagnostics.list()) diagnostics.push({ level: d.severity === 'error' ? 'error' : 'warning', message: d.message });
+      const boxes = readBoxes(boxesPath, view);
       if (boxes === null) diagnostics.push({ level: 'info', message: 'this render program does not report widget boxes (canvas selection is unavailable); rebuild it with html2lvgl --build-render --rebuild' });
       return { png, width, height, diagnostics, boxes };
     } finally {
@@ -435,13 +444,17 @@ export function createRenderProgramRenderer({
       }
       const { ok, errors } = validateIr(parsed);
       if (!ok) throw new RenderError('invalid_ir', `invalid IR: ${errors.join('; ')}`, { errors });
+      if (request.sidecar !== undefined && request.sidecar !== null) {
+        const checked = validateOverrides(request.sidecar);
+        if (!checked.ok) throw new RenderError('invalid_sidecar', `invalid sidecar: ${checked.errors.join('; ')}`, { errors: checked.errors });
+      }
       const rootW = Number(parsed.view.attrs?.width);
       const rootH = Number(parsed.view.attrs?.height);
       const size = request.size ?? (Number.isInteger(rootW) && Number.isInteger(rootH) && rootW > 0 && rootH > 0 ? { width: rootW, height: rootH } : { ...displaySize });
       if (!Number.isInteger(size.width) || !Number.isInteger(size.height) || size.width < 1 || size.height < 1 || size.width > 4096 || size.height > 4096) {
         throw new RenderError('size_unsupported', `size ${size.width}x${size.height} is outside 1..4096 in each dimension`);
       }
-      const key = renderCacheKey({ ir: parsed, size, fonts: [...defaultFonts, ...(request.fonts ?? [])], components: request.components });
+      const key = renderCacheKey({ ir: parsed, size, fonts: [...defaultFonts, ...(request.fonts ?? [])], components: request.components, sidecar: request.sidecar ?? null });
       const hit = cache.get(key);
       if (hit) {
         stats.cacheHits++;
@@ -449,7 +462,7 @@ export function createRenderProgramRenderer({
       }
       stats.cacheMisses++;
       // Cache the promise, so identical requests arriving together share one render.
-      const pending = limiter.run(() => renderUncached({ ...request, ir: parsed }, size));
+      const pending = limiter.run(() => renderUncached({ ...request, ir: parsed, sidecar: request.sidecar ?? null }, size));
       if (cacheSize > 0) {
         cache.set(key, pending);
         while (cache.size > cacheSize) cache.delete(cache.keys().next().value);
@@ -467,11 +480,30 @@ const LOCAL_ORIGIN = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i
 const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
 export const DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024;
 
+/** HTTP status for a sidecar store failure. */
+const STORE_STATUS = {
+  invalid_sidecar_name: 400,
+  sidecar_invalid: 422,
+  sidecar_unsafe_path: 403,
+  sidecar_read_failed: 500,
+  sidecar_write_failed: 500,
+};
+
+/** decodeURIComponent that answers null instead of throwing on a bad escape. */
+function decodeURIComponentSafe(text) {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return null;
+  }
+}
+
 /** @type {Record<string, number>} */
 const STATUS_FOR_CODE = {
   invalid_ir: 422,
   unsafe_file_reference: 422,
   size_unsupported: 422,
+  invalid_sidecar: 422,
   render_binary_missing: 503,
   render_queue_full: 503,
   render_timeout: 504,
@@ -480,9 +512,11 @@ const STATUS_FOR_CODE = {
 /**
  * Start the preview HTTP API.
  *
- *   POST /render         {ir, size?}  -> image/png ; ?format=json -> {png: base64, width, height, diagnostics, cached}
+ *   POST /render         {ir, size?, sidecar?}  -> image/png ; ?format=json -> {png: base64, width, height, diagnostics, boxes, cached}
  *   POST /ir/validate    {ir}         -> {ok, errors[]}
  *   GET  /registry                    -> the component registry export (src/registry-export.mjs)
+ *   GET  /sidecar/<name>              -> {ok, exists, sidecar}   (needs `workspace`)
+ *   PUT  /sidecar/<name> {sidecar}    -> validates, then writes <workspace>/<name>.lvgl.json atomically (needs `workspace`)
  *   GET  /health                      -> {ok, renderer stats}
  *
  * Errors are `{ ok: false, code, message, errors? }` with a stable `code`.
@@ -494,9 +528,10 @@ const STATUS_FOR_CODE = {
  * @param {string[]} [options.allowedOrigins]  Extra CORS origins besides localhost, e.g. ['https://editor.example.com'].
  * @param {number} [options.maxBodyBytes]    Request body cap (default 2 MiB).
  * @param {object} [options.registry]        Registry export served at /registry (default: core registry).
+ * @param {string} [options.workspace]       Directory whose `<name>.lvgl.json` sidecars /sidecar reads and writes. Without it /sidecar answers 501.
  * @returns {Promise<{ port: number, host: string, url: string, close: () => Promise<void> }>}
  */
-export async function startPreviewApi({ port = 8787, host = '127.0.0.1', renderer, allowedOrigins = [], maxBodyBytes = DEFAULT_MAX_BODY_BYTES, registry } = {}) {
+export async function startPreviewApi({ port = 8787, host = '127.0.0.1', renderer, allowedOrigins = [], maxBodyBytes = DEFAULT_MAX_BODY_BYTES, registry, workspace } = {}) {
   if (!renderer || typeof renderer.render !== 'function') throw new TypeError('startPreviewApi needs a renderer with a render() method');
   const allowed = new Set(allowedOrigins);
   const loopbackOnly = /^(127\.|::1$|localhost$)/.test(host);
@@ -578,11 +613,37 @@ export async function startPreviewApi({ port = 8787, host = '127.0.0.1', rendere
       }
 
       if (req.method === 'OPTIONS') {
-        res.writeHead(204, { ...cors, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
+        res.writeHead(204, { ...cors, 'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
         return res.end();
       }
 
       const route = url.pathname;
+
+      // /sidecar/<name>: the editor's save and load. The only routes that touch the disk.
+      if (route === '/sidecar' || route.startsWith('/sidecar/')) {
+        if (req.method !== 'GET' && req.method !== 'PUT') {
+          return fail(res, 405, 'method_not_allowed', '/sidecar/<name> accepts GET and PUT', {}, { ...cors, Allow: 'GET, PUT' });
+        }
+        if (workspace === undefined) {
+          return fail(res, 501, 'workspace_not_configured', 'saving needs a workspace directory: start the server with --workspace <dir> (the directory that holds the <name>.lvgl.json files)', {}, cors);
+        }
+        const name = decodeURIComponentSafe(route.slice('/sidecar/'.length));
+        if (name === null || !SIDECAR_NAME.test(name)) {
+          return fail(res, 400, 'invalid_sidecar_name', `"${route.slice('/sidecar/'.length).slice(0, 60)}" is not a valid sidecar name: use the IR's name (letters, digits, underscore and hyphen)`, {}, cors);
+        }
+        if (req.method === 'GET') {
+          const read = readSidecar(workspace, name);
+          if (!read.ok) return fail(res, STORE_STATUS[read.code] ?? 500, read.code, read.message, read.errors ? { errors: read.errors } : {}, cors);
+          return sendJson(res, 200, { ok: true, exists: read.exists, sidecar: read.sidecar }, cors);
+        }
+        const putBody = await readJson(req, res, cors);
+        if (putBody === undefined) return;
+        if (!('sidecar' in putBody)) return fail(res, 400, 'missing_sidecar', 'body must be {"sidecar": {"version": 1, "nodes": {...}}}', {}, cors);
+        const written = writeSidecar(workspace, name, putBody.sidecar);
+        if (!written.ok) return fail(res, STORE_STATUS[written.code] ?? 500, written.code, written.message, written.errors ? { errors: written.errors } : {}, cors);
+        return sendJson(res, 200, { ok: true, file: written.file, bytes: written.bytes }, cors);
+      }
+
       const allowedMethod = { '/render': 'POST', '/ir/validate': 'POST', '/registry': 'GET', '/health': 'GET' }[route];
       if (!allowedMethod) return fail(res, 404, 'not_found', `no such endpoint: ${route}`, {}, cors);
       if (req.method !== allowedMethod) return fail(res, 405, 'method_not_allowed', `${route} accepts ${allowedMethod}`, {}, { ...cors, Allow: allowedMethod });
@@ -628,9 +689,9 @@ export async function startPreviewApi({ port = 8787, host = '127.0.0.1', rendere
       }
       let result;
       try {
-        // Only `ir` and `size` are forwarded. Fonts and components are not
-        // request fields: they would let a client name host files.
-        result = await renderer.render({ ir: body.ir, size });
+        // Only `ir`, `size` and `sidecar` are forwarded. Fonts and components
+        // are not request fields: they would let a client name host files.
+        result = await renderer.render({ ir: body.ir, size, sidecar: body.sidecar });
       } catch (err) {
         const code = err instanceof RenderError ? err.code : 'render_failed';
         const status = STATUS_FOR_CODE[code] ?? 500;

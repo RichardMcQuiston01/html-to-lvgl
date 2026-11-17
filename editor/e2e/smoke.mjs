@@ -12,7 +12,7 @@
  */
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,9 +63,11 @@ const step = async (label, fn) => {
 };
 
 const scratch = mkdtempSync(join(tmpdir(), 'editor-e2e-'));
+const workspace = join(scratch, 'workspace');
+mkdirSync(workspace);
 let browser;
 try {
-  const api = start(process.execPath, [join(repoRoot, 'src', 'cli.mjs'), '--preview-api', '--port', String(apiPort)], { cwd: repoRoot });
+  const api = start(process.execPath, [join(repoRoot, 'src', 'cli.mjs'), '--preview-api', '--port', String(apiPort), '--workspace', workspace], { cwd: repoRoot });
   const web = start(process.execPath, [join(editorRoot, 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', String(webPort), '--strictPort', '--host', '127.0.0.1'], {
     cwd: editorRoot,
     env: { ...process.env, HTML2LVGL_PREVIEW_URL: apiUrl },
@@ -191,6 +193,194 @@ try {
     await page.getByTestId('file-input').setInputFiles(broken);
     const failure = await page.getByTestId('render-failure').innerText({ timeout: 15000 });
     assert.match(failure, /invalid_ir/);
+  });
+
+
+  /* ---------------------------------------------------------------- M2: editing */
+
+  /** Wait until the picture is not being re-rendered. */
+  const settled = async () => {
+    await page.waitForFunction(() => !document.querySelector('[data-testid=canvas]')?.className.includes('opacity-60'), null, { timeout: 15000 });
+  };
+  /** A pixel of the rendered picture (image coordinates), as [r, g, b]. */
+  const pixel = (x, y) => canvas.locator('img').evaluate((img, [px, py]) => {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return [...ctx.getImageData(px, py, 1, 1).data.slice(0, 3)];
+  }, [x, y]);
+  const editCount = () => page.getByTestId('edit-count').innerText();
+  const sidecarFile = join(workspace, 'dashboard.lvgl.json');
+
+  await step('M2: back to the example for editing, with saving on and no edits', async () => {
+    await page.getByRole('button', { name: 'Load example' }).click();
+    await canvas.locator('img').waitFor({ timeout: 15000 });
+    await settled();
+    assert.equal(await editCount(), 'no edits');
+    assert.equal(await page.getByTestId('save').isDisabled(), true, 'nothing to save yet');
+    assert.equal(await page.getByTestId('undo').isDisabled(), true);
+  });
+
+  await step('editing an attribute re-renders: the card gets taller, and the edit is counted and marked', async () => {
+    await page.getByTestId('tree-row-card').click();
+    const input = page.getByTestId('attr-height');
+    assert.equal(await input.inputValue(), '64');
+    await input.fill('90');
+    await input.press('Enter');
+    await page.getByTestId('edited-card').waitFor({ timeout: 2000 });
+    assert.equal(await editCount(), '1 edit · unsaved');
+    await page.waitForFunction(() => /×90$/.test(document.querySelector('[data-testid=properties-box]')?.textContent ?? ''), null, { timeout: 15000 });
+    assert.equal(await page.getByTestId('attr-height-was').innerText(), 'page: 64');
+    assert.equal(await page.getByTestId('attr-height-row').getAttribute('data-overridden'), 'true');
+  });
+
+  await step('undo and redo step through the edit, from the buttons and from the keyboard', async () => {
+    await page.getByTestId('undo').click();
+    assert.equal(await editCount(), 'no edits');
+    await page.waitForFunction(() => /×64$/.test(document.querySelector('[data-testid=properties-box]')?.textContent ?? ''), null, { timeout: 15000 });
+    await page.getByTestId('redo').click();
+    assert.equal(await editCount(), '1 edit · unsaved');
+    await page.locator('body').click({ position: { x: 5, y: 5 } }); // focus out of any field
+    await page.keyboard.press('Control+z');
+    assert.equal(await editCount(), 'no edits');
+    await page.keyboard.press('Control+Shift+z');
+    assert.equal(await editCount(), '1 edit · unsaved');
+  });
+
+  await step('a value that is not valid for the attribute is refused where it is typed, and changes nothing', async () => {
+    const input = page.getByTestId('attr-width');
+    await input.fill('wide');
+    await input.press('Enter');
+    assert.match(await page.getByTestId('attr-width-problem').innerText(), /"wide" is not a number/);
+    assert.equal(await editCount(), '1 edit · unsaved');
+    await input.press('Escape');
+    assert.equal(await page.getByTestId('attr-width-problem').count(), 0);
+    assert.equal(await input.inputValue(), '114');
+  });
+
+  await step('the colour picker changes the colour, and the rendered picture shows it', async () => {
+    await page.getByTestId('tree-row-topbar').click();
+    assert.deepEqual(await pixel(2, 2), [15, 23, 42], 'the topbar starts as 0x0f172a');
+    await page.getByTestId('attr-style_bg_color-picker').fill('#ff0000');
+    await page.getByTestId('attr-style_bg_color-picker').dispatchEvent('change');
+    await page.waitForFunction(() => document.querySelector('[data-testid=attr-style_bg_color]')?.value === '0xff0000', null, { timeout: 2000 });
+    await page.waitForFunction(() => document.querySelector('[data-testid=canvas] img') !== null);
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const [r, g, b] = await pixel(2, 2);
+      if (r > 200 && g < 40 && b < 40) break;
+      assert.ok(attempt < 49, `the topbar never turned red (pixel ${r},${g},${b})`);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    assert.equal(await editCount(), '2 edits · unsaved');
+  });
+
+  await step('adding an attribute works, a bad name is refused, and an invalid add changes nothing', async () => {
+    await page.getByTestId('tree-row-card').click();
+    await page.getByTestId('add-attr-key').fill('bad key');
+    await page.getByTestId('add-attr-value').fill('1');
+    await page.getByTestId('add-attr-submit').click();
+    assert.match(await page.getByTestId('add-attr-problem').innerText(), /letters, digits and underscores/);
+    await page.getByTestId('add-attr-key').fill('name');
+    await page.getByTestId('add-attr-submit').click();
+    assert.match(await page.getByTestId('add-attr-problem').innerText(), /cannot be changed/);
+    assert.equal(await editCount(), '2 edits · unsaved');
+    await page.getByTestId('add-attr-key').fill('style_radius');
+    await page.getByTestId('add-attr-value').fill('20');
+    await page.getByTestId('add-attr-submit').click();
+    assert.equal(await page.getByTestId('attr-style_radius').inputValue(), '20');
+    assert.equal(await editCount(), '3 edits · unsaved');
+  });
+
+  await step('removing a widget takes it and its children out of the picture and marks the tree', async () => {
+    await page.getByTestId('tree-row-stop').click();
+    await page.getByTestId('remove-node').click();
+    assert.equal(await page.getByTestId('tree-row-stop').getAttribute('data-removed'), 'true');
+    assert.equal(await page.getByTestId('tree-row-stop_2').getAttribute('data-removed'), 'true', 'the child goes with it');
+    assert.equal(await page.getByTestId('tree-row-start').getAttribute('data-removed'), 'false');
+    await page.getByTestId('removed-note').waitFor({ timeout: 2000 });
+    await page.waitForFunction(() => /not shown: removed/.test(document.querySelector('[data-testid=properties-box]')?.textContent ?? ''), null, { timeout: 15000 });
+    assert.equal(await editCount(), '4 edits · unsaved');
+    await settled();
+    // Where the Stop button was is the page background now (it was red).
+    const stop = box('stop');
+    const [r, g, b] = await pixel(stop.x + stop.width / 2, stop.y + 3);
+    assert.ok(!(r > 200 && g < 60 && b < 60), `the stop button is still drawn (pixel ${r},${g},${b})`);
+  });
+
+  await step('a widget with no name says why it cannot be edited', async () => {
+    await page.getByTestId('tree-row-root').click();
+    await page.getByTestId('unnamed-note').waitFor({ timeout: 2000 });
+    assert.equal(await page.getByTestId('add-attr').count(), 0, 'no add-attribute form for an unnamed widget');
+    assert.equal(await page.getByTestId('remove-node').count(), 0);
+  });
+
+  await step('saving writes the sidecar file, in the form the CLI reads, and nothing else', async () => {
+    assert.equal(existsSync(sidecarFile), false, 'nothing is written before Save');
+    await page.getByTestId('save').click();
+    await page.getByTestId('save-status').waitFor({ timeout: 5000 });
+    assert.equal(await editCount(), '4 edits');
+    assert.deepEqual(JSON.parse(readFileSync(sidecarFile, 'utf8')), {
+      version: 1,
+      nodes: {
+        card: { attrs: { height: 90, style_radius: 20 } },
+        topbar: { attrs: { style_bg_color: '0xff0000' } },
+        stop: { remove: true },
+      },
+    });
+    assert.deepEqual(readdirSync(workspace), ['dashboard.lvgl.json'], 'no temporary files left behind');
+    assert.equal(await page.getByTestId('save').isDisabled(), true, 'nothing left to save');
+  });
+
+  await step('reloading the page loads the saved edits', async () => {
+    await page.reload();
+    await canvas.locator('img').waitFor({ timeout: 15000 });
+    await page.getByTestId('edited-card').waitFor({ timeout: 5000 });
+    assert.equal(await editCount(), '4 edits');
+    assert.equal(await page.getByTestId('tree-row-stop').getAttribute('data-removed'), 'true');
+    await page.getByTestId('tree-row-card').click();
+    assert.equal(await page.getByTestId('attr-height').inputValue(), '90');
+  });
+
+  await step('reset brings the page value back; restore brings a removed widget back; revert discards unsaved edits', async () => {
+    await page.getByTestId('attr-height-reset').click();
+    assert.equal(await page.getByTestId('attr-height').inputValue(), '64');
+    assert.equal(await editCount(), '3 edits · unsaved');
+    await page.getByTestId('tree-row-stop').click();
+    await page.getByTestId('restore-node').click();
+    assert.equal(await page.getByTestId('tree-row-stop').getAttribute('data-removed'), 'false');
+    assert.equal(await editCount(), '2 edits · unsaved');
+    await page.getByTestId('revert').click();
+    assert.equal(await editCount(), '4 edits');
+    assert.equal(await page.getByTestId('tree-row-stop').getAttribute('data-removed'), 'true');
+    assert.equal(await page.getByTestId('save').isDisabled(), true);
+  });
+
+  await step('leaving the page with unsaved edits asks first, and keeps them when you decline', async () => {
+    await page.getByTestId('tree-row-card').click();
+    const input = page.getByTestId('attr-height');
+    await input.fill('70');
+    await input.press('Enter');
+    assert.equal(await editCount(), '4 edits · unsaved');
+    const messages = [];
+    page.once('dialog', (dialog) => { messages.push(dialog.message()); void dialog.dismiss(); });
+    await page.getByRole('button', { name: 'Load example' }).click();
+    assert.equal(messages.length, 1, 'a confirmation was shown');
+    assert.match(messages[0], /Discard 1 unsaved edit/);
+    assert.equal(await editCount(), '4 edits · unsaved', 'declining keeps the edits');
+    await page.getByTestId('revert').click();
+  });
+
+  await step('the saved sidecar means the same to the converter: --from-ir on the IR gives the edited XML', async () => {
+    writeFileSync(join(workspace, 'dashboard.ir.json'), readFileSync(join(repoRoot, 'tests', 'golden-editor', 'ir_dashboard.json')));
+    const { spawnSync } = await import('node:child_process');
+    const out = join(scratch, 'cli-out');
+    const run = spawnSync(process.execPath, [join(repoRoot, 'src', 'cli.mjs'), '--from-ir', join(workspace, 'dashboard.ir.json'), '-o', out], { encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    const xml = readFileSync(join(out, 'dashboard.xml'), 'utf8');
+    assert.doesNotMatch(xml, /name="stop"/, 'the removed widget is gone from the generated XML');
+    assert.match(xml, /name="card"[^>]*height="90"/);
+    assert.match(xml, /name="topbar"[^>]*style_bg_color="0xff0000"/);
   });
 
   // The invalid-IR step provokes a 422 on purpose, and the browser logs every failed request.

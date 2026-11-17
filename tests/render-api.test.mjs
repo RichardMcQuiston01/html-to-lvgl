@@ -295,7 +295,7 @@ test('the server ignores request fields that would name files (fonts, components
   await withServer({ renderer }, async (api) => {
     const res = await postJson(api, '/render', { ir: dashboard, fonts: [{ key: 'x', path: '/etc/passwd' }], components: { a: '<x/>' }, path: '/etc/passwd' });
     assert.equal(res.status, 200);
-    assert.deepEqual(Object.keys(renderer.seen[0]).sort(), ['ir', 'size']);
+    assert.deepEqual(Object.keys(renderer.seen[0]).sort(), ['ir', 'sidecar', 'size'], 'only ir, size and the validated sidecar are forwarded');
   });
 });
 
