@@ -10,7 +10,7 @@
  * E2E_CHROMIUM=<path> uses that browser binary instead of Playwright's own;
  * E2E_API_PORT / E2E_WEB_PORT change the ports (18787 / 14173).
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -373,7 +373,6 @@ try {
 
   await step('the saved sidecar means the same to the converter: --from-ir on the IR gives the edited XML', async () => {
     writeFileSync(join(workspace, 'dashboard.ir.json'), readFileSync(join(repoRoot, 'tests', 'golden-editor', 'ir_dashboard.json')));
-    const { spawnSync } = await import('node:child_process');
     const out = join(scratch, 'cli-out');
     const run = spawnSync(process.execPath, [join(repoRoot, 'src', 'cli.mjs'), '--from-ir', join(workspace, 'dashboard.ir.json'), '-o', out], { encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
@@ -381,6 +380,171 @@ try {
     assert.doesNotMatch(xml, /name="stop"/, 'the removed widget is gone from the generated XML');
     assert.match(xml, /name="card"[^>]*height="90"/);
     assert.match(xml, /name="topbar"[^>]*style_bg_color="0xff0000"/);
+  });
+
+
+  /* ------------------------------------------------- M3: drag and resize on the canvas */
+
+  const fixtureHtml = join(editorRoot, 'e2e', 'fixtures', 'absolute.html');
+  const absoluteIr = join(workspace, 'absolute.ir.json');
+  const absoluteSidecar = join(workspace, 'absolute.lvgl.json');
+  const cli = (args) => spawnSync(process.execPath, [join(repoRoot, 'src', 'cli.mjs'), ...args], { encoding: 'utf8', cwd: workspace });
+  const waitProperties = (pattern) =>
+    page.waitForFunction((source) => new RegExp(source).test(document.querySelector('[data-testid=properties-box]')?.textContent ?? ''), pattern, { timeout: 15000 });
+  /** Press at an image point, move by a screen offset in steps, and leave the button down. */
+  const dragFrom = async (imageX, imageY, screenDx, screenDy) => {
+    const rect = await canvas.boundingBox();
+    const startX = rect.x + imageX * 2;
+    const startY = rect.y + imageY * 2;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + screenDx / 2, startY + screenDy / 2, { steps: 4 });
+    await page.mouse.move(startX + screenDx, startY + screenDy, { steps: 4 });
+  };
+  const handleCenter = async (handle) => {
+    const box = await page.getByTestId(`handle-${handle}`).boundingBox();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  const dragHandle = async (handle, screenDx, screenDy) => {
+    const at = await handleCenter(handle);
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x + screenDx / 2, at.y + screenDy / 2, { steps: 4 });
+    await page.mouse.move(at.x + screenDx, at.y + screenDy, { steps: 4 });
+    await page.mouse.up();
+  };
+  /** Where each named widget is in the page as LVGL lays it out (no edits). */
+  let absolute;
+
+  await step('M3: a page of absolutely positioned elements, converted by the real CLI, opens in the editor', async () => {
+    const run = cli([fixtureHtml, '--export-ir', workspace, '--size', '320x240']);
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(existsSync(absoluteIr), `the CLI did not write ${absoluteIr}`);
+    const ir2 = JSON.parse(readFileSync(absoluteIr, 'utf8'));
+    const answer = await (await fetch(`${apiUrl}/render?format=json`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ir: ir2 }) })).json();
+    assert.ok(answer.ok, JSON.stringify(answer));
+    absolute = Object.fromEntries(answer.boxes.map((b) => [b.name, b]));
+    await page.getByTestId('zoom').selectOption('2');
+    await page.getByTestId('file-input').setInputFiles(absoluteIr);
+    await page.getByTestId('tree-row-badge').waitFor({ timeout: 15000 });
+    await canvas.locator('img').waitFor({ timeout: 15000 });
+    await settled();
+    assert.equal(await editCount(), 'no edits');
+  });
+
+  await step('the selected widget shows eight handles when its parent does not lay it out, and the page shows none', async () => {
+    await page.getByTestId('tree-row-badge').click();
+    for (const handle of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) await page.getByTestId(`handle-${handle}`).waitFor({ timeout: 2000 });
+  });
+
+  await step('dragging a widget shows a ghost with its new position, then moves it: x and y change in one undo step, and the picture shows it', async () => {
+    const badge = absolute.badge;
+    assert.deepEqual([badge.x, badge.y], [170, 40]);
+    await dragFrom(badge.x + 3, badge.y + 3, 60, 40); // 30 x 20 picture pixels at 2x
+    assert.equal(await page.getByTestId('drag-readout').innerText(), '200, 60 · 60×30');
+    await page.mouse.up();
+    assert.equal(await editCount(), '2 edits · unsaved');
+    await waitProperties('x 200, y 60, 60×30');
+    assert.equal(await page.getByTestId('attr-x').inputValue(), '200');
+    assert.equal(await page.getByTestId('attr-y').inputValue(), '60');
+    // The blue badge is drawn at its new place and is gone from the old one.
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const [r, g, b] = await pixel(205, 65);
+      if (r < 60 && g < 120 && b > 200) break;
+      assert.ok(attempt < 49, `the badge is not drawn at its new position (pixel ${r},${g},${b})`);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    const [or, og, ob] = await pixel(175, 45);
+    assert.ok(!(or < 60 && og < 120 && ob > 200), 'the old position still shows the badge');
+    await page.getByTestId('undo').click();
+    assert.equal(await editCount(), 'no edits', 'one undo reverts both x and y');
+    await waitProperties('x 170, y 40, 60×30');
+  });
+
+  await step('a press that barely moves is a click, and Escape abandons a drag', async () => {
+    const badge = absolute.badge;
+    await dragFrom(badge.x + 3, badge.y + 3, 1, 1);
+    await page.mouse.up();
+    assert.equal(await editCount(), 'no edits');
+    assert.equal(await page.getByTestId('properties-title').innerText(), 'badge', 'still selected');
+    await dragFrom(badge.x + 3, badge.y + 3, 80, 80);
+    await page.getByTestId('drag-ghost').waitFor({ timeout: 2000 });
+    await page.keyboard.press('Escape');
+    await page.getByTestId('drag-ghost').waitFor({ state: 'detached', timeout: 2000 });
+    await page.mouse.up();
+    assert.equal(await editCount(), 'no edits', 'an abandoned drag changes nothing');
+    assert.equal(await page.getByTestId('properties-title').innerText(), 'badge', 'and does not change the selection');
+  });
+
+  await step('the south-east handle resizes from the drawn size, and the west handle moves the left edge while the right stays put', async () => {
+    await page.getByTestId('tree-row-panel').click();
+    const panel = absolute.panel;
+    assert.deepEqual([panel.x, panel.y, panel.width, panel.height], [20, 30, 122, 82]);
+    await dragHandle('se', 40, 20); // +20 x +10 picture pixels
+    await waitProperties('x 20, y 30, 142×92');
+    assert.equal(await editCount(), '2 edits · unsaved');
+    await page.getByTestId('tree-row-panel').click(); // selection overlay refreshed
+    await dragHandle('w', 20, 0); // +10 picture pixels
+    await waitProperties('x 30, y 30, 132×92');
+    assert.equal(await page.getByTestId('attr-x').inputValue(), '30');
+    assert.equal(await page.getByTestId('attr-width').inputValue(), '132');
+  });
+
+  await step('a child of a flex row can be resized but not moved, and the editor says why', async () => {
+    await page.getByTestId('tree-row-chip_a').click();
+    for (const handle of ['e', 's', 'se']) await page.getByTestId(`handle-${handle}`).waitFor({ timeout: 2000 });
+    for (const handle of ['n', 'w', 'ne', 'nw', 'sw']) assert.equal(await page.getByTestId(`handle-${handle}`).count(), 0, `no ${handle} handle`);
+    const chip = absolute.chip_a;
+    const before = await editCount();
+    await dragFrom(chip.x + 5, chip.y + 5, 40, 0);
+    await page.mouse.up();
+    assert.match(await page.getByTestId('canvas-hint').innerText(), /chip_a is placed by its parent's flex layout/);
+    assert.equal(await editCount(), before, 'a refused move changes nothing');
+    await dragHandle('e', 20, 0); // +10 picture pixels
+    await waitProperties(`x ${chip.x}, y ${chip.y}, 50×30`);
+    // the next chip in the row was pushed along by the layout
+    await page.getByTestId('tree-row-chip_b').click();
+    await waitProperties(`x ${absolute.chip_b.x + 10}, y ${absolute.chip_b.y}`);
+  });
+
+  await step('arrow keys nudge the selected widget (Shift for ten) and a flex child says it cannot move', async () => {
+    await page.getByTestId('tree-row-corner').click();
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Shift+ArrowUp');
+    assert.equal(await page.getByTestId('attr-x').inputValue(), String(absolute.corner.x - 3));
+    assert.equal(await page.getByTestId('attr-y').inputValue(), String(absolute.corner.y - 10));
+    await waitProperties(`x ${absolute.corner.x - 3}, y ${absolute.corner.y - 10}`);
+    await page.getByTestId('tree-row-chip_b').click();
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    const before = await editCount();
+    await page.keyboard.press('ArrowRight');
+    assert.match(await page.getByTestId('canvas-hint').innerText(), /flex layout/);
+    assert.equal(await editCount(), before);
+  });
+
+  await step('saving writes the geometry as plain attributes, and the converter turns the same sidecar into the same XML from the HTML and from the IR', async () => {
+    await page.getByTestId('save').click();
+    await page.getByTestId('save-status').waitFor({ timeout: 5000 });
+    const saved = JSON.parse(readFileSync(absoluteSidecar, 'utf8'));
+    assert.deepEqual(saved, {
+      version: 1,
+      nodes: {
+        panel: { attrs: { width: 132, height: 92, x: 30 } },
+        chip_a: { attrs: { width: 50 } },
+        corner: { attrs: { x: absolute.corner.x - 3, y: absolute.corner.y - 10 } },
+      },
+    });
+    // From the HTML page with the sidecar, and from the exported IR (which finds absolute.lvgl.json beside it).
+    const fromHtml = cli([fixtureHtml, '--overrides', absoluteSidecar, '-o', join(scratch, 'from-html'), '--size', '320x240']);
+    assert.equal(fromHtml.status, 0, fromHtml.stderr);
+    const fromIr = cli(['--from-ir', absoluteIr, '-o', join(scratch, 'from-ir')]);
+    assert.equal(fromIr.status, 0, fromIr.stderr);
+    const xmlHtml = readFileSync(join(scratch, 'from-html', 'absolute.xml'), 'utf8');
+    const xmlIr = readFileSync(join(scratch, 'from-ir', 'absolute.xml'), 'utf8');
+    assert.equal(xmlHtml, xmlIr, 'the HTML and the IR give identical XML with the same sidecar');
+    assert.match(xmlHtml, new RegExp(`name="corner"[^>]*x="${absolute.corner.x - 3}"`));
+    assert.match(xmlHtml, /name="panel"[^>]*width="132"/);
   });
 
   // The invalid-IR step provokes a 422 on purpose, and the browser logs every failed request.

@@ -207,3 +207,12 @@ export function knownAttrKeys(root: IrNode): string[] {
   visit(root);
   return [...keys].sort();
 }
+
+/** The node as it is after the sidecar: attributes replaced, added or (when the sidecar removes them) dropped. */
+export function nodeWithSidecar(node: IrNode, sidecar: SidecarOverrides): IrNode {
+  const attrs: IrNode['attrs'] = {};
+  for (const attr of effectiveAttrs(node, sidecar)) {
+    if (attr.value !== undefined) attrs[attr.key] = attr.value;
+  }
+  return { ...node, attrs };
+}
