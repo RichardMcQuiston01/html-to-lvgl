@@ -37,10 +37,10 @@ test('loadOverrides: malformed JSON and wrong version are not ok, never throw', 
   const bad = loadOverrides(join(d, 'bad.json'));
   assert.equal(bad.ok, false);
   assert.match(bad.errors[0], /not valid JSON/);
-  writeFileSync(join(d, 'v2.json'), JSON.stringify({ version: 2, nodes: {} }));
-  const v2 = loadOverrides(join(d, 'v2.json'));
-  assert.equal(v2.ok, false);
-  assert.match(v2.errors[0], /version/);
+  writeFileSync(join(d, 'v3.json'), JSON.stringify({ version: 3, nodes: {} }));
+  const v3 = loadOverrides(join(d, 'v3.json'));
+  assert.equal(v3.ok, false);
+  assert.match(v3.errors[0], /version.*1 or 2/);
   writeFileSync(join(d, 'good.json'), JSON.stringify(ovr({ a: { remove: true } })));
   assert.equal(loadOverrides(join(d, 'good.json')).ok, true);
   assert.equal(loadOverrides(d).ok, false, 'a directory is unreadable, not a crash');

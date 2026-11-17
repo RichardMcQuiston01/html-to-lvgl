@@ -4,12 +4,12 @@
  * list), const, enum, properties, required, additionalProperties: false,
  * items, minItems, uniqueItems, minLength and pattern, plus propertyNames
  * (a pattern for every key) and additionalProperties as a schema for keys not
- * listed under properties. An unknown keyword throws, so a schema cannot
+ * listed under properties, minimum, and oneOf (exactly one alternative must match). An unknown keyword throws, so a schema cannot
  * silently use something this does not check. Shared by the registry export
  * and IR tests.
  */
 const ANNOTATIONS = new Set(['$schema', '$id', 'title', 'description', '$defs']);
-const KEYWORDS = new Set([...ANNOTATIONS, '$ref', 'type', 'const', 'enum', 'properties', 'required', 'additionalProperties', 'propertyNames', 'items', 'minItems', 'uniqueItems', 'minLength', 'pattern']);
+const KEYWORDS = new Set([...ANNOTATIONS, '$ref', 'oneOf', 'type', 'const', 'enum', 'properties', 'required', 'additionalProperties', 'propertyNames', 'items', 'minItems', 'uniqueItems', 'minLength', 'pattern', 'minimum']);
 
 /** @param {unknown} v */
 function typeOf(v) {
@@ -35,6 +35,10 @@ export function validateJsonSchema(value, schema, root = schema, path = '$') {
     if (!target) throw new Error(`json-schema helper: cannot resolve ${schema.$ref}`);
     return validateJsonSchema(value, target, root, path);
   }
+  if (schema.oneOf !== undefined) {
+    const matching = schema.oneOf.filter((alternative) => validateJsonSchema(value, alternative, root, path).length === 0).length;
+    if (matching !== 1) errors.push(`${path}: must match exactly one of the ${schema.oneOf.length} alternatives, matched ${matching}`);
+  }
   const actual = typeOf(value);
   if (schema.type !== undefined) {
     const allowed = [].concat(schema.type);
@@ -46,6 +50,7 @@ export function validateJsonSchema(value, schema, root = schema, path = '$') {
     if (schema.minLength !== undefined && value.length < schema.minLength) errors.push(`${path}: shorter than ${schema.minLength}`);
     if (schema.pattern !== undefined && !new RegExp(schema.pattern).test(value)) errors.push(`${path}: ${JSON.stringify(value)} does not match ${schema.pattern}`);
   }
+  if (typeof value === 'number' && schema.minimum !== undefined && value < schema.minimum) errors.push(`${path}: ${value} is less than ${schema.minimum}`);
   if (actual === 'object') {
     const obj = /** @type {Record<string, unknown>} */ (value);
     for (const key of schema.required ?? []) if (!(key in obj)) errors.push(`${path}: missing "${key}"`);

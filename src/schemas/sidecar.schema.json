@@ -2,15 +2,40 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/RichardMcQuiston01/html-to-lvgl/schemas/sidecar.schema.json",
   "title": "html2lvgl sidecar overrides",
-  "description": "A `<page>.lvgl.json` file next to a page: attribute changes and removals applied to the generated widget tree by widget `name`. Mirrors validateOverrides() in src/overrides.mjs, which stays the authority; tests/sidecar-schema.test.mjs checks the two agree.",
+  "description": "A `<page>.lvgl.json` file next to a page: attribute changes, removals and (version 2) structure operations applied to the generated widget tree by widget `name`. Mirrors validateOverrides() in src/overrides.mjs, which stays the authority; tests/sidecar-schema.test.mjs checks the two agree. One rule the schema cannot express: a non-empty `structure` needs `version` 2 (a sidecar with only attribute changes stays version 1 so older converters can read it).",
   "type": "object",
-  "required": ["version", "nodes"],
+  "required": [
+    "version",
+    "nodes"
+  ],
   "properties": {
-    "version": { "const": 1 },
+    "version": {
+      "description": "1: attribute overrides and removals. 2: also the `structure` list. The editor and the preview API write the lowest version that fits.",
+      "enum": [
+        1,
+        2
+      ]
+    },
     "nodes": {
       "description": "Widget name (the generated `name` attribute) to its override.",
       "type": "object",
-      "additionalProperties": { "$ref": "#/$defs/nodeOverride" }
+      "additionalProperties": {
+        "$ref": "#/$defs/nodeOverride"
+      }
+    },
+    "structure": {
+      "description": "Adds and moves, applied in order to the tree the operations before them produced, before `nodes`. `parent` is a widget name, or null for the page; `index` is the place among the parent's children (for a move, with the widget already taken out); past the end means the end. See src/overrides-structure.mjs.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/addOperation"
+          },
+          {
+            "$ref": "#/$defs/moveOperation"
+          }
+        ]
+      }
     }
   },
   "$defs": {
@@ -20,9 +45,99 @@
         "attrs": {
           "description": "Values replace or add attributes; null removes one. A key is letters, digits and underscores with an optional LVGL state suffix, as in `style_bg_color:pressed`; `name` cannot be overridden. A key that breaks these rules is not a validation error: applying the sidecar skips it and reports OVERRIDE_ATTR_INVALID.",
           "type": "object",
-          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
         },
-        "remove": { "description": "Delete the node and its subtree.", "type": "boolean" }
+        "remove": {
+          "description": "Delete the node and its subtree.",
+          "type": "boolean"
+        }
+      }
+    },
+    "addOperation": {
+      "description": "Add a new widget.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "name",
+        "tag",
+        "parent",
+        "index"
+      ],
+      "properties": {
+        "op": {
+          "const": "add"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "tag": {
+          "description": "An LVGL widget tag such as lv_label.",
+          "type": "string",
+          "pattern": "^lv_[a-z0-9_]+$"
+        },
+        "parent": {
+          "description": "The name of the widget that holds it, or null for the page. Only lv_obj and lv_button (and the page) can hold widgets.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attrs": {
+          "description": "The new widget's attributes (not `name`).",
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        }
+      }
+    },
+    "moveOperation": {
+      "description": "Move an existing widget to another place.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "name",
+        "parent",
+        "index"
+      ],
+      "properties": {
+        "op": {
+          "const": "move"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "parent": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   }

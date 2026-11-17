@@ -26,8 +26,22 @@
  * This module is pure (no browser) apart from loadOverrides() reading a file.
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { applyStructure, validateStructure } from './overrides-structure.mjs';
 
+/** The oldest version: attribute overrides and removals only. */
 export const OVERRIDES_VERSION = 1;
+/** Adds the `structure` list (add and move). A tool that only knows version 1 refuses such a file instead of silently ignoring the operations. */
+export const OVERRIDES_VERSION_STRUCTURE = 2;
+
+/**
+ * The version a sidecar has to declare: 2 when it has structure operations,
+ * otherwise 1, so a sidecar that only changes attributes stays readable by
+ * older versions of the converter.
+ *
+ * @param {{ structure?: unknown } | null | undefined} overrides
+ */
+export const requiredVersion = (overrides) =>
+  Array.isArray(overrides?.structure) && overrides.structure.length > 0 ? OVERRIDES_VERSION_STRUCTURE : OVERRIDES_VERSION;
 
 // An optional LVGL state suffix is allowed: style_bg_color:pressed.
 const ATTR_KEY = /^[A-Za-z_][A-Za-z0-9_]*(:[a-z_]+)?$/;
@@ -44,8 +58,14 @@ export function validateOverrides(value) {
   if (!isPlainObject(value)) {
     return { ok: false, errors: [`top level must be an object, got ${describe(value)}`] };
   }
-  if (value.version !== OVERRIDES_VERSION) {
-    errors.push(`"version" must be ${OVERRIDES_VERSION}, got ${JSON.stringify(value.version) ?? 'nothing'}`);
+  if (value.version !== OVERRIDES_VERSION && value.version !== OVERRIDES_VERSION_STRUCTURE) {
+    errors.push(`"version" must be ${OVERRIDES_VERSION} or ${OVERRIDES_VERSION_STRUCTURE}, got ${JSON.stringify(value.version) ?? 'nothing'}`);
+  }
+  if ('structure' in value) {
+    errors.push(...validateStructure(value.structure));
+    if (Array.isArray(value.structure) && value.structure.length > 0 && value.version === OVERRIDES_VERSION) {
+      errors.push(`"structure" needs "version": ${OVERRIDES_VERSION_STRUCTURE} (version ${OVERRIDES_VERSION} files have no structure operations)`);
+    }
   }
   if (!isPlainObject(value.nodes)) {
     errors.push(`"nodes" must be an object mapping widget names to overrides, got ${describe(value.nodes)}`);
@@ -137,11 +157,15 @@ function collectNames(node, out = []) {
  * mutated. Problems become diagnostics and the offending override is skipped.
  *
  * @param {{ tag: string, attrs: object, children: object[] }} view
- * @param {{ nodes: Record<string, { attrs?: object, remove?: boolean }> } | null} overrides
+ * @param {{ structure?: object[], nodes: Record<string, { attrs?: object, remove?: boolean }> } | null} overrides
  * @param {{ diagnostics?: { add(d: object): unknown }, file?: string }} [opts]
  */
 export function applyOverrides(view, overrides, { diagnostics = null, file } = {}) {
-  if (!overrides || !isPlainObject(overrides.nodes) || Object.keys(overrides.nodes).length === 0) return view;
+  if (!overrides) return view;
+  // Structure first (adds and moves), so the per-widget overrides below can target an added widget.
+  const structure = Array.isArray(overrides.structure) ? overrides.structure : [];
+  if (structure.length > 0) view = applyStructure(view, structure, { diagnostics, file });
+  if (!isPlainObject(overrides.nodes) || Object.keys(overrides.nodes).length === 0) return view;
   const nodes = overrides.nodes;
   const names = collectNames(view);
   const source = file ? { file } : null;

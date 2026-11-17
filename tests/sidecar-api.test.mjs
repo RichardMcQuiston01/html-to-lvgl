@@ -60,7 +60,7 @@ test('read of a missing sidecar is fine; write then read round-trips with versio
 
 test('an invalid sidecar is rejected with every problem and nothing is written', () => {
   const dir = freshDir();
-  const result = writeSidecar(dir, 'page', { version: 2, nodes: { a: { remove: 'yes' } } });
+  const result = writeSidecar(dir, 'page', { version: 3, nodes: { a: { remove: 'yes' } } });
   assert.equal(result.ok, false);
   assert.equal(result.code, 'sidecar_invalid');
   assert.equal(result.errors.length, 2);
@@ -297,7 +297,7 @@ test('an override that targets a missing widget renders anyway and reports a war
 test('an invalid sidecar is invalid_sidecar with every problem, before any render starts', async () => {
   const program = recordingProgram();
   const renderer = createRenderProgramRenderer({ binary: program.file });
-  await assert.rejects(renderer.render({ ir: dashboard, sidecar: { version: 2, nodes: [] } }), (e) => e instanceof RenderError && e.code === 'invalid_sidecar' && e.errors.length === 2);
+  await assert.rejects(renderer.render({ ir: dashboard, sidecar: { version: 3, nodes: [] } }), (e) => e instanceof RenderError && e.code === 'invalid_sidecar' && e.errors.length === 2);
   assert.equal(existsSync(program.file.replace('fake-render.cjs', 'last-page.xml')), false, 'the program never ran');
 });
 
@@ -353,4 +353,70 @@ test('CLI: --preview-api --workspace rejects a directory that does not exist', (
   const run = spawnSync(process.execPath, [join(root, 'src', 'cli.mjs'), '--preview-api', '--port', '0', '--workspace', join(scratch, 'no-such-dir')], { encoding: 'utf8', timeout: 20000 });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /--workspace: cannot use .*no-such-dir/);
+});
+
+/* ------------------------------------------- structure operations (version 2) */
+
+const structureSidecar = (structure, nodes = {}) => ({ version: 2, structure, nodes });
+
+test('a structure sidecar renders: the added widget is in the XML and in the boxes, and moves reorder the page', async () => {
+  const program = recordingProgram();
+  const renderer = createRenderProgramRenderer({ binary: program.file });
+  await renderer.render({
+    ir: dashboard,
+    sidecar: structureSidecar([
+      { op: 'add', name: 'footer', tag: 'lv_label', parent: null, index: 99, attrs: { text: 'Footer note' } },
+      { op: 'move', name: 'actions', parent: null, index: 0 },
+    ]),
+  });
+  const xml = program.lastXml();
+  assert.match(xml, /name="footer"/);
+  assert.match(xml, /text="Footer note"/);
+  assert.ok(xml.indexOf('name="actions"') < xml.indexOf('name="topbar"'), 'actions moved to the top');
+});
+
+test('an added widget cannot name a host file: the safety check runs on the tree after structure is applied', async () => {
+  const program = recordingProgram();
+  const renderer = createRenderProgramRenderer({ binary: program.file });
+  for (const attrs of [{ src: '/etc/passwd' }, { style_bg_image_src: 'A:/etc/shadow' }, { file: '../../secret' }]) {
+    await assert.rejects(
+      renderer.render({ ir: dashboard, sidecar: structureSidecar([{ op: 'add', name: 'sneaky', tag: 'lv_image', parent: null, index: 0, attrs }]) }),
+      (e) => e.code === 'unsafe_file_reference',
+      JSON.stringify(attrs),
+    );
+  }
+});
+
+test('structure is part of the cache key, and a structure problem is reported as a warning while the rest still renders', async () => {
+  const size = { width: 320, height: 240 };
+  const op = { op: 'move', name: 'card', parent: null, index: 0 };
+  assert.notEqual(renderCacheKey({ ir: dashboard, size, sidecar: structureSidecar([op]) }), renderCacheKey({ ir: dashboard, size, sidecar: structureSidecar([]) }));
+  const program = recordingProgram();
+  const result = await createRenderProgramRenderer({ binary: program.file }).render({
+    ir: dashboard,
+    sidecar: structureSidecar([{ op: 'move', name: 'no_such_widget', parent: null, index: 0 }, { op: 'add', name: 'ok_widget', tag: 'lv_obj', parent: null, index: 0 }]),
+  });
+  assert.ok(result.diagnostics.some((d) => d.level === 'warning' && /no widget named "no_such_widget"/.test(d.message)));
+  assert.match(program.lastXml(), /name="ok_widget"/, 'the valid operation still applied');
+});
+
+test('an invalid structure operation is invalid_sidecar with every problem, before any render starts', async () => {
+  const program = recordingProgram();
+  const renderer = createRenderProgramRenderer({ binary: program.file });
+  await assert.rejects(
+    renderer.render({ ir: dashboard, sidecar: structureSidecar([{ op: 'add', name: '1x', tag: 'label', parent: null, index: -1 }]) }),
+    (e) => e.code === 'invalid_sidecar' && e.errors.length === 3,
+  );
+});
+
+test('saving a sidecar writes the lowest version that fits: 1 without structure, 2 with it', () => {
+  const dir = freshDir();
+  assert.equal(writeSidecar(dir, 'plain', { version: 2, nodes: { a: { remove: true } } }).ok, true);
+  assert.equal(JSON.parse(readFileSync(join(dir, 'plain.lvgl.json'), 'utf8')).version, 1, 'only attribute changes: stays readable by older converters');
+  assert.equal(writeSidecar(dir, 'structured', structureSidecar([{ op: 'move', name: 'a', parent: null, index: 0 }])).ok, true);
+  assert.equal(JSON.parse(readFileSync(join(dir, 'structured.lvgl.json'), 'utf8')).version, 2);
+  const refused = writeSidecar(dir, 'wrong', { version: 1, nodes: {}, structure: [{ op: 'move', name: 'a', parent: null, index: 0 }] });
+  assert.equal(refused.code, 'sidecar_invalid');
+  assert.match(refused.errors.join(' '), /needs "version": 2/);
+  assert.deepEqual(readSidecar(dir, 'structured').sidecar.structure, [{ op: 'move', name: 'a', parent: null, index: 0 }]);
 });
