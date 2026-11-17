@@ -42,6 +42,7 @@ const { values: opts, positionals } = parseArgs({
     'export-registry': { type: 'string' },
     'preview-api': { type: 'boolean', default: false },
     'build-render': { type: 'boolean', default: false },
+    workspace: { type: 'string' },
     'lvgl-dir': { type: 'string' },
     rebuild: { type: 'boolean', default: false },
     'allow-origin': { type: 'string', multiple: true, default: [] },
@@ -117,13 +118,25 @@ if (opts['preview-api']) {
     process.exit(1);
   }
   const { plugins } = await loadPlugins({ specs: opts.plugin });
+  let workspace;
+  if (opts.workspace !== undefined) {
+    const { checkWorkspace } = await import('./sidecar-store.mjs');
+    const checked = checkWorkspace(opts.workspace);
+    if (!checked.ok) {
+      console.error(`--workspace: ${checked.message}`);
+      process.exit(1);
+    }
+    workspace = checked.path;
+  }
   const api = await startPreviewApi({
     port,
+    workspace,
     renderer: createRenderProgramRenderer({ binary: opts['render-bin'] }),
     allowedOrigins: opts['allow-origin'],
     registry: exportRegistry(registryFor(plugins), { plugins }),
   });
-  console.log(`preview API at ${api.url}  (POST /render, POST /ir/validate, GET /registry, GET /health)`);
+  console.log(`preview API at ${api.url}  (POST /render, POST /ir/validate, GET /registry, GET /health${workspace ? ', GET and PUT /sidecar/<name>' : ''})`);
+  console.log(workspace ? `sidecars are read from and saved to ${workspace}` : 'saving is off: add --workspace <dir> to let the editor save <name>.lvgl.json sidecars');
   if (!findRenderBinary({ binary: opts['render-bin'] })) {
     console.log('no render program found: /render answers 503 until you run html2lvgl --build-render (or pass --render-bin or set HTML2LVGL_RENDER_BIN)');
   }
@@ -144,7 +157,7 @@ if (opts.help || (positionals.length === 0 && opts['from-ir'].length === 0)) {
     '                 [--block-external]   (URL inputs)\n' +
     '                 [--watch [--port 8377] [--render-bin path]]\n' +
     '       html2lvgl --build-render [--lvgl-dir <lvgl-9.4.0 checkout>] [--rebuild]\n' +
-    '       html2lvgl --preview-api [--port 8787] [--render-bin path] [--allow-origin <origin>] [--plugin ...]\n' +
+    '       html2lvgl --preview-api [--port 8787] [--render-bin path] [--workspace <dir>] [--allow-origin <origin>] [--plugin ...]\n' +
     '       html2lvgl --export-registry [file|-] [--plugin <package-or-path>] ...\n' +
     '\n' +
     'Passing several pages converts each into a <screen>, and links between\n' +
