@@ -280,7 +280,7 @@ The render response also lists where every named widget ended up, for a canvas e
 The render program turns LVGL XML into a picture; `--watch` and `--preview-api` use it. A binary is specific to one operating system and CPU, so the npm package ships its C sources (`spike/render/`, about 14 kB) instead, and you build it once on your machine:
 
 ```bash
-html2lvgl --build-render            # clones LVGL v9.4.0, runs CMake, prints the binary's path
+html2lvgl --build-render            # clones LVGL v9.4.0, runs CMake; progress goes to stderr, stdout is only the binary's path
 html2lvgl --build-render --lvgl-dir ~/src/lvgl   # use your own v9.4.0 checkout, no clone
 html2lvgl --build-render --rebuild  # build again even if one exists
 ```

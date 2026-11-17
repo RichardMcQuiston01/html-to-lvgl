@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- `html2lvgl --build-render` now prints only the built program's path on stdout. Git's and CMake's output used to share stdout, so `RENDER_BIN=$(html2lvgl --build-render)` captured the whole build log. That output now goes to stderr.
 - A render program built by `--build-render` is now installed under a name that includes a hash of its sources, and the LVGL clone is kept separately. Before, an upgrade that changed the render program's C code would silently keep using the binary built by the previous version. Now the next `--build-render` builds a new binary without cloning LVGL again.
 
 ## [0.10.0] - 2026-11-10
