@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CanvasView } from './components/CanvasView';
+import { CanvasView, type CanvasEditing } from './components/CanvasView';
 import { DiagnosticsPanel, type LabelledFailure } from './components/DiagnosticsPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { Toolbar, type ApiState, type SaveState } from './components/Toolbar';
 import { TreePanel } from './components/TreePanel';
 import { EXAMPLE_FILE_NAME, EXAMPLE_IR } from './example';
 import { checkHealth, fetchSidecar, renderIr, saveSidecar } from './lib/api';
+import { layoutInfo, planDrag } from './lib/geometry';
 import { canRedo, canUndo, createHistory, pushHistory, redoHistory, undoHistory, type History } from './lib/history';
 import { designSize, parseIrText } from './lib/irFile';
 import { ancestorIds, flattenTree, idsByName, visibleRows } from './lib/irTree';
 import {
-  countDifferences, countEdits, emptySidecar, isRemoved, knownAttrKeys, removedRowIds, sidecarsEqual, withAttr, withoutAttr, withRemoved,
+  countDifferences, countEdits, emptySidecar, isRemoved, knownAttrKeys, nodeWithSidecar, removedRowIds, sidecarsEqual, withAttr, withoutAttr, withRemoved,
   type AttrValue,
 } from './lib/sidecar';
 import type { ApiFailure, IrDocument, RenderResponse, SidecarOverrides, Size } from './lib/types';
@@ -52,6 +53,8 @@ export function App() {
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [loadFailure, setLoadFailure] = useState<ApiFailure | null>(null);
   const [saveFailure, setSaveFailure] = useState<ApiFailure | null>(null);
+  /** Why a drag or a nudge did nothing; cleared when the selection changes or something works. */
+  const [hint, setHint] = useState<string | null>(null);
 
   const sidecar = history.present;
   const dirty = !sidecarsEqual(sidecar, savedSidecar);
@@ -149,6 +152,18 @@ export function App() {
     },
     [baseValue, edit],
   );
+  /** Several attributes of one widget as a single undo step (a drag changes x and y together). */
+  const onSetAttrs = useCallback(
+    (nodeName: string, changes: Record<string, number>) => {
+      edit((current) =>
+        Object.entries(changes).reduce(
+          (next, [key, value]) => (Object.is(baseValue(nodeName, key), value) ? withoutAttr(next, nodeName, key) : withAttr(next, nodeName, key, value)),
+          current,
+        ),
+      );
+    },
+    [baseValue, edit],
+  );
   const onResetAttr = useCallback((nodeName: string, key: string) => edit((current) => withoutAttr(current, nodeName, key)), [edit]);
   const onRemoveNode = useCallback((nodeName: string) => edit((current) => withRemoved(current, nodeName, true)), [edit]);
   const onRestoreNode = useCallback((nodeName: string) => edit((current) => withRemoved(current, nodeName, false)), [edit]);
@@ -180,9 +195,42 @@ export function App() {
     else setSaveFailure(result.failure);
   }, [workspace, dirty, sidecar, ir.name]);
 
+  const response = render.status === 'ready' ? render.response : render.status === 'loading' ? render.previous : null;
+  const selectedName = selectedRow?.name ?? null;
+  const selectedBox = response?.boxes?.find((box) => box.name === selectedName) ?? null;
+
+  // What the canvas may do with the selected widget: its layout (from its own and its parent's attributes, with the sidecar applied) decides.
+  const editing = useMemo<CanvasEditing | null>(() => {
+    if (selectedRow === null || selectedName === null || selectedBox === null || removedIds.has(selectedRow.id)) return null;
+    const parentId = selectedRow.id.includes('.') ? selectedRow.id.slice(0, selectedRow.id.lastIndexOf('.')) : null;
+    const parentRow = parentId === null ? null : (rows.find((row) => row.id === parentId) ?? null);
+    const node = nodeWithSidecar(selectedRow.node, sidecar);
+    const parent = parentRow === null ? null : nodeWithSidecar(parentRow.node, sidecar);
+    const box = { x: selectedBox.x, y: selectedBox.y, width: selectedBox.width, height: selectedBox.height };
+    return {
+      layout: layoutInfo(parent, node),
+      plan: (kind, dx, dy) => planDrag(node, parent, box, kind, dx, dy),
+      onCommit: (changes) => {
+        setHint(null);
+        onSetAttrs(selectedName, changes);
+      },
+      onHint: setHint,
+    };
+  }, [selectedRow, selectedName, selectedBox, removedIds, rows, sidecar, onSetAttrs]);
+
   // Keyboard: undo, redo and save, except while typing in a field.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      // Arrow keys nudge the selected widget by 1 pixel, 10 with Shift. A drag has no keyboard equivalent without this.
+      const arrow = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+      if (arrow !== undefined && !event.ctrlKey && !event.metaKey && !event.altKey && editing !== null && !isTypingTarget(event.target)) {
+        event.preventDefault();
+        const step = event.shiftKey ? 10 : 1;
+        const plan = editing.plan({ type: 'move' }, arrow[0]! * step, arrow[1]! * step);
+        if (plan.ok) editing.onCommit(plan.changes);
+        else setHint(plan.reason);
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
       if (key === 's') {
@@ -201,7 +249,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [save, undo, redo]);
+  }, [save, undo, redo, editing]);
 
   const openIr = useCallback(
     (next: IrDocument, name: string) => {
@@ -233,6 +281,7 @@ export function App() {
 
   const select = useCallback((id: string | null) => {
     setSelectedId(id);
+    setHint(null);
     if (id === null) return;
     // Show the selection: open any collapsed ancestor.
     const ancestors = ancestorIds(id);
@@ -247,14 +296,11 @@ export function App() {
     });
   }, []);
 
-  const response = render.status === 'ready' ? render.response : render.status === 'loading' ? render.previous : null;
   const failures: LabelledFailure[] = [
     ...(render.status === 'error' ? [{ kind: 'render' as const, failure: render.failure }] : []),
     ...(loadFailure !== null ? [{ kind: 'load' as const, failure: loadFailure }] : []),
     ...(saveFailure !== null ? [{ kind: 'save' as const, failure: saveFailure }] : []),
   ];
-  const selectedName = selectedRow?.name ?? null;
-  const selectedBox = response?.boxes?.find((box) => box.name === selectedName) ?? null;
   const saveState: SaveState = workspace === 'off' ? 'off' : saving === 'saving' ? 'saving' : saving === 'saved' ? 'saved' : 'idle';
 
   return (
@@ -286,6 +332,8 @@ export function App() {
             loading={render.status === 'loading'}
             zoom={zoom}
             selectedName={selectedName}
+            editing={editing}
+            hint={hint}
             onPick={(name) => select(name === null ? null : (idForName.get(name) ?? null))}
           />
         </div>
