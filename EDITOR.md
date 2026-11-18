@@ -46,21 +46,21 @@ From `src/overrides.mjs`:
 | Remove an attribute | Yes (`null`) | Yes |
 | Remove a node and its subtree | Yes (`remove: true`) | Yes |
 | Change the `name` attribute | No (`name` cannot be overridden) | Yes |
-| Add a node | No | Yes |
-| Move or reorder a node, or change its parent | No | Yes |
+| Add a node | Yes (`structure`, an `add` operation; sidecar version 2) | Yes |
+| Move or reorder a node, or change its parent | Yes (`structure`, a `move` operation; sidecar version 2) | Yes |
 | Change a node's `tag` | No | Yes |
 | Edit `meta` (component, behavior) | No | Yes |
 | Edit subjects, timelines, assets | No | Yes |
 | Target a node with no `name` (tabview parts, behavior tags) | No | Yes, by path |
 
-The sidecar is applied to the same `view` tree the IR holds, after `convert()` and before `componentize()`. So a sidecar edit and an IR edit of an attribute produce the same emitted output. The sidecar is the smaller language.
+The sidecar is applied to the same `view` tree the IR holds, after `convert()` and before `componentize()`. So a sidecar edit and an IR edit of an attribute produce the same emitted output. The sidecar is the smaller language. Version 2 grew it by two operations, add and move, which is what lets the editor change a page's structure without leaving the HTML as the source of truth (see below). Renaming, changing a tag, `meta`, subjects, timelines and assets are still IR-only, and the editor does not offer them.
 
 ### Which one the editor edits
 
 Both, with one rule each.
 
-- **Default: write the sidecar.** Attribute edits and removals go to `<page>.lvgl.json`. The user's HTML stays the source of truth, and the edits are replayed on every conversion.
-- **Structural edits switch the page to IR.** Adding, moving, reparenting or renaming a node cannot be a sidecar edit. The editor then saves `<page>.ir.json` as the new source of truth and tells the user that the HTML is no longer the source for this screen. There is no merge of an edited IR with a fresh conversion (see below).
+- **Write the sidecar, for everything the sidecar can say.** Attribute edits, removals, and (version 2) added widgets and moves go to `<page>.lvgl.json`. The user's HTML stays the source of truth, and the edits are replayed on every conversion.
+- **IR only for what the sidecar cannot say.** Renaming a node, changing a tag, or editing behavior would need the IR as the new source of truth, with no merge against a fresh conversion (see below). The editor does not offer those edits. This replaces the earlier plan to switch a page to IR on its first structural edit: adding and moving turned out to fit the sidecar, which keeps edits alive across conversions.
 
 ### What survives a re-conversion of the source
 
@@ -71,6 +71,9 @@ Re-conversion runs the browser, then `convert()`, then the sidecar. The old IR f
 | Sidecar entry for a name from `data-lv-name` or `id` | Yes | The author chose the name, so it is stable. |
 | Sidecar entry for a class-derived name with a suffix (`card_2`) | Only by luck | The suffix shifts when siblings are added, removed or reordered, so the override can land on a different widget. `src/overrides.mjs` says this in its header. |
 | Sidecar entry whose target no longer exists | No | `applyOverrides()` skips it and adds an `OVERRIDE_TARGET_UNKNOWN` diagnostic with the closest names. |
+| A structure operation (add, move) whose widget or parent still exists | Yes, in effect | Operations are by name, so they replay on every conversion. An added widget is the editor's own and always comes back. |
+| A move's place when siblings are added or removed in the HTML | Position can shift | A move records an index among the parent's children, so a new sibling in the HTML can shift where the widget lands by one. The name of the widget and of its new parent are what count; put `data-lv-name` on them. |
+| A structure operation whose widget or parent no longer exists, or that would now break a rule (a cycle, a widget that cannot hold children, a taken name) | No | That one operation is skipped and `OVERRIDE_STRUCTURE_INVALID` says why; the rest still apply. |
 | Any edit made to an exported IR file | No | A fresh conversion produces a new view. Nothing diffs or merges it with the old IR. |
 | A renamed node in the IR | Breaks sidecars | The sidecar keys by `name`; after a rename every entry for the old name is `OVERRIDE_TARGET_UNKNOWN`. |
 
@@ -79,7 +82,7 @@ The rule the editor must follow:
 1. **Never rename a node** (`name` is read-only in the property panel). Rename in the source with `data-lv-name`.
 2. **Warn before writing a sidecar entry for an unstable name.** A name is stable only if the source has `data-lv-name` or `id`. The IR does not record where a name came from (`name` is just a string; **gap**, see the API table). Until it does, the editor can only guess from the suffix pattern `_<digits>`, and says so.
 3. **Do not write `data-lv-name` back to the source** (no HTML round-trip). Show the exact attribute to add and the node it belongs to, and let the user add it.
-4. **A page with structural edits is an IR page.** The editor marks it, stops reading the sidecar's stale targets silently, and runs `validateIr()` on every save.
+4. **Structure operations are checked as they are made.** The editor applies them with the converter's own function (`src/overrides-structure.mjs`, imported, not copied), shows any operation the converter would skip as a warning at once, and never writes a move that its own plan refused.
 
 [Back to Top](#editor)
 
@@ -284,7 +287,7 @@ The honest fix is a layout dump from the engine. After the final frame, the rend
 | M1: Read-only viewer | Vite SPA, tree panel, canvas showing the render, diagnostics list. | Opens `ir_dashboard.json`, shows the tree and the render at 320x240. Selection by tree works. **Done** (`editor/`, see Running the editor). It also does what M3 lists for selection: a click on the canvas selects the widget, using the boxes. |
 | M2: Property editing | Property panel from the registry and IR attrs, validation, sidecar writer, undo and redo, save endpoints. | Editing `width` of a named node writes a sidecar; `html2lvgl --overrides` on the source gives the same XML as the editor's export. **Done**, with one change from the plan: the panel is built from the node's own attributes, not from the registry. The registry describes the converter's components (their `data-lv-*` props), not the LVGL attributes of the nodes in an IR, so it cannot say what attributes a node may have; the panel offers the attribute names used in the page instead. Tested end to end: an edit written by the editor gives the same XML in `--from-ir` as in the editor's preview. |
 | M3: Canvas | Click to select from boxes, selection overlay, resize handles, move for absolute nodes. | Clicking each named widget in the golden pages selects it. **Done.** Click-to-select came with M1. Dragging a widget moves it and eight handles resize it, for the widgets the layout allows (see Running the editor); the result is written to the sidecar as `x`, `y`, `width` and `height`, and the converter produces the same XML from the HTML page and from the IR with that sidecar. |
-| M4: Structure | Reorder, delete, add plain widgets, IR save, "this page is now IR" marker. | `validateIr()` passes after each edit; `--from-ir` output equals the editor's export in all four formats. |
+| M4: Structure | Reorder, delete, add plain widgets, IR save, "this page is now IR" marker. | `validateIr()` passes after each edit; `--from-ir` output equals the editor's export in all four formats. **Done, by another route than planned:** structure edits are sidecar operations (version 2: `structure` with `add` and `move`), so there is no IR switch, no "this page is now IR" marker and no IR save. The exit criterion is met the same way as for M2 and M3: the converter produces identical XML from the HTML page and from the IR with the saved sidecar, and every widget the editor can add is emitted by all four emitters. An IR save and IR file endpoints remain an optional extra for someone who designs in the editor and never has HTML. |
 | M5: Spike | Time-boxed WebAssembly spike against the criteria above. | A written pass or fail report; decision recorded in this file. |
 
 ### Running the editor
@@ -299,7 +302,7 @@ cd editor && npm ci && npm run dev  # terminal 2: the editor, with /api proxied 
 
 Set `HTML2LVGL_PREVIEW_URL` if the preview API runs elsewhere. The editor opens on the committed dashboard example. **Open IR file** loads one made with `html2lvgl page.html --export-ir ir.json`.
 
-What it does today (M1 and M2): a tree of the widgets (collapsible; unnamed nodes are shown dimmed because a click on the canvas cannot reach them), the LVGL render at 1x to 4x, a click on the picture selects the deepest named widget under the pointer and a click on a tree row outlines it on the picture, a panel with the selected node's attributes and its final on-screen rectangle (which differs from the `width` attribute when layout resizes it), and a diagnostics panel that shows the preview API's problems (an invalid IR lists every one). 
+What it does today (M1 to M4): a tree of the widgets (collapsible; unnamed nodes are shown dimmed because a click on the canvas cannot reach them), the LVGL render at 1x to 4x, a click on the picture selects the deepest named widget under the pointer and a click on a tree row outlines it on the picture, a panel with the selected node's attributes and its final on-screen rectangle (which differs from the `width` attribute when layout resizes it), and a diagnostics panel that shows the preview API's problems (an invalid IR lists every one). 
 
 Editing (M2): the attributes of the selected widget are editable. A change is typed to the attribute (a number stays a number, a boolean is a drop-down, a `*_color` attribute gets a colour picker and is written as `0xrrggbb`) and is committed on Enter or when the field loses focus, so one edit is one undo step. An invalid value is refused where it is typed. Reset (↺) goes back to the page's value, ✕ removes an attribute, and the form under the table adds one (the names used in the page are suggested). **Remove widget** takes a widget and everything inside it out of the generated UI, and **Restore widget** brings it back. Every edit shows in the render after a short pause, and the tree marks edited widgets (●) and strikes through removed ones. Undo and redo (buttons, Ctrl+Z, Ctrl+Shift+Z) keep up to 200 steps. The edits are the page's **sidecar**, not changes to the IR file: **Save** (Ctrl+S) writes `<ir name>.lvgl.json` in the workspace through the preview API, and opening the page again loads it. A page converted from HTML keeps the edits when the HTML changes, and `html2lvgl --from-ir <dir>/<name>.ir.json` picks the same file up by itself, so the generated XML, C, C++ and Python include the edits. **Revert** discards what changed since the last save, and opening another file, or closing the tab, with unsaved edits asks first. Without `--workspace` the editor still edits and previews; Save is off and says why.
 
@@ -315,7 +318,11 @@ Canvas editing (M3): the selected widget can be dragged on the picture to move i
 
 A move adds the distance dragged to the widget's own `x` and `y`, so it works whatever the parent's padding is, and for a widget aligned to the right or bottom (`align="bottom_right"`) the offset grows the other way, which the drag follows. A resize starts from the size LVGL drew, so the widget follows the pointer even when the `width` attribute and the drawn size differ. While dragging, a dashed ghost shows where the widget will end up, with its position and size; the drag is one undo step (it changes `x` and `y` together); Escape abandons it, and a press that moves less than three pixels is a click. Arrow keys nudge the selected widget by one pixel, ten with Shift, for people who cannot drag. Anything the layout refuses shows a one-line reason under the picture instead of doing nothing.
 
-Limits: only widgets with a name can be edited (the sidecar addresses widgets by name; put `data-lv-name` on the element), and a sidecar cannot add, move between parents, reorder or rename widgets (M4). Moving a flex child to another place in its row is a reorder, so it belongs to M4 as well.
+Structure (M4): **Add** buttons above the tree add a plain widget (box, label, button, bar, slider, switch). It goes inside the selected widget if that can hold others, after it if not, or at the end of the page; a button comes with its label inside it. The new widget is selected, so you can name its text or colour straight away, and in a plain (non-flex) parent it starts at x 10, y 10 so it can be dragged. **Reorder and re-parent** by dragging a row in the tree (above or below another row to put it next to it, on the middle of a row to put it inside; a rose outline and a line under the tree say why a drop is not allowed), or with the **Up, Down, Out, In** buttons in the properties panel (Alt+Up and Alt+Down for the first two); a flex child can now be reordered even though the canvas cannot move it. **Delete** (the key, or Remove widget) takes an added widget back completely, with everything inside it and every edit that mentioned it, and marks an original widget removed. Added widgets are marked + in the tree and moved ones ⇅. All of it is undoable, and two moves in a row of the same widget count as one.
+
+What is saved is version 2 of the sidecar: a `structure` list of operations applied in order, before the per-widget `nodes` overrides, so those can restyle an added widget. A sidecar without structure stays version 1, so older converters can still read it, and a version 2 file is refused by an older converter with a clear message instead of being half-applied. The format is in [FEATURES.md](FEATURES.md#sidecar-overrides).
+
+Limits: only widgets with a name can be edited or moved (the sidecar addresses widgets by name; put `data-lv-name` on the element), nothing can be moved into or next to a widget whose parent has no name, only box-like widgets (the page, box, button) can hold children, renaming and changing a widget's type are not offered, and the add menu has plain widgets only: adding a recognized component (a Material UI card, say) needs a per-component builder, which is a separate piece of work. Dragging rows in the tree is tested in Chromium; whether Firefox starts a drag from a button inside a draggable row is untested, and the move buttons are the keyboard and fallback route. The browser does not keep the file chosen with Open IR file, so a reload returns to the example page: open the file again and its saved sidecar loads by name.
 
 Commands in `editor/`: `npm run typecheck`, `npm test` (Vitest: hit-testing, tree, IR file checks, API client, and a check that the generated types are current), `npm run generate:types` (after changing a schema), `npm run build`, and `npm run e2e` (a headless-Chromium smoke test of the built editor against a real preview API and render program). CI runs all of them.
 

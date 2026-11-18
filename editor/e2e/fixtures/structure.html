@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+<style>
+  body { margin: 0; width: 320px; height: 240px; background: #f1f5f9; position: relative; font-family: sans-serif; }
+  #list { display: flex; flex-direction: column; gap: 6px; padding: 10px; width: 300px; }
+  #list > div { height: 30px; border-radius: 4px; }
+  #item_a { background: #ef4444; }
+  #item_b { background: #22c55e; }
+  #item_c { background: #3b82f6; }
+  #tray { position: absolute; left: 10px; top: 170px; width: 280px; height: 50px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; }
+</style>
+</head>
+<body>
+  <div id="list" data-lv-name="list">
+    <div id="item_a" data-lv-name="item_a"></div>
+    <div id="item_b" data-lv-name="item_b"></div>
+    <div id="item_c" data-lv-name="item_c"></div>
+  </div>
+  <div id="tray" data-lv-name="tray"></div>
+</body>
+</html>

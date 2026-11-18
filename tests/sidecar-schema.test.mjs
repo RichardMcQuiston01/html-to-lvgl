@@ -22,7 +22,19 @@ const cases = [
   ['remove', { version: 1, nodes: { card_2: { remove: true } } }, true],
   ['state suffix in a key', { version: 1, nodes: { start: { attrs: { 'style_bg_color:pressed': '0x000000' } } } }, true],
   ['unknown extra keys are tolerated', { version: 1, note: 'x', nodes: { a: { attrs: {}, comment: 'y' } } }, true],
-  ['wrong version', { version: 2, nodes: {} }, false],
+  ['version 2', { version: 2, nodes: {} }, true],
+  ['wrong version', { version: 3, nodes: {} }, false],
+  ['add and move', { version: 2, nodes: {}, structure: [{ op: 'add', name: 'n', tag: 'lv_label', parent: null, index: 0, attrs: { text: 'x', width: 4, f: true } }, { op: 'move', name: 'a', parent: 'panel', index: 2 }] }, true],
+  ['empty structure', { version: 2, nodes: {}, structure: [] }, true],
+  ['structure is not an array', { version: 2, nodes: {}, structure: {} }, false],
+  ['unknown op', { version: 2, nodes: {}, structure: [{ op: 'rotate' }] }, false],
+  ['add without a tag', { version: 2, nodes: {}, structure: [{ op: 'add', name: 'n', parent: null, index: 0 }] }, false],
+  ['add with a bad tag', { version: 2, nodes: {}, structure: [{ op: 'add', name: 'n', tag: 'label', parent: null, index: 0 }] }, false],
+  ['bad name', { version: 2, nodes: {}, structure: [{ op: 'move', name: '1a', parent: null, index: 0 }] }, false],
+  ['negative index', { version: 2, nodes: {}, structure: [{ op: 'move', name: 'a', parent: null, index: -1 }] }, false],
+  ['fractional index', { version: 2, nodes: {}, structure: [{ op: 'move', name: 'a', parent: null, index: 0.5 }] }, false],
+  ['a move with an unknown key', { version: 2, nodes: {}, structure: [{ op: 'move', name: 'a', parent: null, index: 0, tag: 'lv_obj' }] }, false],
+  ['null attr in an add', { version: 2, nodes: {}, structure: [{ op: 'add', name: 'n', tag: 'lv_obj', parent: null, index: 0, attrs: { w: null } }] }, false],
   ['missing version', { nodes: {} }, false],
   ['missing nodes', { version: 1 }, false],
   ['nodes is an array', { version: 1, nodes: [] }, false],
@@ -43,3 +55,10 @@ for (const [label, doc, expected] of cases) {
     assert.equal(bySchema, expected, `schema (${validateJsonSchema(doc, schema).join('; ')})`);
   });
 }
+
+test('the one rule the schema cannot express: structure needs version 2, which validateOverrides enforces', () => {
+  const doc = { version: 1, nodes: {}, structure: [{ op: 'move', name: 'a', parent: null, index: 0 }] };
+  assert.equal(validateJsonSchema(doc, schema).length, 0, 'the schema alone accepts it');
+  assert.equal(validateOverrides(doc).ok, false);
+  assert.match(validateOverrides(doc).errors.join(' '), /needs "version": 2/);
+});

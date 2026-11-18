@@ -311,9 +311,32 @@ A **sidecar** file changes the generated UI without editing your HTML, and the c
 - The widget's `name` cannot be overridden.
 - Overrides apply to the generated widget tree, so XML, C, C++ and Python output all change the same way.
 
+### Adding and moving widgets (version 2)
+
+A sidecar can also add widgets and move them to another place. These go in a `structure` list, and a sidecar that has one must say `"version": 2`:
+
+```json
+{
+  "version": 2,
+  "structure": [
+    { "op": "add",  "name": "note", "tag": "lv_label", "parent": "card", "index": 2, "attrs": { "text": "Hi" } },
+    { "op": "move", "name": "start", "parent": "actions", "index": 0 }
+  ],
+  "nodes": { "note": { "attrs": { "style_text_color": "0xff0000" } } }
+}
+```
+
+- `parent` is the **name** of the widget that holds it, or `null` for the page. `index` is the place among the parent's children, counting from 0. For a move, the widget is taken out of its old place first, so the index counts the list without it. An index past the end means the end.
+- The operations apply **in order**, each to the tree the ones before it produced, and **before** `nodes`. So an override in `nodes` can restyle or remove a widget that `structure` added.
+- A new widget needs a `name` that no widget has, an LVGL `tag` (`lv_obj`, `lv_label`, `lv_button`, `lv_bar`, `lv_slider`, `lv_switch`, ...) and optional `attrs`. Only the page, `lv_obj` and `lv_button` can hold other widgets.
+- A sidecar with no `structure` stays `"version": 1`, so older converters keep reading it. An older converter refuses a version 2 file with a message instead of ignoring the operations.
+- An operation that cannot apply is skipped and reported (`OVERRIDE_STRUCTURE_INVALID` in `TODO.txt`) with the reason (no widget by that name, a parent that cannot hold widgets, a move into the widget's own subtree, a name already taken), and the rest still apply. A widget that moves by index can land one place off when siblings are added to or removed from the HTML, so put `data-lv-name` on the widgets an operation names.
+
+The [editor](EDITOR.md#running-the-editor) writes these for you.
+
 Names come from `data-lv-name`, then `id`, then the class. Use **`data-lv-name`** for anything an override targets. A name you set stays the same when you edit the page. A class-derived name with a number on the end (`card_2`) can move when you add, remove or reorder siblings, and the override would land on a different widget.
 
-A problem with the file is reported in `TODO.txt` and conversion carries on. An unreadable or wrong-version file is ignored. A name that matches no widget lists the closest names that do exist, so a typo is easy to fix.
+A problem with the file is reported in `TODO.txt` and conversion carries on. An unreadable or wrong-version file is ignored (version 1 and 2 are known). A name that matches no widget lists the closest names that do exist, so a typo is easy to fix.
 
 [Back to Top](#features)
 

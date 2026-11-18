@@ -18,7 +18,7 @@
 import { lstatSync, readFileSync, renameSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { validateOverrides, OVERRIDES_VERSION } from './overrides.mjs';
+import { validateOverrides, requiredVersion } from './overrides.mjs';
 
 /** What a sidecar name may be: the IR's `name` (letters, digits, `_` and `-`). */
 export const SIDECAR_NAME = /^[A-Za-z0-9_-]{1,100}$/;
@@ -114,7 +114,7 @@ export function writeSidecar(directory, name, sidecar) {
     if (!err || err.code !== 'ENOENT') return failure('sidecar_write_failed', `cannot check ${name}.lvgl.json: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  const text = `${JSON.stringify({ version: OVERRIDES_VERSION, ...sidecarWithoutVersion(sidecar) }, null, 2)}\n`;
+  const text = `${JSON.stringify({ version: requiredVersion(sidecar), ...sidecarWithoutVersion(sidecar) }, null, 2)}\n`;
   const temporary = join(resolve(directory), `.${name}.lvgl.json.${randomBytes(6).toString('hex')}.tmp`);
   try {
     writeFileSync(temporary, text, { flag: 'wx', mode: 0o644 });

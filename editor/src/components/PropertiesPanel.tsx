@@ -1,6 +1,7 @@
 import { nodeLabel, nodeName } from '../lib/irTree';
 import { effectiveAttrs, type AttrValue } from '../lib/sidecar';
 import type { IrNode, SidecarOverrides, WidgetBox } from '../lib/types';
+import type { MovePlan, Step } from '../lib/structure';
 import { AddAttrForm } from './AddAttrForm';
 import { AttrRow } from './AttrRow';
 
@@ -14,15 +15,27 @@ interface PropertiesPanelProps {
   /** The sidecar removes this very node (so it can be brought back here). */
   removedHere: boolean;
   knownKeys: readonly string[];
+  /** The widget was added in the editor (so removing it takes it back rather than marking it removed). */
+  added: boolean;
+  /** What each move button would do, or null when the widget cannot be moved in the tree (the page, a removed widget). */
+  steps: Record<Step, MovePlan> | null;
+  onStep: (step: Step) => void;
   onSetAttr: (nodeName: string, key: string, value: AttrValue) => void;
   onResetAttr: (nodeName: string, key: string) => void;
   onRemoveNode: (nodeName: string) => void;
   onRestoreNode: (nodeName: string) => void;
 }
 
+const STEP_BUTTONS: readonly { step: Step; label: string; hint: string }[] = [
+  { step: 'up', label: '↑ Up', hint: 'Move before the previous widget (Alt+Up)' },
+  { step: 'down', label: '↓ Down', hint: 'Move after the next widget (Alt+Down)' },
+  { step: 'out', label: '← Out', hint: "Move out of its parent, to just after it" },
+  { step: 'in', label: '→ In', hint: 'Move inside the widget before it, as its last child' },
+];
+
 const smallButton = 'rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800';
 
-export function PropertiesPanel({ node, box, boxesAvailable, sidecar, removed, removedHere, knownKeys, onSetAttr, onResetAttr, onRemoveNode, onRestoreNode }: PropertiesPanelProps) {
+export function PropertiesPanel({ node, box, boxesAvailable, sidecar, removed, removedHere, knownKeys, added, steps, onStep, onSetAttr, onResetAttr, onRemoveNode, onRestoreNode }: PropertiesPanelProps) {
   if (node === null) {
     return <p className="p-3 text-sm text-slate-500" data-testid="properties-empty">Select a widget in the tree or on the canvas.</p>;
   }
@@ -36,11 +49,17 @@ export function PropertiesPanel({ node, box, boxesAvailable, sidecar, removed, r
       <div className="flex items-center gap-2">
         <h2 className="min-w-0 flex-1 truncate font-semibold" data-testid="properties-title">{nodeLabel(node)}</h2>
         {name !== null && !removed && (
-          <button type="button" className={smallButton} onClick={() => onRemoveNode(name)} data-testid="remove-node" title="Remove this widget and everything inside it from the generated UI">
+          <button
+            type="button"
+            className={smallButton}
+            onClick={() => onRemoveNode(name)}
+            data-testid="remove-node"
+            title={added ? 'Take this added widget back (and everything inside it)' : 'Remove this widget and everything inside it from the generated UI'}
+          >
             Remove widget
           </button>
         )}
-        {name !== null && removedHere && (
+        {name !== null && removedHere && !added && (
           <button type="button" className={smallButton} onClick={() => onRestoreNode(name)} data-testid="restore-node">
             Restore widget
           </button>
@@ -55,6 +74,27 @@ export function PropertiesPanel({ node, box, boxesAvailable, sidecar, removed, r
         <p className="mt-1 rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300" data-testid="unnamed-note">
           This widget has no name, so it cannot be edited. Give the element a data-lv-name (or an id) in the page.
         </p>
+      )}
+      {steps !== null && (
+        <div className="mt-2 flex items-center gap-1" role="group" aria-label="Position in the tree">
+          <span className="mr-1 text-xs text-slate-500">Position</span>
+          {STEP_BUTTONS.map(({ step, label, hint }) => {
+            const plan = steps[step];
+            return (
+              <button
+                key={step}
+                type="button"
+                disabled={!plan.ok}
+                className={`${smallButton} disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent`}
+                title={plan.ok ? hint : plan.reason}
+                data-testid={`step-${step}`}
+                onClick={() => onStep(step)}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       )}
       <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
         <dt className="text-slate-500">tag</dt>

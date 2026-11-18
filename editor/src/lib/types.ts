@@ -6,6 +6,8 @@ export type { IrNode };
 export type IrDocument = Html2LvglIR;
 export type RegistryExport = Html2LvglRegistryExport;
 export type SidecarOverrides = Html2LvglSidecarOverrides;
+/** One entry of a sidecar's `structure` list: an add or a move. */
+export type StructureOperation = NonNullable<Html2LvglSidecarOverrides['structure']>[number];
 
 /** Final screen rectangle of one named widget, as the render program reports it (`--boxes`). */
 export interface WidgetBox {

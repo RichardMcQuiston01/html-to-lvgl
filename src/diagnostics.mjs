@@ -70,6 +70,7 @@ export const CODES = Object.freeze({
   OVERRIDE_FILE_INVALID: { severity: 'error' },
   OVERRIDE_TARGET_UNKNOWN: { severity: 'warning' },
   OVERRIDE_ATTR_INVALID: { severity: 'warning' },
+  OVERRIDE_STRUCTURE_INVALID: { severity: 'warning' },
   // Components
   COMPONENT_INLINE: { severity: 'warning' },
   COMPONENT_NESTED_DIFFERS: { severity: 'warning' },

@@ -547,6 +547,211 @@ try {
     assert.match(xmlHtml, /name="panel"[^>]*width="132"/);
   });
 
+
+  /* ------------------------------------------------ M4: structure (add, move, remove) */
+
+  const structureHtml = join(editorRoot, 'e2e', 'fixtures', 'structure.html');
+  const structureIr = join(workspace, 'structure.ir.json');
+  const structureSidecarFile = join(workspace, 'structure.lvgl.json');
+  const RED = [239, 68, 68];
+  const GREEN = [34, 197, 94];
+  const BLUE = [59, 130, 246];
+  const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 14);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const waitPixel = async (x, y, expected, label) => {
+    let last = [];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      last = await pixel(x, y);
+      if (near(last, expected)) return;
+      await sleep(200);
+    }
+    assert.fail(`${label}: expected about ${expected} at ${x},${y}, got ${last}`);
+  };
+  const treeOrder = () => page.evaluate(() => [...document.querySelectorAll('[data-testid^="tree-row-"]')].map((e) => e.getAttribute('data-testid').slice('tree-row-'.length)));
+  const depthOf = async (name) => Number((await page.getByTestId(`row-${name}`).locator('xpath=ancestor::li').getAttribute('style')).match(/padding-left: (\d+)px/)[1]) / 14;
+  /** Dispatch drag events by hand, to look at the tree mid-drag (a real drag cannot be paused). */
+  const hoverDrag = async (sourceName, targetName, where = 'middle') => {
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await page.getByTestId(`row-${sourceName}`).dispatchEvent('dragstart', { dataTransfer });
+    const target = page.getByTestId(`row-${targetName}`);
+    const box = await target.boundingBox();
+    const clientY = box.y + box.height * (where === 'before' ? 0.1 : where === 'after' ? 0.9 : 0.5);
+    await target.dispatchEvent('dragover', { dataTransfer, clientX: box.x + 10, clientY });
+    return { dataTransfer, end: () => page.getByTestId(`row-${sourceName}`).dispatchEvent('dragend', { dataTransfer }) };
+  };
+
+  await step('M4: a flex list page, converted by the real CLI, opens with its three coloured bars in order', async () => {
+    const run = cli([structureHtml, '--export-ir', workspace, '--size', '320x240']);
+    assert.equal(run.status, 0, run.stderr);
+    await page.getByTestId('file-input').setInputFiles(structureIr);
+    await page.getByTestId('tree-row-item_c').waitFor({ timeout: 15000 });
+    await canvas.locator('img').waitFor({ timeout: 15000 });
+    assert.deepEqual(await treeOrder(), ['root', 'list', 'item_a', 'item_b', 'item_c', 'tray']);
+    await waitPixel(50, 25, RED, 'row 1');
+    await waitPixel(50, 61, GREEN, 'row 2');
+    await waitPixel(50, 97, BLUE, 'row 3');
+    assert.equal(await editCount(), 'no edits');
+  });
+
+  await step('the move buttons reorder a flex child (which the canvas cannot), say why one is unavailable, and mark the widget moved', async () => {
+    await page.getByTestId('tree-row-item_a').click();
+    assert.equal(await page.getByTestId('step-up').isDisabled(), true);
+    assert.equal(await page.getByTestId('step-up').getAttribute('title'), 'already first');
+    await page.getByTestId('step-down').click();
+    assert.deepEqual(await treeOrder(), ['root', 'list', 'item_b', 'item_a', 'item_c', 'tray']);
+    await page.getByTestId('moved-item_a').waitFor({ timeout: 2000 });
+    assert.equal(await editCount(), '1 edit · unsaved');
+    await waitPixel(50, 25, GREEN, 'row 1 after the move');
+    await waitPixel(50, 61, RED, 'row 2 after the move');
+    await page.getByTestId('tree-row-list').click();
+    assert.equal(await page.getByTestId('step-out').isDisabled(), true);
+    assert.equal(await page.getByTestId('step-out').getAttribute('title'), 'already directly on the page');
+  });
+
+  await step('Alt+Up moves it back, and two moves in a row of one widget stay one edit', async () => {
+    await page.getByTestId('tree-row-item_a').click();
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('Alt+ArrowUp');
+    assert.deepEqual(await treeOrder(), ['root', 'list', 'item_a', 'item_b', 'item_c', 'tray']);
+    assert.equal(await editCount(), '1 edit · unsaved');
+    await waitPixel(50, 25, RED, 'row 1 restored');
+  });
+
+  await step('dragging a row in the tree puts it before another, and the picture shows the new order', async () => {
+    await page.getByTestId('tree-row-item_c').dragTo(page.getByTestId('tree-row-item_a'), { targetPosition: { x: 30, y: 2 } });
+    assert.deepEqual(await treeOrder(), ['root', 'list', 'item_c', 'item_a', 'item_b', 'tray']);
+    assert.equal(await editCount(), '2 edits · unsaved');
+    await waitPixel(50, 25, BLUE, 'row 1 after the drag');
+    await waitPixel(50, 61, RED, 'row 2 after the drag');
+    await waitPixel(50, 97, GREEN, 'row 3 after the drag');
+    assert.equal(await page.getByTestId('drop-hint').innerText(), 'Drag a widget to move it, or use the move buttons in the properties panel.');
+  });
+
+  await step('dropping on the middle of a widget moves it inside, and it lands where the converter puts it', async () => {
+    await page.getByTestId('tree-row-item_b').dragTo(page.getByTestId('tree-row-tray'));
+    assert.equal(await depthOf('item_b'), 2, 'item_b is now inside tray');
+    assert.equal(await depthOf('tray'), 1);
+    assert.equal(await editCount(), '3 edits · unsaved');
+    await waitPixel(50, 185, GREEN, 'item_b drawn inside the tray');
+  });
+
+  await step('a drop that is not allowed shows the reason while hovering, and does nothing', async () => {
+    const drag = await hoverDrag('tray', 'item_b');
+    assert.match(await page.getByTestId('drop-hint').innerText(), /item_b is inside tray, so tray cannot go there/);
+    await drag.end();
+    assert.equal(await page.getByTestId('drop-hint').innerText(), 'Drag a widget to move it, or use the move buttons in the properties panel.');
+    const self = await hoverDrag('item_a', 'item_a');
+    assert.match(await page.getByTestId('drop-hint').innerText(), /cannot be dropped on itself/);
+    await self.end();
+    assert.equal(await editCount(), '3 edits · unsaved');
+  });
+
+  await step('Move in and Move out change the parent, one step at a time', async () => {
+    await page.getByTestId('tree-row-tray').click();
+    await page.getByTestId('step-in').click();
+    assert.equal(await depthOf('tray'), 2, 'tray is now inside list (the widget before it)');
+    await page.getByTestId('step-out').click();
+    assert.equal(await depthOf('tray'), 1, 'and out again, onto the page');
+  });
+
+  await step('adding a widget puts it where the selection says, selects it, and it can be edited like any other', async () => {
+    await page.getByTestId('tree-row-list').click();
+    assert.equal(await page.getByTestId('add-placement').innerText(), 'inside list');
+    await page.getByTestId('add-widget-lv_label').click();
+    await page.getByTestId('added-label').waitFor({ timeout: 2000 });
+    assert.equal(await page.getByTestId('properties-title').innerText(), 'label');
+    assert.equal(await page.getByTestId('attr-text').inputValue(), 'Label');
+    assert.equal(await page.getByTestId('attr-x').count(), 0, 'list lays its children out with flex, so the new widget has no starting position');
+    assert.equal(await depthOf('label'), 2, 'inside list');
+    await waitProperties('x \\d+, y \\d+, \\d+×\\d+');
+    await page.getByTestId('attr-text').fill('Hello');
+    await page.getByTestId('attr-text').press('Enter');
+    await page.getByTestId('attr-text-was').waitFor({ timeout: 2000 });
+    assert.equal(await page.getByTestId('attr-text').inputValue(), 'Hello');
+  });
+
+  await step('a button is added with its label inside it, after the selected widget; taking it back removes both', async () => {
+    assert.equal(await page.getByTestId('add-placement').innerText(), 'after label');
+    await page.getByTestId('add-widget-lv_button').click();
+    await page.getByTestId('added-button').waitFor({ timeout: 2000 });
+    await page.getByTestId('added-button_label').waitFor({ timeout: 2000 });
+    assert.equal(await depthOf('button'), 2);
+    assert.equal(await depthOf('button_label'), 3, 'the label is inside the button');
+    await waitProperties('x \\d+, y \\d+, 90×36');
+    await page.getByTestId('remove-node').click();
+    assert.equal(await page.getByTestId('tree-row-button').count(), 0);
+    assert.equal(await page.getByTestId('tree-row-button_label').count(), 0, 'what was added inside goes too');
+    assert.equal(await page.getByTestId('tree-row-label').count(), 1, 'the label stays');
+  });
+
+  await step('a refused drop onto a widget that cannot hold others says so', async () => {
+    const drag = await hoverDrag('item_c', 'label');
+    assert.match(await page.getByTestId('drop-hint').innerText(), /label is a lv_label, which cannot hold other widgets/);
+    await drag.end();
+  });
+
+  await step('Delete marks an original widget removed (undo brings it back); Ctrl+Z and Ctrl+Shift+Z step through every kind of edit', async () => {
+    const before = await editCount();
+    await page.getByTestId('tree-row-item_a').click();
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('Delete');
+    assert.equal(await page.getByTestId('tree-row-item_a').getAttribute('data-removed'), 'true');
+    await page.keyboard.press('Control+z');
+    assert.equal(await page.getByTestId('tree-row-item_a').getAttribute('data-removed'), 'false');
+    assert.equal(await editCount(), before);
+    // Undo walks back through every kind of edit, newest first: taking the button back, adding it, the label's text, adding the label.
+    await page.keyboard.press('Control+z');
+    await page.getByTestId('tree-row-button').waitFor({ timeout: 2000 });
+    assert.equal(await depthOf('button_label'), 3, 'undoing the removal brings the button back with its label');
+    await page.keyboard.press('Control+z');
+    assert.equal(await page.getByTestId('tree-row-button').count(), 0, 'undoing the add takes the button away');
+    await page.keyboard.press('Control+z');
+    await page.getByTestId('tree-row-label').click();
+    assert.equal(await page.getByTestId('attr-text').inputValue(), 'Label', 'undoing the edit restores the text');
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('Control+z');
+    assert.equal(await page.getByTestId('tree-row-label').count(), 0, 'undoing the add takes the label away');
+    for (let i = 0; i < 4; i += 1) await page.keyboard.press('Control+Shift+z');
+    assert.equal(await page.getByTestId('tree-row-button').count(), 0, 'redoing all four ends where we were: no button');
+    await page.getByTestId('tree-row-label').click();
+    assert.equal(await page.getByTestId('attr-text').inputValue(), 'Hello');
+  });
+
+  await step('saving writes a version 2 sidecar the converter reads: the same XML from the HTML page and from the IR', async () => {
+    await page.getByTestId('save').click();
+    await page.getByTestId('save-status').waitFor({ timeout: 5000 });
+    const saved = JSON.parse(readFileSync(structureSidecarFile, 'utf8'));
+    assert.equal(saved.version, 2);
+    assert.ok(Array.isArray(saved.structure) && saved.structure.length >= 3, 'the structure operations are saved');
+    assert.ok(saved.structure.some((op) => op.op === 'add' && op.name === 'label' && op.tag === 'lv_label' && op.parent === 'list'));
+    assert.ok(saved.structure.every((op) => op.op === 'add' || op.op === 'move'));
+    assert.deepEqual(saved.nodes, { label: { attrs: { text: 'Hello' } } });
+    const fromHtml = cli([structureHtml, '--overrides', structureSidecarFile, '-o', join(scratch, 'structure-from-html'), '--size', '320x240']);
+    assert.equal(fromHtml.status, 0, fromHtml.stderr);
+    const fromIr = cli(['--from-ir', structureIr, '-o', join(scratch, 'structure-from-ir')]);
+    assert.equal(fromIr.status, 0, fromIr.stderr);
+    const xmlHtml = readFileSync(join(scratch, 'structure-from-html', 'structure.xml'), 'utf8');
+    const xmlIr = readFileSync(join(scratch, 'structure-from-ir', 'structure.xml'), 'utf8');
+    assert.equal(xmlHtml, xmlIr, 'the HTML and the IR give identical XML with the same sidecar');
+    assert.match(xmlHtml, /name="label"[^>]*text="Hello"/);
+    assert.ok(xmlHtml.indexOf('name="item_c"') < xmlHtml.indexOf('name="item_a"'), 'item_c now comes before item_a');
+    assert.ok(xmlHtml.indexOf('name="tray"') < xmlHtml.indexOf('name="item_b"'), 'item_b is inside tray');
+    assert.doesNotMatch(readFileSync(structureSidecarFile, 'utf8'), /"remove"/, 'the undone Delete left no trace');
+  });
+
+  await step('reloading restores the whole structure: order, the added widget and its markers', async () => {
+    await page.reload(); // the browser does not keep the chosen file, so the editor is back on the example: open the file again
+    await canvas.locator('img').waitFor({ timeout: 15000 });
+    await page.getByTestId('file-input').setInputFiles(structureIr);
+    await page.getByTestId('tree-row-item_c').waitFor({ timeout: 15000 });
+    await page.getByTestId('added-label').waitFor({ timeout: 5000 });
+    const order = await treeOrder();
+    assert.ok(order.indexOf('item_c') < order.indexOf('item_a'));
+    assert.equal(await depthOf('item_b'), 2);
+    await page.getByTestId('moved-item_c').waitFor({ timeout: 2000 });
+    assert.match(await editCount(), /^\d+ edits$/);
+  });
+
   // The invalid-IR step provokes a 422 on purpose, and the browser logs every failed request.
   const unexpected = errors.filter((message) => !/status of 422/.test(message));
   assert.deepEqual(unexpected, [], `the page logged errors: ${unexpected.join(' | ')}`);

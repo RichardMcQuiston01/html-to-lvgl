@@ -36,8 +36,10 @@ describe('irTree', () => {
   it('hides the descendants of collapsed rows only', () => {
     const rows = flattenTree(small);
     expect(visibleRows(rows, new Set()).length).toBe(5);
-    expect(visibleRows(rows, new Set(['root.0'])).map((r) => r.id)).toEqual(['root', 'root.0', 'root.1', 'root.1.0']);
+    expect(visibleRows(rows, new Set(['topbar'])).map((r) => r.id)).toEqual(['root', 'root.0', 'root.1', 'root.1.0']);
     expect(visibleRows(rows, new Set([ROOT_ID])).map((r) => r.id)).toEqual(['root']);
+    // an unnamed row is collapsed by its id
+    expect(visibleRows(rows, new Set(['root.1'])).map((r) => r.id)).toEqual(['root', 'root.0', 'root.0.0', 'root.1']);
   });
 
   it('lists the ancestors to expand for a selection', () => {
