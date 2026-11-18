@@ -646,6 +646,23 @@ try {
     assert.equal(await editCount(), '3 edits · unsaved');
   });
 
+  await step('a dragover that arrives in the same task as the dragstart is still handled (React has not re-rendered in between)', async () => {
+    // A fast pointer, or a test that fires both events back to back, would otherwise lose the first drop target.
+    const accepted = await page.evaluate(() => {
+      const dataTransfer = new DataTransfer();
+      const source = document.querySelector('[data-testid="row-item_a"]');
+      const target = document.querySelector('[data-testid="row-tray"]'); // a box: dropping inside is allowed
+      const box = target.getBoundingClientRect();
+      const fire = (element, type, extra = {}) => element.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer, ...extra }));
+      fire(source, 'dragstart');
+      const result = !fire(target, 'dragover', { clientX: box.x + 10, clientY: box.y + box.height / 2 }); // preventDefault called: the drop is accepted
+      fire(source, 'dragend');
+      return result;
+    });
+    assert.equal(accepted, true, 'the first dragover was ignored');
+    assert.equal(await editCount(), '3 edits · unsaved', 'and nothing was moved by it');
+  });
+
   await step('Move in and Move out change the parent, one step at a time', async () => {
     await page.getByTestId('tree-row-tray').click();
     await page.getByTestId('step-in').click();
