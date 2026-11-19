@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-18
+
+A visual editor for pages now exists in the repository (`editor/`; it is not part of the npm package), and the converter gained what it needs, so this is a minor bump: sidecar version 2 (add and move widgets), widget boxes and any-size rendering in the render program, and a sidecar save API in the preview server. Generated output for existing pages and existing sidecars does not change.
+
+**Upgrading:** a sidecar the editor writes with added or moved widgets declares `"version": 2` and needs this version of the converter; an older converter refuses it with a clear message instead of ignoring the operations. A sidecar with only attribute changes stays version 1. Run `html2lvgl --build-render` again to get the render program that reports widget boxes (it is rebuilt automatically because its install folder is named for a hash of its sources); an older render program still works for `--watch`, and the preview API tells you when it needs the rebuild.
+
 ### Added
 
 - **Add, reorder and delete widgets in the editor (editor milestone M4).** **Add** buttons put a plain widget (box, label, button with its label, bar, slider, switch) inside or after the selected one. Drag a row in the tree to move a widget next to another or inside it, or use Up, Down, Out and In (Alt+Up and Alt+Down); a flex child, which the canvas cannot move, can be reordered this way. Delete takes an added widget back completely and marks an original one removed. Added and moved widgets are marked in the tree, and all of it undoes. See [EDITOR.md](EDITOR.md#running-the-editor).

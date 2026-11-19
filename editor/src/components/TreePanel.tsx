@@ -39,7 +39,17 @@ function zoneAt(event: DragEvent<HTMLElement>, isRoot: boolean): DropZone {
 
 export function TreePanel({ rows, selectedId, collapsed, removedIds, editedNames, addedNames, movedNames, planDrop, onSelect, onToggle, onDrop }: TreePanelProps) {
   const selectedRef = useRef<HTMLLIElement>(null);
-  const [dragName, setDragName] = useState<string | null>(null);
+  const [dragName, setDragNameState] = useState<string | null>(null);
+  /**
+   * The dragged widget as the handlers see it. State alone can lag: a dragover
+   * that arrives in the same task as the dragstart would still see null, and
+   * the first drop target would be ignored.
+   */
+  const dragRef = useRef<string | null>(null);
+  const setDragName = (name: string | null): void => {
+    dragRef.current = name;
+    setDragNameState(name);
+  };
   const [drop, setDrop] = useState<DropState | null>(null);
   // A pick on the canvas selects a row that may be off screen.
   useEffect(() => {
@@ -94,9 +104,10 @@ export function TreePanel({ rows, selectedId, collapsed, removedIds, editedNames
                 }}
                 onDragEnd={endDrag}
                 onDragOver={(event) => {
-                  if (dragName === null) return;
+                  const dragging = dragRef.current;
+                  if (dragging === null) return;
                   const zone = zoneAt(event, isRoot);
-                  const plan = planDrop(dragName, row, zone);
+                  const plan = planDrop(dragging, row, zone);
                   if (plan.ok) {
                     event.preventDefault(); // this row accepts the drop
                     event.dataTransfer.dropEffect = 'move';
@@ -110,9 +121,10 @@ export function TreePanel({ rows, selectedId, collapsed, removedIds, editedNames
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
-                  if (dragName !== null) {
-                    const plan = planDrop(dragName, row, zoneAt(event, isRoot));
-                    if (plan.ok) onDrop(dragName, plan);
+                  const dropped = dragRef.current;
+                  if (dropped !== null) {
+                    const plan = planDrop(dropped, row, zoneAt(event, isRoot));
+                    if (plan.ok) onDrop(dropped, plan);
                   }
                   endDrag();
                 }}
