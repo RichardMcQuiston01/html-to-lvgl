@@ -580,6 +580,16 @@ try {
     return { dataTransfer, end: () => page.getByTestId(`row-${sourceName}`).dispatchEvent('dragend', { dataTransfer }) };
   };
 
+  // The hint is React state, so it follows the event by a render: wait for it instead of reading it at once.
+  const waitHint = async (expected) => {
+    const hint = page.getByTestId('drop-hint');
+    await page.waitForFunction(
+      ({ source, flags }) => new RegExp(source, flags).test(document.querySelector('[data-testid="drop-hint"]')?.innerText ?? ''),
+      { source: expected.source, flags: expected.flags },
+      { timeout: 2000 },
+    ).catch(async () => { throw new Error(`the drop hint never matched ${expected}; it says: ${await hint.innerText()}`); });
+  };
+
   await step('M4: a flex list page, converted by the real CLI, opens with its three coloured bars in order', async () => {
     const run = cli([structureHtml, '--export-ir', workspace, '--size', '320x240']);
     assert.equal(run.status, 0, run.stderr);
@@ -637,11 +647,11 @@ try {
 
   await step('a drop that is not allowed shows the reason while hovering, and does nothing', async () => {
     const drag = await hoverDrag('tray', 'item_b');
-    assert.match(await page.getByTestId('drop-hint').innerText(), /item_b is inside tray, so tray cannot go there/);
+    await waitHint(/item_b is inside tray, so tray cannot go there/);
     await drag.end();
-    assert.equal(await page.getByTestId('drop-hint').innerText(), 'Drag a widget to move it, or use the move buttons in the properties panel.');
+    await waitHint(/^Drag a widget to move it, or use the move buttons in the properties panel\.$/);
     const self = await hoverDrag('item_a', 'item_a');
-    assert.match(await page.getByTestId('drop-hint').innerText(), /cannot be dropped on itself/);
+    await waitHint(/cannot be dropped on itself/);
     await self.end();
     assert.equal(await editCount(), '3 edits · unsaved');
   });
@@ -703,7 +713,7 @@ try {
 
   await step('a refused drop onto a widget that cannot hold others says so', async () => {
     const drag = await hoverDrag('item_c', 'label');
-    assert.match(await page.getByTestId('drop-hint').innerText(), /label is a lv_label, which cannot hold other widgets/);
+    await waitHint(/label is a lv_label, which cannot hold other widgets/);
     await drag.end();
   });
 
